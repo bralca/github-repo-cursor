@@ -1,0 +1,152 @@
+name: Server CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'server/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'server/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './server/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run check-types
+
+      - name: Run tests
+        run: npm run test:coverage
+        
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage
+          path: ./server/coverage
+  
+  build:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './server/package-lock.json'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build
+        run: npm run build:prod
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: ./server/dist
+  
+  build-docker:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract branch name
+        id: extract_branch
+        run: echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./server
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/server:${{ steps.extract_branch.outputs.branch }}-${{ github.sha }}
+            ghcr.io/${{ github.repository }}/server:${{ steps.extract_branch.outputs.branch }}-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  
+  deploy-staging:
+    needs: build-docker
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/develop') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment: staging
+    
+    steps:
+      - name: Deploy to staging
+        # This would connect to your cloud provider (e.g., Railway or Render)
+        # For now we just echo a message
+        run: echo "Deploying to staging environment"
+  
+  deploy-production:
+    needs: [build-docker, deploy-staging]
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment:
+      name: production
+      url: https://api.github-explorer.example.com # Replace with your actual production URL
+    
+    steps:
+      - name: Approve production deployment
+        # For manual approval in GitHub
+        run: echo "Deployment to production was approved"
+      
+      - name: Deploy to production
+        # This would connect to your cloud provider (e.g., Railway or Render)
+        # For now we just echo a message
+        run: echo "Deploying to production environment"
+      
+      - name: Verify deployment
+        # This would check if the deployment was successful
+        run: echo "Verifying deployment health" 

@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  pipeline-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder # Use the builder stage for development
+    command: npm run dev
+    ports:
+      - "3001:3001"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - LOG_LEVEL=debug
+    restart: unless-stopped
+
+  # Uncomment and configure when integrating with Supabase
+  # supabase:
+  #   image: supabase/supabase-local:latest
+  #   ports:
+  #     - "54321:54321"
+  #     - "54322:54322"
+  #   environment:
+  #     - POSTGRES_PASSWORD=postgres
+  #     - ANON_KEY=your-anon-key
+  #     - SERVICE_ROLE_KEY=your-service-role-key
+  #   volumes:
+  #     - supabase-data:/var/lib/postgresql/data
+
+# Uncomment when integrating Supabase
+# volumes:
+#   supabase-data: 
