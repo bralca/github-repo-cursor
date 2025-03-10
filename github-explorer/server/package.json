@@ -3,25 +3,16 @@
   "version": "1.0.0",
   "description": "Node.js pipeline server for the GitHub Explorer application",
   "main": "dist/index.js",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "start": "node dist/index.js",
     "dev": "nodemon --watch src/**/*.ts --exec npx ts-node src/index.ts",
     "build": "rimraf dist && tsc",
-    "build:prod": "npm run lint && npm run build",
     "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix",
     "test": "jest",
-    "test:coverage": "jest --coverage",
-    "clean": "rimraf dist",
-    "check-types": "tsc --noEmit",
-    "check": "npm run lint && npm run check-types",
-    "prestart": "npm run build",
-    "docker:build": "docker build -t github-explorer-server .",
-    "docker:run": "docker run -p 3001:3001 github-explorer-server",
-    "docker:dev": "docker-compose up",
-    "docker:down": "docker-compose down",
-    "prepare-release": "npm run build:prod && npm run test",
-    "postinstall": "npm run build"
+    "heroku-postbuild": "npm run build"
   },
   "keywords": [],
   "author": "GitHub Explorer Team",

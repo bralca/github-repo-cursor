@@ -1,0 +1,35 @@
+{
+  "name": "GitHub Explorer Server",
+  "description": "Node.js pipeline server for the GitHub Explorer application",
+  "repository": "https://github.com/yourusername/github-explorer",
+  "keywords": ["node", "express", "github", "api"],
+  "env": {
+    "NODE_ENV": {
+      "description": "Environment mode",
+      "value": "production"
+    },
+    "CORS_ORIGIN": {
+      "description": "Frontend URL for CORS (update after frontend deployment)",
+      "value": "https://your-frontend-url.vercel.app"
+    },
+    "GITHUB_TOKEN": {
+      "description": "GitHub Personal Access Token",
+      "required": true
+    },
+    "LOG_LEVEL": {
+      "description": "Logging level",
+      "value": "info"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "eco"
+    }
+  }
+} 
