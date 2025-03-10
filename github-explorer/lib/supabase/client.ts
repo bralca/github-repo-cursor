@@ -32,5 +32,44 @@ if (!supabaseUrl || !supabaseKey) {
  */
 export const supabase = createClient<Database>(
   supabaseUrl || 'https://placeholder-url.supabase.co',
-  supabaseKey || 'placeholder-key'
+  supabaseKey || 'placeholder-key',
+  {
+    auth: {
+      persistSession: true,
+      storageKey: 'supabase-auth-token',
+      storage: {
+        getItem: (key) => {
+          if (typeof window === 'undefined') {
+            return null;
+          }
+          
+          const item = window.localStorage.getItem(key);
+          console.log(`[Auth] Getting item from storage: ${key}, exists: ${!!item}`);
+          return item;
+        },
+        setItem: (key, value) => {
+          if (typeof window === 'undefined') {
+            return;
+          }
+          
+          console.log(`[Auth] Setting item in storage: ${key}`);
+          window.localStorage.setItem(key, value);
+          
+          // Also set a cookie for middleware access
+          document.cookie = `${key}=true; path=/; max-age=2592000`; // 30 days
+        },
+        removeItem: (key) => {
+          if (typeof window === 'undefined') {
+            return;
+          }
+          
+          console.log(`[Auth] Removing item from storage: ${key}`);
+          window.localStorage.removeItem(key);
+          
+          // Also remove the cookie
+          document.cookie = `${key}=; path=/; max-age=0`;
+        },
+      },
+    },
+  }
 ); 
