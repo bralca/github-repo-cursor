@@ -1,0 +1,13 @@
+---
+description: When there is an error in the code and a fix need to be implemented, use this rule
+globs: 
+alwaysApply: false
+---
+
+# Your rule content
+
+In Case of Errors this is how you should approach it: 
+- Think step by step. 
+- Reduce the number of assumptions you make in the code to 0
+- Write deterministic code that gets the job done
+- If necessary think of an alternative approach

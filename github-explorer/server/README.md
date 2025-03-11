@@ -1,37 +1,79 @@
 # GitHub Explorer Server
 
-Node.js pipeline server for the GitHub Explorer application. This server processes GitHub API data and stores it in a database for the frontend to access.
+A Node.js server for the GitHub Explorer application. This server is responsible for fetching data from the GitHub API, processing it, and storing it in a Supabase database.
 
-## Quick Start
+## Features
 
-```bash
-# Install dependencies
-npm install
+- Fetch repository data from GitHub API
+- Fetch contributor data from GitHub API
+- Fetch pull request data from GitHub API
+- Fetch commit data from GitHub API
+- Process and transform GitHub data
+- Store transformed data in Supabase
 
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
+## Prerequisites
 
-# Start development server
-npm run dev
+- Node.js 18.0.0 or higher
+- GitHub Personal Access Token
+- Supabase account with project setup
 
-# Build for production
-npm run build
+## Getting Started
 
-# Start production server
-npm start
-```
+1. Clone the repository
+2. Copy `.env.example` to `.env` and fill in your credentials
+3. Install dependencies:
+   ```bash
+   npm install
+   ```
+4. Start the server:
+   ```bash
+   npm run dev
+   ```
+
+## Available Scripts
+
+- `npm start` - Start the server in production mode
+- `npm run dev` - Start the server in development mode with auto-reload
+- `npm test` - Run test suite
+- `npm run test:github-api` - Test GitHub API client
+
+## API Endpoints
+
+### GitHub Data
+
+- `GET /github/repos/:owner/:repo` - Get repository details
+- `GET /github/repos/:owner/:repo/contributors` - Get repository contributors
+- `GET /github/repos/:owner/:repo/pulls` - Get repository pull requests
+- `GET /github/repos/:owner/:repo/commits` - Get repository commits
+- `GET /github/rate-limit` - Get GitHub API rate limit information
+
+### System
+
+- `GET /health` - Basic health check
+- `GET /health/detailed` - Detailed health status
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and update the values:
+The server requires the following environment variables:
 
-- `NODE_ENV`: Environment mode (development, production)
-- `PORT`: Port to run the server on
-- `GITHUB_TOKEN`: GitHub Personal Access Token
-- `CORS_ORIGIN`: Frontend URL for CORS
+- `PORT` - Server port (default: 3001)
+- `NODE_ENV` - Environment (development, production, test)
+- `GITHUB_TOKEN` - GitHub Personal Access Token
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_KEY` - Supabase API key (anon)
+- `SUPABASE_SERVICE_KEY` - Supabase service role key
 
-See `.env.example` for all available options.
+## Architecture
+
+This server follows a modular architecture:
+
+- `src/index.js` - Main entry point
+- `src/controllers/` - Request handlers
+- `src/routes/` - API routes
+- `src/services/` - Business logic
+- `src/utils/` - Utility functions
+- `src/middleware/` - Express middleware
+- `src/config/` - Configuration files
 
 ## Deployment
 
@@ -48,19 +90,6 @@ heroku create
 heroku config:set GITHUB_TOKEN=your_token
 git push heroku main
 ```
-
-## API Endpoints
-
-- `GET /health`: Health check endpoint
-- `GET /api/v1/health`: Detailed health check
-- Additional endpoints coming soon
-
-## Features
-
-- GitHub API data processing
-- Rate limiting and resilience
-- Structured logging
-- Error handling
 
 ## License
 

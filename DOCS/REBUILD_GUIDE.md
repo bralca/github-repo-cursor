@@ -1,7 +1,12 @@
-
 # GitHub Explorer Rebuild Guide
 
 This document provides a comprehensive roadmap for rebuilding the GitHub Explorer application from scratch using Next.js, Node.js, and Supabase. It serves as a structured guide that references all relevant documentation and source files, organized in a logical sequence to facilitate efficient reconstruction of the application.
+
+## Important Implementation Guidelines
+
+> **IMPORTANT**: This document takes precedence over any conflicting information found in other documentation files. If you encounter inconsistencies between this guide and other files, follow the instructions in this guide.
+>
+> **SERVER IMPLEMENTATION**: All server-related code MUST be implemented in vanilla Node.js using ES modules (not CommonJS). DO NOT use TypeScript for the server component, regardless of what other documentation may suggest.
 
 ## Table of Contents
 
@@ -38,7 +43,7 @@ The GitHub Explorer application follows a modern architecture with Next.js for t
 ### Technology Stack
 
 - **Frontend**: Next.js 14+, TypeScript, Tailwind CSS, Shadcn UI
-- **Backend**: Node.js, Express, TypeScript
+- **Backend**: Node.js, Express (vanilla JavaScript with ES modules)
 - **Database**: Supabase (PostgreSQL database)
 - **State Management**: React Query for server state, React Context for local state
 - **Data Visualization**: Recharts
@@ -56,13 +61,13 @@ npx create-next-app@latest github-explorer --typescript --tailwind --eslint
 npx shadcn-ui@latest init
 ```
 
-3. Create Node.js server with Express
+3. Create Node.js server with Express (vanilla JavaScript)
 ```bash
 mkdir server
 cd server
 npm init -y
-npm install express typescript ts-node @types/express @types/node
-npx tsc --init
+# Configure package.json with "type": "module" for ES modules
+npm install express cors helmet dotenv pino pino-pretty
 ```
 
 4. Configure environment variables
@@ -86,7 +91,7 @@ The application will connect to the existing Supabase database:
 
 Follow these steps to implement the Node.js server:
 
-1. Set up Express application with TypeScript
+1. Set up Express application with vanilla JavaScript (ES modules)
 2. Implement API routes for all required operations
 3. Create data pipeline modules:
    - GitHub API integration
@@ -223,8 +228,47 @@ For detailed implementation guidance for each epic, refer to these documents:
 - [Epic 6: Commits Page Integration](epics/EPIC_6_COMMITS.md)
 - [Epic 7: Performance & Refinement](epics/EPIC_7_PERFORMANCE.md)
 
+## Best Practices for Server Implementation
+
+When implementing the Node.js server, follow these guidelines:
+
+1. **Use ES Modules**: Always use ES modules (import/export) instead of CommonJS (require/module.exports)
+```javascript
+// Correct
+import express from 'express';
+import { logger } from './utils/logger.js';
+
+// Incorrect
+const express = require('express');
+const logger = require('./utils/logger');
+```
+
+2. **File Extensions**: Always include the `.js` extension in import statements
+```javascript
+// Correct
+import { logger } from './utils/logger.js';
+
+// Incorrect
+import { logger } from './utils/logger';
+```
+
+3. **Module Structure**: Use named exports for utilities and default exports for main components
+```javascript
+// utils/logger.js
+export const logger = { /* ... */ };
+
+// services/github-client.js
+class GitHubClient { /* ... */ }
+export default new GitHubClient();
+```
+
+4. **Avoid TypeScript**: Do not use TypeScript (.ts) files or TypeScript-specific features in the server code
+   - No type annotations
+   - No interfaces or type aliases
+   - No tsconfig.json for the server
+
 ## Conclusion
 
 By following this rebuild guide and referencing the detailed documentation files, you can systematically reconstruct the GitHub Explorer application with Next.js, Node.js, and Supabase while maintaining compatibility with the existing database structure.
 
-Remember to follow the implementation guidelines specified in [prompts/IMPLEMENTATION_GUIDELINES.md](prompts/IMPLEMENTATION_GUIDELINES.md) to ensure consistency and best practices throughout the rebuild process.
+Remember to follow the implementation guidelines specified in [prompts/IMPLEMENTATION_GUIDELINES.md](prompts/IMPLEMENTATION_GUIDELINES.md) to ensure consistency and best practices throughout the rebuild process. However, if there are any contradictions between that document and this guide regarding server implementation, this guide takes precedence.
