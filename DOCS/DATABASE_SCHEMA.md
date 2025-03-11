@@ -3,7 +3,7 @@
 
 This document provides a comprehensive overview of the database schema used in the GitHub Explorer application. The schema is designed to efficiently store and manage GitHub data including repositories, contributors, commits, merge requests, and related analytics.
 
-## Table of Contents
+## Table of Contents:
 
 - [Overview](#overview)
 - [Tables](#tables)
