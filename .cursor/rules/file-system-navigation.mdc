@@ -1,0 +1,12 @@
+---
+description: When the agent needs to move in the file system using terminal commands or install dependencies or libraries
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- When moving in the filesystem always use simple commands that work well for Windows Power Shell
+- Don't do chains of commands as these always fail.. like cd <directory> && npm install... 
+- when moving to a directory use always absolute path to avoid errors
+- use the most restrictive commands to move deterministically in the file system withuot having to retry simple methods later.

@@ -9,98 +9,100 @@ if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
 }
 
-// Define log levels with custom colors
-const logLevels = {
+// Define log levels
+const levels = {
   error: 0,
   warn: 1,
   info: 2,
   http: 3,
   debug: 4,
-  verbose: 5,
 };
 
-// Define custom colors for log levels
+// Define log level based on environment
+const level = () => {
+  const env = process.env.NODE_ENV || 'development';
+  return env === 'development' ? 'debug' : 'info';
+};
+
+// Define colors for each level
 const colors = {
   error: 'red',
   warn: 'yellow',
   info: 'green',
   http: 'magenta',
   debug: 'blue',
-  verbose: 'cyan',
 };
 
 // Add colors to winston
 winston.addColors(colors);
 
-// Determine log level based on environment
-const getLogLevel = (): string => {
-  const env = process.env.NODE_ENV || 'development';
-  const isDevelopment = env === 'development';
-  return isDevelopment ? 'debug' : process.env.LOG_LEVEL || 'info';
-};
-
-// Configure log format
-const logFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
-  winston.format.errors({ stack: true }),
-  winston.format.json()
-);
-
-// Configure console format with colors
+// Define format for console output
 const consoleFormat = winston.format.combine(
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
   winston.format.colorize({ all: true }),
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
   winston.format.printf(
-    (info) => `${info.timestamp} ${info.level}: ${info.message} ${info.component ? `[${info.component}]` : ''} ${
-      info.requestId ? `(${info.requestId})` : ''
-    } ${info.stack || ''}`
+    (info) => `${info.timestamp} ${info.level}: ${info.message}${info.splat !== undefined ? `${info.splat}` : ''}${
+      info.stack !== undefined ? `\n${info.stack}` : ''
+    }`
   )
 );
 
-// Create file transports with rotation
-const fileTransport = new winston.transports.DailyRotateFile({
-  filename: path.join(logsDir, 'application-%DATE%.log'),
-  datePattern: 'YYYY-MM-DD',
-  maxSize: '20m',
-  maxFiles: '14d',
-  format: logFormat,
-});
+// Define format for file output (JSON)
+const fileFormat = winston.format.combine(
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+  winston.format.json()
+);
 
-// Create error file transport for errors only
-const errorFileTransport = new winston.transports.DailyRotateFile({
-  filename: path.join(logsDir, 'error-%DATE%.log'),
-  datePattern: 'YYYY-MM-DD',
-  maxSize: '20m',
-  maxFiles: '14d',
-  level: 'error',
-  format: logFormat,
-});
+// Define transports
+const transports = [
+  // Console transport
+  new winston.transports.Console({
+    format: consoleFormat,
+  }),
+];
 
-// Create console transport
-const consoleTransport = new winston.transports.Console({
-  format: consoleFormat,
-});
-
-// Collect all transports
-const transports: winston.transport[] = [consoleTransport];
-
-// Add file transports if not in test environment
-if (process.env.NODE_ENV !== 'test') {
-  transports.push(fileTransport, errorFileTransport);
+// Add file transports in production
+if (process.env.NODE_ENV === 'production') {
+  // Daily rotate file for all logs
+  transports.push(
+    new winston.transports.DailyRotateFile({
+      filename: path.join('logs', 'application-%DATE%.log'),
+      datePattern: 'YYYY-MM-DD',
+      zippedArchive: true,
+      maxSize: '20m',
+      maxFiles: '14d',
+      format: fileFormat,
+    })
+  );
+  
+  // Daily rotate file for error logs
+  transports.push(
+    new winston.transports.DailyRotateFile({
+      filename: path.join('logs', 'error-%DATE%.log'),
+      datePattern: 'YYYY-MM-DD',
+      zippedArchive: true,
+      maxSize: '20m',
+      maxFiles: '14d',
+      level: 'error',
+      format: fileFormat,
+    })
+  );
 }
 
-// Create the logger instance
-export const logger = winston.createLogger({
-  level: getLogLevel(),
-  levels: logLevels,
-  format: logFormat,
-  defaultMeta: { 
-    service: 'github-analytics-server',
-    environment: process.env.NODE_ENV || 'development' 
-  },
+// Create the logger
+const logger = winston.createLogger({
+  level: level(),
+  levels,
+  format: winston.format.combine(
+    winston.format.errors({ stack: true }),
+    winston.format.splat(),
+    winston.format.json()
+  ),
   transports,
   exitOnError: false,
 });
+
+export default logger;
 
 // Track whether the system is shutting down
 let isShuttingDown = false;

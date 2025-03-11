@@ -88,6 +88,16 @@ export default function Home() {
               </Link>
             </CardFooter>
           </Card>
+
+          <Link 
+            href="/hooks-test" 
+            className="p-6 border rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <h2 className="text-xl font-semibold mb-2">Data Access Hooks Test</h2>
+            <p className="text-gray-600">
+              Test the Supabase data access hooks to verify they're working correctly.
+            </p>
+          </Link>
         </div>
       </div>
     </Container>

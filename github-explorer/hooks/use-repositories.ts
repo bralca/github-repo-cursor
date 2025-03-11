@@ -1,71 +1,188 @@
 'use client'
 
-import { useSupabaseQuery } from '@/lib/supabase/hooks'
+import { useSupabaseQuery, useSupabaseItem, useSupabasePaginatedList } from './supabase'
 import { supabase } from '@/lib/supabase/client'
-import { Database } from '@/types/supabase'
+import { useQuery } from '@tanstack/react-query'
 
-export type Repository = Database['public']['Tables']['repositories']['Row']
-
-interface RepositoriesResult {
-  repositories: Repository[];
-  totalCount: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
+export interface Repository {
+  id: string
+  name: string
+  full_name: string
+  description: string | null
+  owner: string
+  stars: number
+  forks: number
+  language: string | null
+  created_at: string
+  updated_at: string
+  last_commit_at: string | null
+  is_fork: boolean
+  is_archived: boolean
+  url: string
+  homepage: string | null
+  topics: string[] | null
+  license: string | null
+  open_issues: number
+  watchers: number
 }
 
-interface UseRepositoriesOptions {
-  page?: number
-  pageSize?: number
-  search?: string
-  sortBy?: keyof Repository
-  sortOrder?: 'asc' | 'desc'
+export interface RepositoryFilters {
+  language?: string | null
+  owner?: string | null
+  minStars?: number | null
+  search?: string | null
+  isArchived?: boolean | null
+  isFork?: boolean | null
 }
 
 /**
- * Hook for fetching repositories from Supabase
+ * Hook for fetching a single repository by ID
  */
-export function useRepositories({
-  page = 1,
-  pageSize = 10,
-  search = '',
-  sortBy = 'stars',
-  sortOrder = 'desc',
-}: UseRepositoriesOptions = {}) {
-  const from = (page - 1) * pageSize
-  const to = from + pageSize - 1
+export function useRepository(id: string | undefined) {
+  return useSupabaseItem<Repository>('repositories', id)
+}
 
-  return useSupabaseQuery<RepositoriesResult>(
-    ['repositories', { page, pageSize, search, sortBy, sortOrder }],
-    async () => {
+/**
+ * Hook for fetching a paginated list of repositories
+ */
+export function useRepositories(
+  page: number = 1,
+  pageSize: number = 10,
+  filters: RepositoryFilters = {}
+) {
+  return useQuery({
+    queryKey: ['repositories', page, pageSize, filters],
+    queryFn: async () => {
+      const start = (page - 1) * pageSize
+      const end = start + pageSize - 1
+      
       let query = supabase
         .from('repositories')
         .select('*', { count: 'exact' })
       
-      // Apply search filter if provided
-      if (search) {
-        query = query.ilike('name', `%${search}%`)
+      // Apply filters
+      if (filters.language) {
+        query = query.eq('language', filters.language)
       }
       
-      // Apply sorting
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' })
+      if (filters.owner) {
+        query = query.eq('owner', filters.owner)
+      }
+      
+      if (filters.minStars) {
+        query = query.gte('stars', filters.minStars)
+      }
+      
+      if (filters.search) {
+        query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
+      }
+      
+      if (filters.isArchived !== null && filters.isArchived !== undefined) {
+        query = query.eq('is_archived', filters.isArchived)
+      }
+      
+      if (filters.isFork !== null && filters.isFork !== undefined) {
+        query = query.eq('is_fork', filters.isFork)
+      }
       
       // Apply pagination
-      query = query.range(from, to)
+      query = query.range(start, end)
+      
+      // Order by stars descending
+      query = query.order('stars', { ascending: false })
       
       const { data, error, count } = await query
       
       if (error) {
+        console.error('Error fetching repositories:', error)
         throw error
       }
       
       return {
-        repositories: data as Repository[],
-        totalCount: count ?? 0,
+        data: data as Repository[],
+        count: count || 0,
         page,
         pageSize,
         totalPages: count ? Math.ceil(count / pageSize) : 0,
       }
-    }
-  )
+    },
+    placeholderData: (previousData) => previousData,
+  })
+}
+
+/**
+ * Hook for fetching the top repositories by stars
+ */
+export function useTopRepositories(limit: number = 5) {
+  return useQuery({
+    queryKey: ['repositories', 'top', limit],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('repositories')
+        .select('*')
+        .order('stars', { ascending: false })
+        .limit(limit)
+      
+      if (error) {
+        console.error('Error fetching top repositories:', error)
+        throw error
+      }
+      
+      return data as Repository[]
+    },
+  })
+}
+
+/**
+ * Hook for fetching repositories by language
+ */
+export function useRepositoriesByLanguage(language: string | null, limit: number = 10) {
+  return useQuery({
+    queryKey: ['repositories', 'language', language, limit],
+    queryFn: async () => {
+      if (!language) return []
+      
+      const { data, error } = await supabase
+        .from('repositories')
+        .select('*')
+        .eq('language', language)
+        .order('stars', { ascending: false })
+        .limit(limit)
+      
+      if (error) {
+        console.error(`Error fetching repositories for language ${language}:`, error)
+        throw error
+      }
+      
+      return data as Repository[]
+    },
+    enabled: !!language,
+  })
+}
+
+/**
+ * Hook for fetching repositories by owner
+ */
+export function useRepositoriesByOwner(owner: string | null, limit: number = 10) {
+  return useQuery({
+    queryKey: ['repositories', 'owner', owner, limit],
+    queryFn: async () => {
+      if (!owner) return []
+      
+      const { data, error } = await supabase
+        .from('repositories')
+        .select('*')
+        .eq('owner', owner)
+        .order('stars', { ascending: false })
+        .limit(limit)
+      
+      if (error) {
+        console.error(`Error fetching repositories for owner ${owner}:`, error)
+        throw error
+      }
+      
+      return data as Repository[]
+    },
+    enabled: !!owner,
+  })
 } 

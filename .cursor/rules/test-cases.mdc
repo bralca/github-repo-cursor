@@ -1,0 +1,10 @@
+---
+description: When a story or task is fully done or new one start
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- When a new story or task starts, always explain what's the scope of the story or task. Wait for confirmation before starting development.
+- When you completed a story or tast, always recap what has been done and provide a test case to make sure all is working as expected. 
