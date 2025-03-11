@@ -1,95 +1,105 @@
 # GitHub Explorer Server
 
-A Node.js server for the GitHub Explorer application. This server is responsible for fetching data from the GitHub API, processing it, and storing it in a Supabase database.
-
-## Features
-
-- Fetch repository data from GitHub API
-- Fetch contributor data from GitHub API
-- Fetch pull request data from GitHub API
-- Fetch commit data from GitHub API
-- Process and transform GitHub data
-- Store transformed data in Supabase
-
-## Prerequisites
-
-- Node.js 18.0.0 or higher
-- GitHub Personal Access Token
-- Supabase account with project setup
-
-## Getting Started
-
-1. Clone the repository
-2. Copy `.env.example` to `.env` and fill in your credentials
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-4. Start the server:
-   ```bash
-   npm run dev
-   ```
-
-## Available Scripts
-
-- `npm start` - Start the server in production mode
-- `npm run dev` - Start the server in development mode with auto-reload
-- `npm test` - Run test suite
-- `npm run test:github-api` - Test GitHub API client
-
-## API Endpoints
-
-### GitHub Data
-
-- `GET /github/repos/:owner/:repo` - Get repository details
-- `GET /github/repos/:owner/:repo/contributors` - Get repository contributors
-- `GET /github/repos/:owner/:repo/pulls` - Get repository pull requests
-- `GET /github/repos/:owner/:repo/commits` - Get repository commits
-- `GET /github/rate-limit` - Get GitHub API rate limit information
-
-### System
-
-- `GET /health` - Basic health check
-- `GET /health/detailed` - Detailed health status
-
-## Environment Variables
-
-The server requires the following environment variables:
-
-- `PORT` - Server port (default: 3001)
-- `NODE_ENV` - Environment (development, production, test)
-- `GITHUB_TOKEN` - GitHub Personal Access Token
-- `SUPABASE_URL` - Supabase project URL
-- `SUPABASE_KEY` - Supabase API key (anon)
-- `SUPABASE_SERVICE_KEY` - Supabase service role key
+This is the server component of the GitHub Explorer application, responsible for processing GitHub data and providing analytics.
 
 ## Architecture
 
-This server follows a modular architecture:
+The server is built with a modular pipeline architecture that processes GitHub data through various stages:
 
-- `src/index.js` - Main entry point
-- `src/controllers/` - Request handlers
-- `src/routes/` - API routes
-- `src/services/` - Business logic
-- `src/utils/` - Utility functions
-- `src/middleware/` - Express middleware
-- `src/config/` - Configuration files
+1. **Entity Extraction**: Extracts entities like repositories, contributors, merge requests, and commits from GitHub webhook data.
+2. **Data Enrichment**: Enriches extracted entities with additional data from the GitHub API.
+3. **Repository Processing**: Computes statistics and metrics for repositories, including commit frequency, star history, fork statistics, contributor counts, and language breakdown.
+4. **Database Writing**: Persists processed data to the Supabase database.
 
-## Deployment
+## Key Components
 
-This server is designed for easy deployment to Heroku. See [HEROKU-DEPLOYMENT.md](./HEROKU-DEPLOYMENT.md) for detailed instructions.
+### Pipeline Core
 
-Basic deployment steps:
+- **Pipeline Factory**: Manages pipeline registration and execution.
+- **Base Stage**: Abstract base class for all pipeline stages.
 
-1. Create a Heroku app
-2. Set environment variables
-3. Deploy using Git
+### Pipeline Processors
+
+- **Entity Extractor**: Extracts entities from GitHub webhook data.
+- **Data Enricher**: Enriches entities with additional data.
+- **Repository Processor**: Computes repository statistics and metrics.
+- **Database Writer**: Writes processed data to the database.
+
+### Pipeline Stages
+
+- **Webhook Processor Pipeline**: Processes GitHub webhook data.
+- **Repository Processor Pipeline**: Processes repository data to compute statistics.
+
+## Repository Processor
+
+The Repository Processor is responsible for computing various statistics and metrics for GitHub repositories:
+
+- **Commit Frequency**: Analyzes commit patterns to determine daily, weekly, and monthly averages, as well as distribution by weekday.
+- **Star History**: Tracks star growth over time and calculates growth rates.
+- **Fork Statistics**: Analyzes fork activity and calculates fork-to-star ratio.
+- **Contributor Counts**: Tracks contributor activity and identifies core contributors.
+- **Language Breakdown**: Analyzes the distribution of programming languages in the repository.
+- **Health Score**: Calculates an overall health score based on various metrics.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 16+
+- npm or yarn
+
+### Installation
 
 ```bash
-heroku create
-heroku config:set GITHUB_TOKEN=your_token
-git push heroku main
+# Clone the repository
+git clone https://github.com/your-username/github-explorer.git
+
+# Navigate to the server directory
+cd github-explorer/server
+
+# Install dependencies
+npm install
+
+# Create a .env file with the following variables
+GITHUB_TOKEN=your_github_token
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_key
+PORT=3001
 ```
+
+### Running the Server
+
+```bash
+# Start the server
+npm start
+
+# Start the server in development mode
+npm run dev
+```
+
+### Testing
+
+```bash
+# Run the pipeline test
+npm test
+
+# Test the repository processor
+npm run test:repo
+```
+
+## API Endpoints
+
+- `GET /health`: Health check endpoint
+- `POST /api/webhooks/github`: Webhook endpoint for GitHub events
+- `POST /api/repositories/:id/process`: Process a repository to compute statistics
+
+## Environment Variables
+
+- `GITHUB_TOKEN`: GitHub API token for authentication
+- `SUPABASE_URL`: Supabase project URL
+- `SUPABASE_KEY`: Supabase API key
+- `PORT`: Server port (default: 3001)
+- `LOG_LEVEL`: Logging level (debug, info, warn, error)
 
 ## License
 

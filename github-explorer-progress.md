@@ -198,8 +198,31 @@
   - Implemented detailed monitoring and logging of API usage
 
 ### Story 1.5: Data Pipeline Architecture
-- [ ] **Task 1.5.1: Pipeline Core Architecture**
-- [ ] **Task 1.5.2: Repository Processing Stage**
+- [x] **Task 1.5.1: Pipeline Core Architecture** - Completed on March 17, 2025
+  - Created modular pipeline architecture with stages, processors, and context
+  - Implemented core components (Pipeline, PipelineContext, BaseStage, PipelineFactory)
+  - Created data transformation utilities for GitHub API data
+  - Added entity extraction processor for repositories, contributors, merge requests, and commits
+  - Implemented data enrichment processor for fetching additional data
+  - Created database writer processor for persisting entities to Supabase
+  - Added webhook processor pipeline for handling GitHub webhook data
+  - Implemented pipeline registration in server
+  - Created webhook route for receiving GitHub events
+  - Added comprehensive error handling and retry logic
+  - Implemented batch processing for efficient data handling
+  - Created testing script for pipeline verification
+  - Added detailed documentation of pipeline architecture
+- [x] **Task 1.5.2: Repository Processing Stage** - Completed on March 11, 2025
+  - Implemented repository statistics collection methods
+  - Created repository processor stage for the pipeline
+  - Added methods for calculating commit frequency
+  - Implemented star history retrieval and analysis
+  - Created fork statistics calculation
+  - Implemented contributor count methods
+  - Added language breakdown analysis
+  - Created repository health score calculation
+  - Integrated repository processor with webhook pipeline
+  - Implemented test script for verification
 - [ ] **Task 1.5.3: Contributor Processing Stage**
 - [ ] **Task 1.5.4: Merge Request Processing Stage**
 - [ ] **Task 1.5.5: Data Storage & Persistence**
@@ -224,7 +247,7 @@
 ## Current Status
 - Project setup: In progress
 - Current epic: Epic 1 - Foundation & Infrastructure
-- Current story: Story 1.4 - GitHub API Integration in Node.js Server
-- Current task: Task 1.4.5: Rate Limiting & Resilience
-- Last updated: March 16, 2025
+- Current story: Story 1.5 - Data Pipeline Architecture
+- Current task: Task 1.5.3: Contributor Processing Stage
+- Last updated: March 11, 2025
 - Blockers: None 

@@ -1,4 +1,3 @@
-
 # Epic 1: Foundation & Infrastructure - Implementation Prompts
 
 This document contains detailed prompts for implementing Epic 1: Foundation & Infrastructure. Each prompt is designed to complete a specific task from the implementation plan.
@@ -232,19 +231,19 @@ Reference the DESIGN_GUIDELINES.md document for layout specifications and respon
 
 #### Prompt for Task 1.2.1: Server Project Initialization
 ```
-Create a new Node.js server project for the GitHub Analytics data processing pipeline with TypeScript. Implement:
+Create a new Node.js server project for the GitHub Analytics data processing pipeline using pure JavaScript. Implement:
 
 1. Initialize a new Node.js project:
    - Set up package.json with appropriate metadata
-   - Configure TypeScript with tsconfig.json
    - Create standard directory structure (src, dist, etc.)
    - Initialize Git repository with .gitignore
+   - Add JSDoc comments for documentation and code hints
 
-2. Configure TypeScript for backend needs:
-   - Set strict type checking
-   - Configure module resolution
-   - Set up path aliases
-   - Configure source maps for debugging
+2. Configure ESLint for JavaScript best practices:
+   - Set up eslint configuration
+   - Add CommonJS module support
+   - Configure code style rules
+   - Set up error checking
 
 3. Install core dependencies:
    - Express for API framework
@@ -262,16 +261,16 @@ Create a new Node.js server project for the GitHub Analytics data processing pip
 
 5. Set up build and development scripts:
    - Configure nodemon for development
-   - Set up TypeScript compilation
-   - Create start/dev/build scripts
+   - Create start/dev scripts
    - Implement clean script for builds
+   - Add linting scripts
 
-Reference the NODE_SERVER_ARCHITECTURE.md document for details on the server design and requirements. The project structure should support the pipeline stages outlined in the DATA_PIPELINE_ARCHITECTURE.md document.
+Reference the NODE_SERVER_ARCHITECTURE.md document for details on the server design and requirements. The project structure should support the pipeline stages outlined in the DATA_PIPELINE_ARCHITECTURE.md document using plain JavaScript patterns.
 ```
 
 #### Prompt for Task 1.2.2: API Foundation
 ```
-Implement the API foundation for the GitHub Analytics Node.js server using Express. Create:
+Implement the API foundation for the GitHub Analytics Node.js server using Express with JavaScript. Create:
 
 1. Set up basic Express middleware:
    - Configure CORS with appropriate origins
@@ -295,7 +294,7 @@ Implement the API foundation for the GitHub Analytics Node.js server using Expre
    - Set up monitoring-friendly response format
 
 4. Add request validation middleware:
-   - Implement validation using Zod
+   - Implement validation using schemas
    - Create validation middleware factory
    - Set up error response formatting
    - Implement custom validation rules
@@ -308,12 +307,12 @@ Implement the API foundation for the GitHub Analytics Node.js server using Expre
    - Create limit bypass for internal requests
    - Implement storage for limit tracking
 
-Reference the NODE_SERVER_ARCHITECTURE.md document for API design guidelines and endpoint specifications. The implementation should align with the requirements in the DATA_PIPELINE_ARCHITECTURE.md document.
+Reference the NODE_SERVER_ARCHITECTURE.md document for API design guidelines and endpoint specifications. Use JSDoc comments for function documentation and type hints where helpful.
 ```
 
 #### Prompt for Task 1.2.3: Error Handling System
 ```
-Implement a comprehensive error handling system for the GitHub Analytics Node.js server. Create:
+Implement a comprehensive error handling system for the GitHub Analytics Node.js server using JavaScript. Create:
 
 1. Global error handler middleware:
    - Create centralized error handling middleware
@@ -350,12 +349,12 @@ Implement a comprehensive error handling system for the GitHub Analytics Node.js
    - Add HATEOAS links for error resolution
    - Create documentation references in responses
 
-Reference the NODE_SERVER_ARCHITECTURE.md document for error handling requirements and best practices. The implementation should provide detailed error information for debugging while maintaining security by not exposing sensitive details in production.
+Reference the NODE_SERVER_ARCHITECTURE.md document for error handling requirements and best practices. Use plain JavaScript with optional JSDoc comments for clarity.
 ```
 
 #### Prompt for Task 1.2.4: Logging Infrastructure
 ```
-Implement a structured logging infrastructure for the GitHub Analytics Node.js server. Create:
+Implement a structured logging infrastructure for the GitHub Analytics Node.js server using JavaScript. Create:
 
 1. Configure structured logging:
    - Set up Winston or Pino logger
@@ -392,7 +391,7 @@ Implement a structured logging infrastructure for the GitHub Analytics Node.js s
    - Create pipeline stage logging
    - Add periodic system status logging
 
-Reference the NODE_SERVER_ARCHITECTURE.md document for logging requirements and standards. The implementation should balance comprehensive logging with performance considerations and should support debugging in production environments.
+Reference the NODE_SERVER_ARCHITECTURE.md document for logging requirements and standards. Use JavaScript objects for configuration with appropriate comments for clarity.
 ```
 
 #### Prompt for Task 1.2.5: Deployment Configuration
@@ -400,7 +399,7 @@ Reference the NODE_SERVER_ARCHITECTURE.md document for logging requirements and 
 Create the deployment configuration for the GitHub Analytics Node.js server. Implement:
 
 1. Create production build process:
-   - Configure TypeScript compilation settings
+   - Configure directory structure for production
    - Set up asset copying
    - Implement bundle optimization
    - Create Docker build configuration
@@ -434,7 +433,7 @@ Create the deployment configuration for the GitHub Analytics Node.js server. Imp
    - Configure cloud provider settings
    - Add monitoring/alert configuration
 
-Reference the NODE_SERVER_ARCHITECTURE.md document for deployment requirements and target environments. The configuration should support easy deployment to the hosting platforms specified in the project requirements (Railway/Render).
+Reference the NODE_SERVER_ARCHITECTURE.md document for deployment requirements and target environments. Use JavaScript-compatible tools for all build steps.
 ```
 
 ### Story 1.3: Supabase Direct Integration with Next.js
@@ -651,7 +650,7 @@ Reference the SUPABASE_INTEGRATION.md document for database access patterns and 
 
 #### Prompt for Task 1.4.1: GitHub API Client Foundation
 ```
-Implement a robust GitHub API client in the Node.js server for the GitHub Analytics application. Create:
+Implement a robust GitHub API client in the Node.js server for the GitHub Analytics application using JavaScript. Create:
 
 1. Install and configure Octokit:
    - Set up Octokit REST client
@@ -661,8 +660,8 @@ Implement a robust GitHub API client in the Node.js server for the GitHub Analyt
    - Create client configuration
 
 2. Create client wrapper class:
-   - Implement GitHubClient class
-   - Add typed methods for common operations
+   - Implement GitHubClient class with JavaScript classes
+   - Add methods for common operations with JSDoc documentation
    - Create request builders
    - Implement response parsing
    - Add error handling
@@ -688,12 +687,12 @@ Implement a robust GitHub API client in the Node.js server for the GitHub Analyt
    - Implement error response testing
    - Create client testing utilities
 
-Reference the DATA_PIPELINE_ARCHITECTURE.md document for GitHub data requirements and GITHUB_API_INTEGRATION.md for API usage patterns. The client should handle GitHub API rate limits gracefully and provide a consistent interface for all GitHub API operations.
+Reference the DATA_PIPELINE_ARCHITECTURE.md document for GitHub data requirements and GITHUB_API_INTEGRATION.md for API usage patterns. Use plain JavaScript classes and prototypes with JSDoc for type documentation.
 ```
 
 #### Prompt for Task 1.4.2: Repository Data Service
 ```
-Implement the Repository Data Service for fetching and processing GitHub repository data. Create:
+Implement the Repository Data Service for fetching and processing GitHub repository data using JavaScript. Create:
 
 1. Create methods for fetching repository details:
    - Implement getRepository method
@@ -730,12 +729,12 @@ Implement the Repository Data Service for fetching and processing GitHub reposit
    - Implement code quality metrics
    - Create documentation coverage assessment
 
-Reference the DATABASE_SCHEMA.md document for repository data structure and DATA_PIPELINE_ARCHITECTURE.md for processing requirements. The service should efficiently collect all required repository data while respecting API rate limits.
+Reference the DATABASE_SCHEMA.md document for repository data structure and DATA_PIPELINE_ARCHITECTURE.md for processing requirements. Use JavaScript classes with clear JSDoc documentation for method parameters and returns.
 ```
 
 #### Prompt for Task 1.4.3: Contributor Data Service
 ```
-Implement the Contributor Data Service for fetching and processing GitHub contributor data. Create:
+Implement the Contributor Data Service for fetching and processing GitHub contributor data using JavaScript. Create:
 
 1. Implement contributor profile fetching:
    - Create getUser method for basic profiles
@@ -772,12 +771,12 @@ Implement the Contributor Data Service for fetching and processing GitHub contri
    - Create community role classification
    - Implement expertise network mapping
 
-Reference the DATABASE_SCHEMA.md document for contributor data structure and DATA_PIPELINE_ARCHITECTURE.md for processing requirements. The service should efficiently collect all required contributor data while protecting user privacy and respecting API rate limits.
+Reference the DATABASE_SCHEMA.md document for contributor data structure and DATA_PIPELINE_ARCHITECTURE.md for processing requirements. Use plain JavaScript with JSDoc comments for documentation.
 ```
 
 #### Prompt for Task 1.4.4: Merge Request Data Service
 ```
-Implement the Merge Request Data Service for fetching and processing GitHub pull request data. Create:
+Implement the Merge Request Data Service for fetching and processing GitHub pull request data using JavaScript. Create:
 
 1. Create pull request listing functionality:
    - Implement getRepositoryPullRequests method
@@ -814,12 +813,12 @@ Implement the Merge Request Data Service for fetching and processing GitHub pull
    - Create branch protection compliance checking
    - Implement merge strategy detection
 
-Reference the DATABASE_SCHEMA.md document for merge request data structure and DATA_PIPELINE_ARCHITECTURE.md for processing requirements. The service should collect comprehensive PR data to enable advanced analytics on development workflows.
+Reference the DATABASE_SCHEMA.md document for merge request data structure and DATA_PIPELINE_ARCHITECTURE.md for processing requirements. Use JavaScript classes and objects with clear documentation.
 ```
 
 #### Prompt for Task 1.4.5: Rate Limiting & Resilience
 ```
-Implement GitHub API rate limiting and resilience features for the GitHub Analytics data pipeline. Create:
+Implement GitHub API rate limiting and resilience features for the GitHub Analytics data pipeline using JavaScript. Create:
 
 1. Implement token rotation for rate limits:
    - Create token pool management
@@ -856,18 +855,18 @@ Implement GitHub API rate limiting and resilience features for the GitHub Analyt
    - Implement conditional requests (ETag/If-Modified-Since)
    - Add cache statistics monitoring
 
-Reference the DATA_PIPELINE_ARCHITECTURE.md document for pipeline efficiency requirements and GitHub API guidelines. The implementation should maximize data collection while strictly adhering to GitHub's rate limits and terms of service.
+Reference the DATA_PIPELINE_ARCHITECTURE.md document for pipeline efficiency requirements and GitHub API guidelines. Use JavaScript patterns appropriate for asynchronous operation handling.
 ```
 
 ### Story 1.5: Data Pipeline Architecture
 
 #### Prompt for Task 1.5.1: Pipeline Core Architecture
 ```
-Implement the core architecture for the GitHub Analytics data processing pipeline. Create:
+Implement the core architecture for the GitHub Analytics data processing pipeline using JavaScript. Create:
 
 1. Design pipeline stages and interfaces:
-   - Create PipelineStage interface
-   - Implement stage input/output types
+   - Create PipelineStage base class
+   - Implement stage input/output patterns
    - Add stage context and configuration
    - Create stage dependency specification
    - Implement stage progress reporting
@@ -900,12 +899,12 @@ Implement the core architecture for the GitHub Analytics data processing pipelin
    - Create configuration documentation
    - Implement configuration versioning
 
-Reference the DATA_PIPELINE_ARCHITECTURE.md document for pipeline design requirements and stage specifications. The architecture should be flexible, extensible, and robust enough to handle large data processing tasks with appropriate error handling.
+Reference the DATA_PIPELINE_ARCHITECTURE.md document for pipeline design requirements and stage specifications. Use JavaScript classes and factory patterns with JSDoc comments for clarity.
 ```
 
 #### Prompt for Task 1.5.2: Repository Processing Stage
 ```
-Implement the Repository Processing Stage for the GitHub Analytics data pipeline. Create:
+Implement the Repository Processing Stage for the GitHub Analytics data pipeline using JavaScript. Create:
 
 1. Implement repository metadata extraction:
    - Create repository data fetching
@@ -942,12 +941,12 @@ Implement the Repository Processing Stage for the GitHub Analytics data pipeline
    - Create data transformation pipelines
    - Implement output formatting
 
-Reference the DATABASE_SCHEMA.md document for repository data structure and DATA_PIPELINE_ARCHITECTURE.md for processing requirements. The stage should efficiently process repository data and prepare it for storage in the database.
+Reference the DATABASE_SCHEMA.md document for repository data structure and DATA_PIPELINE_ARCHITECTURE.md for processing requirements. Use JavaScript objects for data handling and clear module exports.
 ```
 
 #### Prompt for Task 1.5.3: Contributor Processing Stage
 ```
-Implement the Contributor Processing Stage for the GitHub Analytics data pipeline. Create:
+Implement the Contributor Processing Stage for the GitHub Analytics data pipeline using JavaScript. Create:
 
 1. Create contributor identification process:
    - Implement contributor extraction from commits
@@ -984,12 +983,12 @@ Implement the Contributor Processing Stage for the GitHub Analytics data pipelin
    - Create community role identification
    - Implement expertise mapping
 
-Reference the DATABASE_SCHEMA.md document for contributor data structure and DATA_PIPELINE_ARCHITECTURE.md for processing requirements. The stage should respect user privacy while extracting valuable contributor insights for analysis.
+Reference the DATABASE_SCHEMA.md document for contributor data structure and DATA_PIPELINE_ARCHITECTURE.md for processing requirements. Use JavaScript classes and methods with appropriate documentation.
 ```
 
 #### Prompt for Task 1.5.4: Merge Request Processing Stage
 ```
-Implement the Merge Request Processing Stage for the GitHub Analytics data pipeline. Create:
+Implement the Merge Request Processing Stage for the GitHub Analytics data pipeline using JavaScript. Create:
 
 1. Implement PR data extraction and normalization:
    - Create pull request fetching
@@ -1026,12 +1025,12 @@ Implement the Merge Request Processing Stage for the GitHub Analytics data pipel
    - Create branch relationship mapping
    - Implement release association
 
-Reference the DATABASE_SCHEMA.md document for merge request data structure and DATA_PIPELINE_ARCHITECTURE.md for processing requirements. The stage should extract comprehensive PR data and calculate derived metrics for analysis.
+Reference the DATABASE_SCHEMA.md document for merge request data structure and DATA_PIPELINE_ARCHITECTURE.md for processing requirements. Use JavaScript with clear module patterns and error handling.
 ```
 
 #### Prompt for Task 1.5.5: Data Storage & Persistence
 ```
-Implement the Data Storage & Persistence system for the GitHub Analytics data pipeline. Create:
+Implement the Data Storage & Persistence system for the GitHub Analytics data pipeline using JavaScript. Create:
 
 1. Create database transaction management:
    - Implement transaction wrapper
@@ -1068,12 +1067,12 @@ Implement the Data Storage & Persistence system for the GitHub Analytics data pi
    - Create error rate tracking
    - Implement alert thresholds
 
-Reference the DATABASE_SCHEMA.md document for data structure and DATA_PIPELINE_ARCHITECTURE.md for storage requirements. The implementation should ensure data integrity while optimizing for bulk operations and handling conflicts gracefully.
+Reference the DATABASE_SCHEMA.md document for data structure and DATA_PIPELINE_ARCHITECTURE.md for storage requirements. Use JavaScript promises and async/await for asynchronous database operations.
 ```
 
 #### Prompt for Task 1.5.6: Pipeline Scheduling & Control
 ```
-Implement the Pipeline Scheduling & Control system for the GitHub Analytics data pipeline. Create:
+Implement the Pipeline Scheduling & Control system for the GitHub Analytics data pipeline using JavaScript. Create:
 
 1. Implement cron-based scheduling:
    - Create scheduler configuration
@@ -1110,12 +1109,12 @@ Implement the Pipeline Scheduling & Control system for the GitHub Analytics data
    - Create stage skipping controls
    - Implement forced reprocessing options
 
-Reference the DATA_PIPELINE_ARCHITECTURE.md document for pipeline control requirements. The implementation should provide both automated scheduling and manual control options with appropriate monitoring and notification capabilities.
+Reference the DATA_PIPELINE_ARCHITECTURE.md document for pipeline control requirements. Use JavaScript event emitters and callbacks for notification handling.
 ```
 
 #### Prompt for Task 1.5.7: Error Recovery & Resilience
 ```
-Implement Error Recovery & Resilience features for the GitHub Analytics data pipeline. Create:
+Implement Error Recovery & Resilience features for the GitHub Analytics data pipeline using JavaScript. Create:
 
 1. Implement checkpoint system:
    - Create stage checkpointing
@@ -1152,7 +1151,7 @@ Implement Error Recovery & Resilience features for the GitHub Analytics data pip
    - Create failover mechanisms
    - Add self-healing capabilities
 
-Reference the DATA_PIPELINE_ARCHITECTURE.md document for resilience requirements. The implementation should ensure the pipeline can recover from failures and continue processing with minimal manual intervention.
+Reference the DATA_PIPELINE_ARCHITECTURE.md document for resilience requirements. Use JavaScript patterns for error handling and recovery operations.
 ```
 
 ### Story 1.6: Next.js Core UI Components
@@ -1448,7 +1447,6 @@ Implement the Security Foundation for direct Supabase data access in the GitHub 
    - Add role hierarchy implementation
    - Implement feature flagging system
    - Create audit logging for access
-   - Add access denial handling
 
 Reference the SUPABASE_INTEGRATION.md document for security requirements and DATABASE_SCHEMA.md for data access patterns. The implementation should ensure secure data access while providing appropriate error feedback and preventing unauthorized access.
 ```

@@ -19,293 +19,336 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
- * Store merge request data in Supabase
- * @param {object} mergeRequestData - Processed merge request data
- * @returns {Promise<object>} - Result of the insert/update operation
+ * MergeRequestService class for managing merge requests in the database
  */
-export async function storeMergeRequestData(mergeRequestData) {
-  if (!mergeRequestData || !mergeRequestData.id) {
-    logger.error('Invalid merge request data provided for storage');
-    throw new Error('Valid merge request data is required');
+export class MergeRequestService {
+  constructor(supabaseClient) {
+    this.supabaseClient = supabaseClient;
   }
-
-  try {
-    logger.info(`Storing merge request data for PR ID: ${mergeRequestData.id}`);
-    
-    // Check if merge request already exists
-    const { data: existingMR, error: lookupError } = await supabase
-      .from('merge_requests')
-      .select('id')
-      .eq('id', mergeRequestData.id)
-      .maybeSingle();
-    
-    if (lookupError) {
-      logger.error(`Error looking up merge request: ${lookupError.message}`, { 
-        error: lookupError, 
-        mergeRequestId: mergeRequestData.id 
-      });
-      throw lookupError;
-    }
-    
-    let result;
-    
-    // Update or insert merge request data
-    if (existingMR) {
-      // Update existing merge request
-      const { data, error } = await supabase
-        .from('merge_requests')
-        .update(mergeRequestData)
-        .eq('id', existingMR.id)
-        .select();
-      
-      if (error) throw error;
-      result = { data, operation: 'update', id: existingMR.id };
-      logger.info(`Updated merge request data for ID: ${existingMR.id}`);
-    } else {
-      // Insert new merge request
-      const { data, error } = await supabase
-        .from('merge_requests')
-        .insert(mergeRequestData)
-        .select();
-      
-      if (error) throw error;
-      result = { data, operation: 'insert', id: data[0].id };
-      logger.info(`Inserted new merge request with ID: ${data[0].id}`);
-    }
-    
-    return result;
-  } catch (error) {
-    logger.error(`Error storing merge request data: ${error.message}`, {
-      error,
-      mergeRequestId: mergeRequestData.id
-    });
-    throw new Error(`Failed to store merge request data: ${error.message}`);
-  }
-}
-
-/**
- * Retrieve merge request by ID
- * @param {number} mergeRequestId - ID of the merge request to retrieve
- * @returns {Promise<object>} - Merge request data
- */
-export async function getMergeRequestById(mergeRequestId) {
-  try {
-    const { data, error } = await supabase
-      .from('merge_requests')
-      .select('*')
-      .eq('id', mergeRequestId)
-      .maybeSingle();
-      
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    logger.error(`Error retrieving merge request: ${error.message}`, {
-      error,
-      mergeRequestId
-    });
-    throw new Error(`Failed to retrieve merge request: ${error.message}`);
-  }
-}
-
-/**
- * Update specific merge request fields
- * @param {number} mergeRequestId - ID of the merge request to update
- * @param {object} updateData - Data fields to update
- * @returns {Promise<object>} - Updated merge request data
- */
-export async function updateMergeRequest(mergeRequestId, updateData) {
-  try {
-    const { data, error } = await supabase
-      .from('merge_requests')
-      .update(updateData)
-      .eq('id', mergeRequestId)
-      .select();
-      
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    logger.error(`Error updating merge request: ${error.message}`, {
-      error,
-      mergeRequestId
-    });
-    throw new Error(`Failed to update merge request: ${error.message}`);
-  }
-}
-
-/**
- * Get all merge requests with optional filtering
- * @param {object} options - Filter and pagination options
- * @returns {Promise<object>} - List of merge requests and count
- */
-export async function getAllMergeRequests(options = {}) {
-  const {
-    repositoryId = null,
-    status = null,
-    author = null,
-    isEnriched = null,
-    limit = 10,
-    offset = 0,
-    orderBy = 'updated_at',
-    orderDirection = 'desc'
-  } = options;
   
-  try {
-    let query = supabase
-      .from('merge_requests')
-      .select('*', { count: 'exact' });
-    
-    // Apply optional filters
-    if (repositoryId !== null) {
-      query = query.eq('repository_id', repositoryId);
-    }
-    
-    if (status !== null) {
-      query = query.eq('status', status);
-    }
-    
-    if (author !== null) {
-      query = query.eq('author', author);
-    }
-    
-    if (isEnriched !== null) {
-      query = query.eq('is_enriched', isEnriched);
-    }
-    
-    // Apply sorting
-    query = query.order(orderBy, { ascending: orderDirection === 'asc' });
-    
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1);
-    
-    const { data, error, count } = await query;
-    
-    if (error) throw error;
-    
-    return {
-      data,
-      count,
-      pagination: {
-        offset,
-        limit,
-        hasMore: count > offset + limit
+  /**
+   * Store merge request data in the database
+   */
+  async storeMergeRequestData(mergeRequestData) {
+    try {
+      // Ensure data has required fields
+      if (!mergeRequestData.id || !mergeRequestData.title) {
+        throw new Error('Merge request data must include id and title');
       }
-    };
-  } catch (error) {
-    logger.error(`Error retrieving merge requests: ${error.message}`, { error });
-    throw new Error(`Failed to retrieve merge requests: ${error.message}`);
+      
+      const { data, error } = await this.supabaseClient.getClient()
+        .from('merge_requests')
+        .upsert({
+          id: mergeRequestData.id,
+          title: mergeRequestData.title,
+          description: mergeRequestData.body || null,
+          status: mergeRequestData.state || 'open',
+          author: mergeRequestData.user?.login || null,
+          author_avatar: mergeRequestData.user?.avatar_url || null,
+          created_at: mergeRequestData.created_at,
+          updated_at: mergeRequestData.updated_at,
+          closed_at: mergeRequestData.closed_at || null,
+          merged_at: mergeRequestData.merged_at || null,
+          base_branch: mergeRequestData.base?.ref || null,
+          head_branch: mergeRequestData.head?.ref || null,
+          repository_id: mergeRequestData.repository_id,
+          is_enriched: mergeRequestData.is_enriched || false,
+          github_link: mergeRequestData.html_url || null,
+          labels: mergeRequestData.labels?.map(label => label.name) || []
+        }, {
+          onConflict: 'id',
+          returning: 'minimal'
+        });
+      
+      if (error) {
+        logger.error('Failed to store merge request data', { error });
+        throw error;
+      }
+      
+      logger.info('Merge request data stored successfully', { 
+        mergeRequest: mergeRequestData.title 
+      });
+      
+      return data;
+    } catch (error) {
+      logger.error('Error storing merge request data', { error });
+      throw error;
+    }
   }
-}
-
-/**
- * Get merge requests for a specific repository
- * @param {number} repositoryId - Repository ID
- * @param {object} options - Filter and pagination options
- * @returns {Promise<object>} - List of merge requests and count
- */
-export async function getMergeRequestsByRepository(repositoryId, options = {}) {
-  const defaultOptions = {
-    repositoryId,
-    ...options
-  };
   
-  return getAllMergeRequests(defaultOptions);
-}
-
-/**
- * Get merge requests by a specific author
- * @param {string} author - Author username
- * @param {object} options - Filter and pagination options
- * @returns {Promise<object>} - List of merge requests and count
- */
-export async function getMergeRequestsByAuthor(author, options = {}) {
-  const defaultOptions = {
-    author,
-    ...options
-  };
+  /**
+   * Get a merge request by id
+   */
+  async getMergeRequestById(mergeRequestId) {
+    try {
+      const { data, error } = await this.supabaseClient.getClient()
+        .from('merge_requests')
+        .select('*')
+        .eq('id', mergeRequestId)
+        .single();
+      
+      if (error) {
+        // If the error is not 'No rows found', log and throw
+        if (error.code !== 'PGRST116') {
+          logger.error('Failed to get merge request by id', { error, mergeRequestId });
+          throw error;
+        }
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      logger.error('Error getting merge request by id', { error, mergeRequestId });
+      throw error;
+    }
+  }
   
-  return getAllMergeRequests(defaultOptions);
-}
-
-/**
- * Get recent merge requests with a specific status
- * @param {string} status - Status (open, closed, merged)
- * @param {number} limit - Maximum number of PRs to retrieve
- * @returns {Promise<Array>} - List of merge requests
- */
-export async function getRecentMergeRequestsByStatus(status, limit = 10) {
-  try {
-    const { data, error } = await supabase
-      .from('merge_requests')
-      .select('*')
-      .eq('status', status)
-      .order('updated_at', { ascending: false })
-      .limit(limit);
+  /**
+   * Update a merge request
+   */
+  async updateMergeRequest(mergeRequestId, updateData) {
+    try {
+      const { data, error } = await this.supabaseClient.getClient()
+        .from('merge_requests')
+        .update(updateData)
+        .eq('id', mergeRequestId)
+        .select();
       
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    logger.error(`Error retrieving recent merge requests: ${error.message}`, {
-      error,
-      status
-    });
-    throw new Error(`Failed to retrieve recent merge requests: ${error.message}`);
-  }
-}
-
-/**
- * Store PR review data
- * @param {object} reviewData - Review data to store
- * @returns {Promise<object>} - Result of the operation
- */
-export async function storePullRequestReview(reviewData) {
-  try {
-    const { data, error } = await supabase
-      .from('pull_request_reviewers')
-      .insert(reviewData)
-      .select();
+      if (error) {
+        logger.error('Failed to update merge request', { error, mergeRequestId });
+        throw error;
+      }
       
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    logger.error(`Error storing PR review data: ${error.message}`, {
-      error,
-      prId: reviewData.pull_request_id
-    });
-    throw new Error(`Failed to store PR review data: ${error.message}`);
+      return data[0];
+    } catch (error) {
+      logger.error('Error updating merge request', { error, mergeRequestId });
+      throw error;
+    }
   }
-}
-
-/**
- * Store PR comment data
- * @param {object} commentData - Comment data to store
- * @returns {Promise<object>} - Result of the operation
- */
-export async function storePullRequestComment(commentData) {
-  try {
-    const { data, error } = await supabase
-      .from('pull_request_comments')
-      .insert(commentData)
-      .select();
+  
+  /**
+   * Get all merge requests with optional filtering and pagination
+   */
+  async getAllMergeRequests(options = {}) {
+    try {
+      const {
+        limit = 50,
+        offset = 0,
+        sortBy = 'created_at',
+        sortDirection = 'desc',
+        status = null,
+        enriched = null
+      } = options;
       
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    logger.error(`Error storing PR comment data: ${error.message}`, {
-      error,
-      prId: commentData.pull_request_id
-    });
-    throw new Error(`Failed to store PR comment data: ${error.message}`);
+      let query = this.supabaseClient.getClient()
+        .from('merge_requests')
+        .select('*');
+      
+      // Apply status filter if provided
+      if (status) {
+        query = query.eq('status', status);
+      }
+      
+      // Apply is_enriched filter if provided
+      if (enriched !== null) {
+        query = query.eq('is_enriched', enriched);
+      }
+      
+      // Apply sorting
+      query = query.order(sortBy, { ascending: sortDirection === 'asc' });
+      
+      // Apply pagination
+      query = query.range(offset, offset + limit - 1);
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        logger.error('Failed to get merge requests', { error });
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      logger.error('Error getting merge requests', { error });
+      throw error;
+    }
   }
-}
-
-export default {
-  storeMergeRequestData,
-  getMergeRequestById,
-  updateMergeRequest,
-  getAllMergeRequests,
-  getMergeRequestsByRepository,
-  getMergeRequestsByAuthor,
-  getRecentMergeRequestsByStatus,
-  storePullRequestReview,
-  storePullRequestComment
-}; 
+  
+  /**
+   * Get merge requests for a specific repository
+   */
+  async getMergeRequestsByRepository(repositoryId, options = {}) {
+    try {
+      const { 
+        limit = 50, 
+        offset = 0,
+        status = null 
+      } = options;
+      
+      let query = this.supabaseClient.getClient()
+        .from('merge_requests')
+        .select('*')
+        .eq('repository_id', repositoryId);
+      
+      // Apply status filter if provided
+      if (status) {
+        query = query.eq('status', status);
+      }
+      
+      // Apply pagination
+      query = query.order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        logger.error('Failed to get merge requests by repository', { 
+          error,
+          repositoryId
+        });
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      logger.error('Error getting merge requests by repository', { 
+        error,
+        repositoryId
+      });
+      throw error;
+    }
+  }
+  
+  /**
+   * Get merge requests by author
+   */
+  async getMergeRequestsByAuthor(author, options = {}) {
+    try {
+      const { 
+        limit = 50, 
+        offset = 0,
+        status = null 
+      } = options;
+      
+      let query = this.supabaseClient.getClient()
+        .from('merge_requests')
+        .select('*')
+        .eq('author', author);
+      
+      // Apply status filter if provided
+      if (status) {
+        query = query.eq('status', status);
+      }
+      
+      // Apply pagination
+      query = query.order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        logger.error('Failed to get merge requests by author', { 
+          error,
+          author
+        });
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      logger.error('Error getting merge requests by author', { 
+        error,
+        author
+      });
+      throw error;
+    }
+  }
+  
+  /**
+   * Get recent merge requests by status
+   */
+  async getRecentMergeRequestsByStatus(status, limit = 10) {
+    try {
+      const { data, error } = await this.supabaseClient.getClient()
+        .from('merge_requests')
+        .select('*')
+        .eq('status', status)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      
+      if (error) {
+        logger.error('Failed to get recent merge requests by status', { 
+          error,
+          status
+        });
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      logger.error('Error getting recent merge requests by status', { 
+        error,
+        status
+      });
+      throw error;
+    }
+  }
+  
+  /**
+   * Store pull request review data
+   */
+  async storePullRequestReview(reviewData) {
+    try {
+      const { data, error } = await this.supabaseClient.getClient()
+        .from('pull_request_reviewers')
+        .insert({
+          pull_request_id: reviewData.pull_request_id,
+          reviewer_id: reviewData.reviewer_id,
+          status: reviewData.status,
+          submitted_at: reviewData.submitted_at
+        })
+        .select();
+      
+      if (error) {
+        logger.error('Failed to store pull request review', { error });
+        throw error;
+      }
+      
+      return data[0];
+    } catch (error) {
+      logger.error('Error storing pull request review', { error });
+      throw error;
+    }
+  }
+  
+  /**
+   * Store pull request comment
+   */
+  async storePullRequestComment(commentData) {
+    try {
+      const { data, error } = await this.supabaseClient.getClient()
+        .from('pull_request_comments')
+        .insert({
+          pull_request_id: commentData.pull_request_id,
+          github_id: commentData.github_id,
+          author: commentData.author,
+          content: commentData.content,
+          created_at: commentData.created_at,
+          updated_at: commentData.updated_at,
+          file_path: commentData.file_path,
+          line_number: commentData.line_number
+        })
+        .select();
+      
+      if (error) {
+        logger.error('Failed to store pull request comment', { error });
+        throw error;
+      }
+      
+      return data[0];
+    } catch (error) {
+      logger.error('Error storing pull request comment', { error });
+      throw error;
+    }
+  }
+} 

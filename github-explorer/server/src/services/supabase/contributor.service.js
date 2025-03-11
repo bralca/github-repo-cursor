@@ -19,286 +19,277 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
- * Store contributor data in Supabase
- * @param {object} contributorData - Processed contributor data
- * @returns {Promise<object>} - Result of the insert/update operation
+ * ContributorService class for managing contributors in the database
  */
-export async function storeContributorData(contributorData) {
-  if (!contributorData || !contributorData.username) {
-    logger.error('Invalid contributor data provided for storage');
-    throw new Error('Valid contributor data is required');
+export class ContributorService {
+  constructor(supabaseClient) {
+    this.supabaseClient = supabaseClient;
   }
-
-  try {
-    logger.info(`Storing contributor data for: ${contributorData.username}`);
-    
-    // Check if contributor already exists
-    const { data: existingContributor, error: lookupError } = await supabase
-      .from('contributors')
-      .select('id, username')
-      .eq('username', contributorData.username)
-      .maybeSingle();
-    
-    if (lookupError) {
-      logger.error(`Error looking up contributor: ${lookupError.message}`, { 
-        error: lookupError, 
-        username: contributorData.username 
-      });
-      throw lookupError;
-    }
-    
-    let result;
-    
-    // Update or insert contributor data
-    if (existingContributor) {
-      // Update existing contributor
-      const { data, error } = await supabase
-        .from('contributors')
-        .update(contributorData)
-        .eq('id', existingContributor.id)
-        .select();
-      
-      if (error) throw error;
-      result = { data, operation: 'update', id: existingContributor.id };
-      logger.info(`Updated contributor data for: ${contributorData.username} (ID: ${existingContributor.id})`);
-    } else {
-      // Insert new contributor
-      const { data, error } = await supabase
-        .from('contributors')
-        .insert(contributorData)
-        .select();
-      
-      if (error) throw error;
-      result = { data, operation: 'insert', id: data[0].id };
-      logger.info(`Inserted new contributor: ${contributorData.username} (ID: ${data[0].id})`);
-    }
-    
-    return result;
-  } catch (error) {
-    logger.error(`Error storing contributor data: ${error.message}`, {
-      error,
-      username: contributorData.username
-    });
-    throw new Error(`Failed to store contributor data: ${error.message}`);
-  }
-}
-
-/**
- * Retrieve contributor by username
- * @param {string} username - Username of the contributor to retrieve
- * @returns {Promise<object>} - Contributor data
- */
-export async function getContributorByUsername(username) {
-  try {
-    const { data, error } = await supabase
-      .from('contributors')
-      .select('*')
-      .eq('username', username)
-      .maybeSingle();
-      
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    logger.error(`Error retrieving contributor: ${error.message}`, {
-      error,
-      username
-    });
-    throw new Error(`Failed to retrieve contributor: ${error.message}`);
-  }
-}
-
-/**
- * Update specific contributor fields
- * @param {string} contributorId - ID of the contributor to update
- * @param {object} updateData - Data fields to update
- * @returns {Promise<object>} - Updated contributor data
- */
-export async function updateContributor(contributorId, updateData) {
-  try {
-    const { data, error } = await supabase
-      .from('contributors')
-      .update(updateData)
-      .eq('id', contributorId)
-      .select();
-      
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    logger.error(`Error updating contributor: ${error.message}`, {
-      error,
-      contributorId
-    });
-    throw new Error(`Failed to update contributor: ${error.message}`);
-  }
-}
-
-/**
- * Get all contributors with optional filtering
- * @param {object} options - Filter and pagination options
- * @returns {Promise<object>} - List of contributors and count
- */
-export async function getAllContributors(options = {}) {
-  const {
-    isEnriched = null,
-    limit = 10,
-    offset = 0,
-    orderBy = 'impact_score',
-    orderDirection = 'desc'
-  } = options;
   
-  try {
-    let query = supabase
-      .from('contributors')
-      .select('*', { count: 'exact' });
-    
-    // Apply optional filters
-    if (isEnriched !== null) {
-      query = query.eq('is_enriched', isEnriched);
-    }
-    
-    // Apply sorting
-    query = query.order(orderBy, { ascending: orderDirection === 'asc' });
-    
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1);
-    
-    const { data, error, count } = await query;
-    
-    if (error) throw error;
-    
-    return {
-      data,
-      count,
-      pagination: {
-        offset,
-        limit,
-        hasMore: count > offset + limit
+  /**
+   * Store contributor data in the database
+   */
+  async storeContributorData(contributorData) {
+    try {
+      // Ensure data has required fields
+      if (!contributorData.id || !contributorData.username) {
+        throw new Error('Contributor data must include id and username');
       }
-    };
-  } catch (error) {
-    logger.error(`Error retrieving contributors: ${error.message}`, { error });
-    throw new Error(`Failed to retrieve contributors: ${error.message}`);
-  }
-}
-
-/**
- * Get top contributors by impact score
- * @param {number} limit - Number of contributors to retrieve
- * @returns {Promise<Array>} - List of top contributors
- */
-export async function getTopContributors(limit = 10) {
-  try {
-    const { data, error } = await supabase
-      .from('contributors')
-      .select('*')
-      .order('impact_score', { ascending: false })
-      .limit(limit);
       
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    logger.error(`Error retrieving top contributors: ${error.message}`, { error });
-    throw new Error(`Failed to retrieve top contributors: ${error.message}`);
-  }
-}
-
-/**
- * Link contributor to repository (create or update junction record)
- * @param {string} contributorId - Contributor ID
- * @param {number} repositoryId - Repository ID
- * @param {number} contributionCount - Number of contributions
- * @returns {Promise<object>} - Junction record data
- */
-export async function linkContributorToRepository(contributorId, repositoryId, contributionCount = 1) {
-  try {
-    // Check if relationship already exists
-    const { data: existingLink, error: lookupError } = await supabase
-      .from('contributor_repository')
-      .select('contributor_id, repository_id, contribution_count')
-      .eq('contributor_id', contributorId)
-      .eq('repository_id', repositoryId)
-      .maybeSingle();
+      const { data, error } = await this.supabaseClient.getClient()
+        .from('contributors')
+        .upsert({
+          id: contributorData.id,
+          username: contributorData.username,
+          name: contributorData.name || null,
+          avatar: contributorData.avatar_url || null,
+          bio: contributorData.bio || null,
+          company: contributorData.company || null,
+          blog: contributorData.blog || null,
+          twitter_username: contributorData.twitter_username || null,
+          location: contributorData.location || null,
+          followers: contributorData.followers || 0,
+          repositories: contributorData.public_repos || 0,
+          is_enriched: contributorData.is_enriched || false
+        }, {
+          onConflict: 'id',
+          returning: 'minimal'
+        });
       
-    if (lookupError) throw lookupError;
-    
-    // Update or insert relationship
-    if (existingLink) {
-      // Update existing link
-      const { data, error } = await supabase
+      if (error) {
+        logger.error('Failed to store contributor data', { error });
+        throw error;
+      }
+      
+      logger.info('Contributor data stored successfully', { 
+        contributor: contributorData.username 
+      });
+      
+      return data;
+    } catch (error) {
+      logger.error('Error storing contributor data', { error });
+      throw error;
+    }
+  }
+  
+  /**
+   * Get a contributor by username
+   */
+  async getContributorByUsername(username) {
+    try {
+      const { data, error } = await this.supabaseClient.getClient()
+        .from('contributors')
+        .select('*')
+        .eq('username', username)
+        .single();
+      
+      if (error) {
+        // If the error is not 'No rows found', log and throw
+        if (error.code !== 'PGRST116') {
+          logger.error('Failed to get contributor by username', { error, username });
+          throw error;
+        }
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      logger.error('Error getting contributor by username', { error, username });
+      throw error;
+    }
+  }
+  
+  /**
+   * Update a contributor
+   */
+  async updateContributor(contributorId, updateData) {
+    try {
+      const { data, error } = await this.supabaseClient.getClient()
+        .from('contributors')
+        .update(updateData)
+        .eq('id', contributorId)
+        .select();
+      
+      if (error) {
+        logger.error('Failed to update contributor', { error, contributorId });
+        throw error;
+      }
+      
+      return data[0];
+    } catch (error) {
+      logger.error('Error updating contributor', { error, contributorId });
+      throw error;
+    }
+  }
+  
+  /**
+   * Get all contributors with optional filtering and pagination
+   */
+  async getAllContributors(options = {}) {
+    try {
+      const {
+        limit = 50,
+        offset = 0,
+        sortBy = 'username',
+        sortDirection = 'asc',
+        enriched = null
+      } = options;
+      
+      let query = this.supabaseClient.getClient()
+        .from('contributors')
+        .select('*, contributor_repository(repository_id, contribution_count)');
+      
+      // Apply is_enriched filter if provided
+      if (enriched !== null) {
+        query = query.eq('is_enriched', enriched);
+      }
+      
+      // Apply sorting
+      query = query.order(sortBy, { ascending: sortDirection === 'asc' });
+      
+      // Apply pagination
+      query = query.range(offset, offset + limit - 1);
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        logger.error('Failed to get contributors', { error });
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      logger.error('Error getting contributors', { error });
+      throw error;
+    }
+  }
+  
+  /**
+   * Get top contributors by contribution count
+   */
+  async getTopContributors(limit = 10) {
+    try {
+      const { data, error } = await this.supabaseClient.getClient()
+        .rpc('get_top_contributors_by_commits', { limit_count: limit });
+      
+      if (error) {
+        logger.error('Failed to get top contributors', { error });
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      logger.error('Error getting top contributors', { error });
+      throw error;
+    }
+  }
+  
+  /**
+   * Link a contributor to a repository
+   */
+  async linkContributorToRepository(contributorId, repositoryId, contributionCount = 1) {
+    try {
+      // First check if the relationship exists
+      const { data: existingData, error: existingError } = await this.supabaseClient.getClient()
         .from('contributor_repository')
-        .update({
-          contribution_count: existingLink.contribution_count + contributionCount
-        })
+        .select('*')
         .eq('contributor_id', contributorId)
         .eq('repository_id', repositoryId)
-        .select();
-        
-      if (error) throw error;
-      return { data, operation: 'update' };
-    } else {
-      // Create new link
-      const { data, error } = await supabase
-        .from('contributor_repository')
-        .insert({
-          contributor_id: contributorId,
-          repository_id: repositoryId,
-          contribution_count: contributionCount
-        })
-        .select();
-        
-      if (error) throw error;
-      return { data, operation: 'insert' };
-    }
-  } catch (error) {
-    logger.error(`Error linking contributor to repository: ${error.message}`, {
-      error,
-      contributorId,
-      repositoryId
-    });
-    throw new Error(`Failed to link contributor to repository: ${error.message}`);
-  }
-}
-
-/**
- * Get contributors for a specific repository
- * @param {number} repositoryId - Repository ID
- * @param {number} limit - Maximum number of contributors to return
- * @returns {Promise<Array>} - List of contributors
- */
-export async function getContributorsForRepository(repositoryId, limit = 10) {
-  try {
-    const { data, error } = await supabase
-      .from('contributor_repository')
-      .select(`
-        contribution_count,
-        contributors:contributor_id(*)
-      `)
-      .eq('repository_id', repositoryId)
-      .order('contribution_count', { ascending: false })
-      .limit(limit);
+        .single();
       
-    if (error) throw error;
-    
-    // Transform the data to a more usable format
-    return data.map(item => ({
-      ...item.contributors,
-      contribution_count: item.contribution_count
-    }));
-  } catch (error) {
-    logger.error(`Error retrieving contributors for repository: ${error.message}`, {
-      error,
-      repositoryId
-    });
-    throw new Error(`Failed to retrieve contributors for repository: ${error.message}`);
+      if (existingError && existingError.code !== 'PGRST116') {
+        logger.error('Failed to check contributor-repository relationship', { 
+          error: existingError,
+          contributorId,
+          repositoryId
+        });
+        throw existingError;
+      }
+      
+      // If relationship exists, update the contribution count
+      if (existingData) {
+        const newCount = existingData.contribution_count + contributionCount;
+        
+        const { data, error } = await this.supabaseClient.getClient()
+          .from('contributor_repository')
+          .update({ contribution_count: newCount })
+          .eq('contributor_id', contributorId)
+          .eq('repository_id', repositoryId)
+          .select();
+        
+        if (error) {
+          logger.error('Failed to update contributor-repository relationship', { 
+            error,
+            contributorId,
+            repositoryId
+          });
+          throw error;
+        }
+        
+        return data[0];
+      } else {
+        // If relationship doesn't exist, create a new one
+        const { data, error } = await this.supabaseClient.getClient()
+          .from('contributor_repository')
+          .insert({
+            contributor_id: contributorId,
+            repository_id: repositoryId,
+            contribution_count: contributionCount
+          })
+          .select();
+        
+        if (error) {
+          logger.error('Failed to create contributor-repository relationship', { 
+            error,
+            contributorId,
+            repositoryId
+          });
+          throw error;
+        }
+        
+        return data[0];
+      }
+    } catch (error) {
+      logger.error('Error linking contributor to repository', { 
+        error,
+        contributorId,
+        repositoryId
+      });
+      throw error;
+    }
   }
-}
-
-export default {
-  storeContributorData,
-  getContributorByUsername,
-  updateContributor,
-  getAllContributors,
-  getTopContributors,
-  linkContributorToRepository,
-  getContributorsForRepository
-}; 
+  
+  /**
+   * Get contributors for a specific repository
+   */
+  async getContributorsForRepository(repositoryId, limit = 10) {
+    try {
+      const { data, error } = await this.supabaseClient.getClient()
+        .from('contributor_repository')
+        .select('contributor_id, contribution_count, contributors(*)')
+        .eq('repository_id', repositoryId)
+        .order('contribution_count', { ascending: false })
+        .limit(limit);
+      
+      if (error) {
+        logger.error('Failed to get contributors for repository', { 
+          error,
+          repositoryId
+        });
+        throw error;
+      }
+      
+      // Transform the data to a more usable format
+      return data.map(item => ({
+        ...item.contributors,
+        contribution_count: item.contribution_count
+      }));
+    } catch (error) {
+      logger.error('Error getting contributors for repository', { 
+        error,
+        repositoryId
+      });
+      throw error;
+    }
+  }
+} 
