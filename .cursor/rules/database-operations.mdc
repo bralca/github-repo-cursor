@@ -1,0 +1,10 @@
+---
+description: When writing to supabase follow these rules 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+always use upsert when writing to the database, so we don't risk duplicates 
+when using upsert use the ids of the different entities from github (which should be stored in the database) as a way to find if an entity is already been written

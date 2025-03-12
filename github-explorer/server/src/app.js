@@ -56,6 +56,30 @@ function initializePipelines() {
   logger.info('Data processing pipelines initialized successfully');
 }
 
+// Import routes
+import pipelineRoutes from './routes/pipeline-routes.js';
+import webhookRoutes from './routes/webhook-routes.js';
+import authRoutes from './routes/auth-routes.js';
+import repoRoutes from './routes/repository-routes.js';
+import contributorRoutes from './routes/contributor-routes.js';
+import mergeRequestRoutes from './routes/merge-request-routes.js';
+import commitRoutes from './routes/commit-routes.js';
+import adminRoutes from './routes/admin-routes.js';
+import pipelineSchedulerRoutes from './routes/pipeline-scheduler-routes.js';
+import pipelineNotificationRoutes from './routes/pipeline-notification-routes.js';
+
+// Register routes
+app.use('/api/auth', authRoutes);
+app.use('/api/pipeline', pipelineRoutes);
+app.use('/api/webhook', webhookRoutes);
+app.use('/api/repositories', repoRoutes);
+app.use('/api/contributors', contributorRoutes);
+app.use('/api/merge-requests', mergeRequestRoutes);
+app.use('/api/commits', commitRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/scheduler', pipelineSchedulerRoutes);
+app.use('/api/notifications', pipelineNotificationRoutes);
+
 // API Routes
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });

@@ -15,4 +15,27 @@ export { registerRepositoryProcessorPipeline } from './repository-processor-pipe
 export { 
   registerContributorRepositoryPipeline,
   processContributorRepositoryRelationships 
-} from './contributor-repository-pipeline.js'; 
+} from './contributor-repository-pipeline.js';
+
+export {
+  registerMergeRequestProcessorPipeline,
+  processMergeRequest,
+  processMergeRequests
+} from './merge-request-processor-pipeline.js';
+
+export {
+  registerCommitProcessorPipeline,
+  processCommit,
+  processCommits
+} from './commit-processor-pipeline.js';
+
+export {
+  registerDatabaseWriterPipeline,
+  storeData,
+  storeRepositories,
+  storeContributors,
+  storeMergeRequests,
+  storeCommits,
+  storeCommitStatistics,
+  storeContributorRepositoryRelationships
+} from './database-writer-pipeline.js'; 

@@ -4,7 +4,8 @@ import {
   DataEnricherProcessor, 
   DatabaseWriterProcessor,
   ContributorRepositoryProcessor,
-  RepositoryProcessorStage
+  RepositoryProcessorStage,
+  ContributorProcessorStage
 } from '../processors/index.js';
 import { githubClientFactory } from '../../services/github/github-client.js';
 import { logger } from '../../utils/logger.js';
@@ -39,6 +40,21 @@ export function registerWebhookProcessorPipeline(supabaseServices) {
         enrichMergeRequests: true,
         enrichCommits: true,
         concurrency: 2
+      }
+    });
+  });
+  
+  pipelineFactory.registerStage('process-contributor-statistics', () => {
+    return new ContributorProcessorStage({
+      githubClient,
+      contributorService: supabaseServices?.contributorService,
+      config: {
+        computeImpactScore: true,
+        computeRoleClassification: true,
+        computeLanguagePreferences: true,
+        computeActivityMetrics: true,
+        computeRepositoryRelationships: true,
+        timeframeInDays: 90
       }
     });
   });
@@ -97,6 +113,7 @@ export function registerWebhookProcessorPipeline(supabaseServices) {
     stages: [
       'extract-entities',
       'enrich-data',
+      'process-contributor-statistics',
       'process-contributor-relationships',
       'process-repository-statistics',
       'persist-to-database'
@@ -138,6 +155,7 @@ export async function processWebhookPayload(webhookPayload) {
         commitsExtracted: result.stats?.commitsExtracted || 0,
         relationshipsProcessed: result.relationships?.contributorRepository?.length || 0,
         repositoriesProcessed: Object.keys(result.repositoryStatistics || {}).length || 0,
+        contributorsProcessed: Object.keys(result.contributorStatistics || {}).length || 0,
         errors: result.errors?.length || 0
       },
       // Include entity counts
@@ -147,7 +165,8 @@ export async function processWebhookPayload(webhookPayload) {
         mergeRequests: result.mergeRequests?.length || 0,
         commits: result.commits?.length || 0,
         relationships: result.relationships?.contributorRepository?.length || 0,
-        repositoryStatistics: Object.keys(result.repositoryStatistics || {}).length || 0
+        repositoryStatistics: Object.keys(result.repositoryStatistics || {}).length || 0,
+        contributorStatistics: Object.keys(result.contributorStatistics || {}).length || 0
       }
     };
   } catch (error) {

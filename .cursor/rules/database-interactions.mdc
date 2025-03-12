@@ -1,0 +1,12 @@
+---
+description: Whenever a change in the supabase database schema happens follow this rules
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+THIS IS VERY IMPORTANT. NEVER SKIP THIS RULE. 
+
+Whenever we make a change in the database schema in supabase, remember to update the DATABASE_SCHEMA.md file with all the latest changes. 
+You should follow the same format already present in the DATABASE_SCHEMA.md file when updating it. 

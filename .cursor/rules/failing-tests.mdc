@@ -1,0 +1,11 @@
+---
+description: When you are a test and it fails use this rules
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+When you implement a test and it fails, never change the test by removing critical check to make the test pass. 
+
+In case of repeated errors, take a step back, consult the documentation, think step by step and keep trying until the issue is resolved.

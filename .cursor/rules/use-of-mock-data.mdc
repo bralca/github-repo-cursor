@@ -1,0 +1,14 @@
+---
+description: When mock data is involved check this rules
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+Mock data should only be used for testing purposes. 
+Never use Mock data in dev or production
+When you are trying to fetch data in dev or production, but can't do it, never use mock data as a fallback
+When fetching data fails show always clear error messages to help debug and fix the problem when it comes to dev and prod environments
+
+WE NEED TO ALWAYS TEST BACKEND AND FRONTEND CODE WITH REAL DATA WHEN IT COMES TO DEV AND PRODUCTION ENVIRONMENT

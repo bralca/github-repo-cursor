@@ -9,7 +9,15 @@
     "dev": "nodemon src/server.js",
     "test": "node src/scripts/test-pipeline.js",
     "test:repo": "node src/scripts/test-repository-processor.js",
-    "test:contrib-repo": "node src/scripts/test-contributor-repository-processor.js"
+    "test:contrib-repo": "node src/scripts/test-contributor-repository-processor.js",
+    "test:contrib": "node src/scripts/test-contributor-processor.js",
+    "test:merge-req": "node src/scripts/test-merge-request-processor.js",
+    "test:commit": "node src/scripts/test-commit-processor.js",
+    "test:db-writer": "node src/scripts/test-database-writer.js",
+    "test:scheduler": "node src/scripts/test-scheduler.js",
+    "test:quick-scheduler": "node src/scripts/test-quick-scheduler.js",
+    "setup:db": "node src/scripts/setup-database.js",
+    "test:schema-manager": "node tests/test-schema-manager.js"
   },
   "dependencies": {
     "@octokit/rest": "^19.0.7",
@@ -19,7 +27,9 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "helmet": "^6.1.5",
-    "octokit": "^4.1.2"
+    "node-schedule": "^2.1.1",
+    "octokit": "^4.1.2",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
