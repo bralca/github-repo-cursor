@@ -2,7 +2,6 @@
 
 A modern application for exploring GitHub repositories, analyzing contributors, tracking merge requests, and visualizing commit data.
 
-![GitHub Explorer](https://via.placeholder.com/800x400?text=GitHub+Explorer)
 
 ## 🌟 Project Overview
 
