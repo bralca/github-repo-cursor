@@ -361,7 +361,6 @@ export class PipelineSchedulerController extends BaseController {
   }
 }
 
-// Create singleton instance
+// Create and export a singleton instance
 const pipelineSchedulerController = new PipelineSchedulerController();
-
 export default pipelineSchedulerController; 

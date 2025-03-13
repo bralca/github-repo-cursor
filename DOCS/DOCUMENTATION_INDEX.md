@@ -1,34 +1,55 @@
-
 # GitHub Explorer Documentation
 
 This directory contains comprehensive documentation for the GitHub Explorer application. These documents provide detailed information about the application's architecture, components, data flow, and design guidelines.
 
+## Documentation Structure
+
+The documentation is organized into the following categories:
+
+- **Core Architecture** - Fundamental application architecture
+- **Page Architecture** - Implementation details for specific pages
+- **Data Systems** - Database and data pipeline documentation
+- **Server Architecture** - Backend services and serverless functions
+- **Implementation Guidelines** - Design principles, roadmap, and security
+
 ## Documentation Files
 
-### System Architecture
+### Core Architecture
 
-- [Database Schema](DATABASE_SCHEMA.md) - Detailed database structure and relationships
-- [Data Pipeline Architecture](DATA_PIPELINE_ARCHITECTURE.md) - End-to-end data processing flow
-- [Edge Functions Documentation](EDGE_FUNCTIONS_DOCUMENTATION.md) - Backend serverless functions
-- [Rebuild Guide](REBUILD_GUIDE.md) - Comprehensive roadmap for rebuilding the application
-- [Next.js Architecture](NEXT_JS_ARCHITECTURE.md) - Frontend architecture using Next.js
-- [Node.js Server Architecture](NODE_SERVER_ARCHITECTURE.md) - Backend architecture using Node.js
-- [Supabase Integration](SUPABASE_INTEGRATION.md) - Database integration details
+- [Next.js Architecture](core-architecture/NEXT_JS_ARCHITECTURE.md) - Frontend architecture using Next.js
+- [Supabase Integration](core-architecture/SUPABASE_INTEGRATION.md) - Database integration details
 
-### UI Architecture
+### Data Systems
 
-- [Repository Page Architecture](REPOSITORY_PAGE_ARCHITECTURE.md) - Repository page components and data flow
-- [Contributors Page Architecture](CONTRIBUTORS_PAGE_ARCHITECTURE.md) - Contributors page components and data flow
-- [Merge Requests Architecture](MERGE_REQUESTS_ARCHITECTURE.md) - Merge requests page components and data flow
-- [Commits Page Architecture](COMMITS_PAGE_ARCHITECTURE.md) - Commits page components and data flow
-- [Admin Page Architecture](ADMIN_PAGE_ARCHITECTURE.md) - Admin interface components and functionality
-- [Homepage Architecture](HOMEPAGE_ARCHITECTURE.md) - Homepage components and structure
-- [Top Bar Architecture](TOPBAR_ARCHITECTURE.md) - Navigation component implementation
+- [Database Schema](data-systems/DATABASE_SCHEMA.md) - Detailed database structure and relationships
+- [Data Pipeline Architecture](data-systems/DATA_PIPELINE_ARCHITECTURE.md) - End-to-end data processing flow
+- [Pipeline Architecture](data-systems/PIPELINE_ARCHITECTURE.md) - Pipeline implementation details
+
+### Page Architecture
+
+- [Repository Page Architecture](page-architecture/REPOSITORY_PAGE_ARCHITECTURE.md) - Repository page components and data flow
+- [Contributors Page Architecture](page-architecture/CONTRIBUTORS_PAGE_ARCHITECTURE.md) - Contributors page components and data flow
+- [Merge Requests Architecture](page-architecture/MERGE_REQUESTS_ARCHITECTURE.md) - Merge requests page components and data flow
+- [Commits Page Architecture](page-architecture/COMMITS_PAGE_ARCHITECTURE.md) - Commits page components and data flow
+- [Admin Page Architecture](page-architecture/ADMIN_PAGE_ARCHITECTURE.md) - Admin interface components and functionality
+- [Homepage Architecture](page-architecture/HOMEPAGE_ARCHITECTURE.md) - Homepage components and structure
+- [Top Bar Architecture](page-architecture/TOPBAR_ARCHITECTURE.md) - Navigation component implementation
+
+### Server Architecture
+
+- [Node.js Server Architecture](server-architecture/NODE_SERVER_ARCHITECTURE.md) - Backend architecture using Node.js
+- [Edge Functions Documentation](server-architecture/EDGE_FUNCTIONS_DOCUMENTATION.md) - Backend serverless functions
+
+### Implementation Guidelines
+
+- [Design Guidelines](implementation-guidelines/DESIGN_GUIDELINES.md) - UI styling patterns and visual language
+- [Implementation Plan](implementation-guidelines/IMPLEMENTATION_PLAN.md) - Development roadmap and priorities
+- [Roadmap](implementation-guidelines/ROADMAP.md) - Detailed project roadmap
+- [Rebuild Guide](implementation-guidelines/REBUILD_GUIDE.md) - Comprehensive roadmap for rebuilding the application
+- [Secrets](implementation-guidelines/SECRETS.md) - Secret management and access patterns
 
 ### Project Management
 
-- [Implementation Plan](IMPLEMENTATION_PLAN.md) - Development roadmap and priorities
-- [Epic Implementation Sequence](epics/EPIC_IMPLEMENTATION_SEQUENCE.md) - Sequence for implementing epics
 - Individual Epic Documents:
   - [Epic 1: Foundation & Infrastructure](epics/EPIC_1_FOUNDATION.md)
   - [Epic 2: Homepage Integration](epics/EPIC_2_HOMEPAGE.md)
@@ -38,34 +59,25 @@ This directory contains comprehensive documentation for the GitHub Explorer appl
   - [Epic 6: Commits Page Integration](epics/EPIC_6_COMMITS.md)
   - [Epic 7: Performance & Refinement](epics/EPIC_7_PERFORMANCE.md)
 
-### Design System
-
-- [Design Guidelines](DESIGN_GUIDELINES.md) - UI styling patterns and visual language
-
-### Security and Configuration
-
-- [Secrets](SECRETS.md) - Secret management and access patterns
-
 ## How To Use This Documentation
 
 ### For New Developers
 
-1. Start with the [Rebuild Guide](REBUILD_GUIDE.md) for a complete overview of the project structure
-2. Review the [Database Schema](DATABASE_SCHEMA.md) and [Data Pipeline Architecture](DATA_PIPELINE_ARCHITECTURE.md) to understand the data flow
+1. Start with the [Rebuild Guide](implementation-guidelines/REBUILD_GUIDE.md) for a complete overview of the project structure
+2. Review the [Database Schema](data-systems/DATABASE_SCHEMA.md) and [Data Pipeline Architecture](data-systems/DATA_PIPELINE_ARCHITECTURE.md) to understand the data flow
 3. Explore individual page architecture documents based on your area of focus
-4. Reference the [Design Guidelines](DESIGN_GUIDELINES.md) for UI implementation
+4. Reference the [Design Guidelines](implementation-guidelines/DESIGN_GUIDELINES.md) for UI implementation
 
 ### For Project Planning
 
-1. Review the [Implementation Plan](IMPLEMENTATION_PLAN.md) for high-level priorities
-2. Consult the [Epic Implementation Sequence](epics/EPIC_IMPLEMENTATION_SEQUENCE.md) for dependency management
-3. Refer to individual epic documents for detailed implementation tasks
+1. Review the [Implementation Plan](implementation-guidelines/IMPLEMENTATION_PLAN.md) for high-level priorities
+2. Consult the Epic documents for dependency management and implementation tasks
 
 ### For Maintenance and Extension
 
-1. Use the [Secrets](SECRETS.md) document for managing API keys and credentials
+1. Use the [Secrets](implementation-guidelines/SECRETS.md) document for managing API keys and credentials
 2. Reference specific component architecture documents when extending functionality
-3. Follow patterns in the [Design Guidelines](DESIGN_GUIDELINES.md) for UI consistency
+3. Follow patterns in the [Design Guidelines](implementation-guidelines/DESIGN_GUIDELINES.md) for UI consistency
 
 ## Documentation Maintenance
 

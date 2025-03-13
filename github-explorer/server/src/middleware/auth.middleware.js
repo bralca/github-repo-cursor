@@ -31,6 +31,10 @@ export function authenticateToken(req, res, next) {
   }
 }
 
+// Export authenticate as an alias for authenticateToken for backward compatibility
+export const authenticate = authenticateToken;
+
 export default {
-  authenticateToken
+  authenticateToken,
+  authenticate
 }; 

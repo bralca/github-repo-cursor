@@ -133,23 +133,78 @@ function calculateImpactScore(contributorData) {
  * @returns {Promise<object>} - Enriched contributor data
  */
 export async function enrichContributorData(contributorData, octokit) {
-  if (!contributorData || !contributorData.username || !octokit) {
+  if (!contributorData || (!contributorData.id && !contributorData.username) || !octokit) {
     logger.error('Missing required parameters for contributor enrichment');
-    throw new Error('Contributor data and Octokit instance are required');
+    throw new Error('Contributor data (with id or username) and Octokit instance are required');
   }
 
   try {
+    // Check if we have a valid GitHub ID to use
+    const userId = contributorData.id;
     const username = contributorData.username;
-    logger.debug(`Enriching contributor data for: ${username}`);
     
-    // Get additional user data
-    const { data: userData } = await octokit.rest.users.getByUsername({
-      username
-    });
+    let userData;
+    
+    // If we have a valid GitHub user ID, use that for fetching data
+    if (userId) {
+      logger.debug(`Enriching contributor data for ID: ${userId}`);
+      
+      try {
+        // Using the custom getUserById method
+        userData = await octokit.request('GET /user/{id}', {
+          id: userId,
+          headers: {
+            'X-GitHub-Api-Version': '2022-11-28'
+          }
+        }).then(response => response.data);
+        
+        // If the request succeeds, update the username in case it has changed
+        if (userData && userData.login !== username) {
+          logger.info(`Username for user ID ${userId} has changed from "${username}" to "${userData.login}"`);
+        }
+      } catch (idError) {
+        logger.warn(`Failed to fetch user by ID ${userId}, error: ${idError.message}`);
+        
+        // If we also have a username, try that as fallback
+        if (username) {
+          logger.debug(`Falling back to username: ${username}`);
+          try {
+            userData = await octokit.rest.users.getByUsername({
+              username
+            }).then(response => response.data);
+          } catch (usernameError) {
+            logger.error(`Failed to fetch user by username ${username}, error: ${usernameError.message}`);
+            throw new Error(`Failed to fetch user data: ${usernameError.message}`);
+          }
+        } else {
+          throw idError; // Re-throw if we have no username fallback
+        }
+      }
+    } 
+    // If we only have a username, use that
+    else if (username) {
+      logger.debug(`Enriching contributor data for username: ${username}`);
+      
+      try {
+        userData = await octokit.rest.users.getByUsername({
+          username
+        }).then(response => response.data);
+      } catch (usernameError) {
+        logger.error(`Failed to fetch user by username ${username}, error: ${usernameError.message}`);
+        throw new Error(`Failed to fetch user data: ${usernameError.message}`);
+      }
+    }
+    
+    if (!userData) {
+      throw new Error('Failed to fetch user data from GitHub API');
+    }
     
     // Prepare the enriched data object
     const enrichedData = { 
       ...contributorData,
+      // Always ensure the id and username are updated to the latest values
+      id: userData.id,
+      username: userData.login,
       // Update with fresh data from the user profile
       name: userData.name || contributorData.name,
       bio: userData.bio || contributorData.bio,
@@ -163,7 +218,7 @@ export async function enrichContributorData(contributorData, octokit) {
     
     // Get user's organizations
     const { data: orgs } = await octokit.rest.orgs.listForUser({
-      username,
+      username: userData.login, // Use the possibly updated username
       per_page: 100
     });
     

@@ -292,4 +292,19 @@ export class ContributorService {
       throw error;
     }
   }
-} 
+}
+
+// Create an instance of the contributor service
+const contributorService = new ContributorService(supabase);
+
+// Export the service instance as default
+export default contributorService;
+
+// Export individual methods for backward compatibility
+export const storeContributorData = contributorService.storeContributorData.bind(contributorService);
+export const getContributorByUsername = contributorService.getContributorByUsername.bind(contributorService);
+export const getAllContributors = contributorService.getAllContributors.bind(contributorService);
+export const getTopContributors = contributorService.getTopContributors.bind(contributorService);
+export const updateContributor = contributorService.updateContributor.bind(contributorService);
+export const linkContributorToRepository = contributorService.linkContributorToRepository.bind(contributorService);
+export const getContributorsForRepository = contributorService.getContributorsForRepository.bind(contributorService); 

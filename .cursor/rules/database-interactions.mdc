@@ -10,3 +10,4 @@ THIS IS VERY IMPORTANT. NEVER SKIP THIS RULE.
 
 Whenever we make a change in the database schema in supabase, remember to update the DATABASE_SCHEMA.md file with all the latest changes. 
 You should follow the same format already present in the DATABASE_SCHEMA.md file when updating it. 
+BEFORE MAKING ANY CHANGE TO THE DOCUMENTATION THOUGH WE NEED TO MAKE SURE EVERYTHING WORKS. LEAVE THE UPDATE DOCUMENTATION STEP AS THE LAST STEP OF THE PROCESS.

@@ -10,7 +10,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { pipelineFactory } from '../../pipeline/core/pipeline-factory.js';
 import { logger } from '../../utils/logger.js';
 import { supabaseClientFactory } from '../supabase/supabase-client.js';
-import { SupabaseSchemaManager } from '../supabase/supabase-schema-manager.js';
 import EventEmitter from 'events';
 
 /**
@@ -26,13 +25,11 @@ export class SchedulerService extends EventEmitter {
     this.schedules = new Map();
     this.jobs = new Map();
     this.supabase = null;
-    this.schemaManager = null;
     this.isDbAvailable = false;
     
     // Try to initialize Supabase client
     try {
       this.supabase = supabaseClientFactory.getClient();
-      this.schemaManager = new SupabaseSchemaManager();
       this.checkDatabaseAvailability();
     } catch (error) {
       logger.error('Failed to initialize Supabase client for scheduler service', { error });
@@ -43,100 +40,26 @@ export class SchedulerService extends EventEmitter {
   }
   
   /**
-   * Check if the database is available and tables exist
+   * Check if the database is available
    * @returns {Promise<boolean>} Whether the database is available
    */
   async checkDatabaseAvailability() {
     try {
-      // Initialize schema manager if needed
-      if (!this.schemaManager) {
-        this.schemaManager = new SupabaseSchemaManager();
-        await this.schemaManager.initialize();
-      }
-      
       logger.info('Checking database availability for scheduler service');
       
-      // Check if schedules table exists, create if it doesn't
-      const pipelineScheduleSchema = `
-        CREATE TABLE pipeline_schedules (
-          id SERIAL PRIMARY KEY,
-          name TEXT NOT NULL,
-          description TEXT,
-          pipeline_type TEXT NOT NULL,
-          cron_expression TEXT NOT NULL,
-          timezone TEXT DEFAULT 'UTC',
-          parameters JSONB,
-          is_active BOOLEAN DEFAULT TRUE,
-          last_run_at TIMESTAMP WITH TIME ZONE,
-          next_run_at TIMESTAMP WITH TIME ZONE,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-        );
-        
-        CREATE INDEX IF NOT EXISTS idx_pipeline_schedules_pipeline_type 
-          ON pipeline_schedules(pipeline_type);
-        CREATE INDEX IF NOT EXISTS idx_pipeline_schedules_is_active 
-          ON pipeline_schedules(is_active);
-        CREATE INDEX IF NOT EXISTS idx_pipeline_schedules_next_run_at 
-          ON pipeline_schedules(next_run_at);
-      `;
-      
-      const schedulesExist = await this.schemaManager.tableExists('pipeline_schedules');
-      
-      if (!schedulesExist) {
-        logger.info('Creating pipeline_schedules table');
-        const created = await this.schemaManager.createTableIfNotExists(
-          'pipeline_schedules', 
-          pipelineScheduleSchema
-        );
-        
-        if (created) {
-          logger.info('Successfully created pipeline_schedules table');
-          this.isDbAvailable = true;
-        } else {
-          logger.error('Failed to create pipeline_schedules table');
-          this.isDbAvailable = false;
-          return false;
-        }
-      } else {
-        logger.info('pipeline_schedules table already exists');
-        this.isDbAvailable = true;
+      // Simple test to see if Supabase client is working, without checking tables
+      if (!this.supabase) {
+        this.supabase = supabaseClientFactory.getClient();
       }
       
-      // Check if configurations table exists, create if it doesn't
-      const pipelineConfigSchema = `
-        CREATE TABLE pipeline_configurations (
-          id SERIAL PRIMARY KEY,
-          name TEXT NOT NULL,
-          pipeline_type TEXT NOT NULL,
-          configuration JSONB NOT NULL,
-          is_active BOOLEAN DEFAULT TRUE,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-        );
-        
-        CREATE INDEX IF NOT EXISTS idx_pipeline_configurations_pipeline_type 
-          ON pipeline_configurations(pipeline_type);
-        CREATE INDEX IF NOT EXISTS idx_pipeline_configurations_is_active 
-          ON pipeline_configurations(is_active);
-      `;
+      // Assume the database is available if we have a Supabase client
+      // We're assuming all required tables exist as they've been created manually
+      this.isDbAvailable = !!this.supabase;
       
-      const configsExist = await this.schemaManager.tableExists('pipeline_configurations');
-      
-      if (!configsExist) {
-        logger.info('Creating pipeline_configurations table');
-        const created = await this.schemaManager.createTableIfNotExists(
-          'pipeline_configurations', 
-          pipelineConfigSchema
-        );
-        
-        if (created) {
-          logger.info('Successfully created pipeline_configurations table');
-        } else {
-          logger.warn('Failed to create pipeline_configurations table');
-        }
+      if (this.isDbAvailable) {
+        logger.info('Database connection available, assuming required tables exist');
       } else {
-        logger.info('pipeline_configurations table already exists');
+        logger.warn('Database connection not available');
       }
       
       return this.isDbAvailable;
@@ -803,13 +726,7 @@ export class SchedulerService extends EventEmitter {
         this.supabase = supabaseClientFactory.getClient();
       }
       
-      // Check if table exists
-      const exists = await this.schemaManager.tableExists('pipeline_schedules');
-      
-      if (!exists) {
-        logger.warn('pipeline_schedules table does not exist, skipping database update');
-        return;
-      }
+      // Assume the table exists since we're managing schema manually
       
       // Map updates to database format
       const dbUpdates = {
@@ -867,13 +784,7 @@ export class SchedulerService extends EventEmitter {
         this.supabase = supabaseClientFactory.getClient();
       }
       
-      // Check if table exists
-      const exists = await this.schemaManager.tableExists('pipeline_schedules');
-      
-      if (!exists) {
-        logger.warn('pipeline_schedules table does not exist, skipping database deletion');
-        return;
-      }
+      // Assume the table exists since we're managing schema manually
       
       // Delete from database
       const { error } = await this.supabase

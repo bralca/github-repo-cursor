@@ -1,0 +1,11 @@
+---
+description: When We need to execute a migration in the supabase database apply this rule
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+Provide me with the SQL commands to perform the migration directly in the supabase dashboard. 
+Dont' attempt to do anything else as it seems we can't make this work. 
+All other CRUD operations we can perform, but for tables and schema change use these rules above.

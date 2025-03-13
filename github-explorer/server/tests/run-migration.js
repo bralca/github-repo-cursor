@@ -112,6 +112,49 @@ async function runMigration() {
   }
 }
 
+// Add the migration for placeholder fields
+async function addPlaceholderFields() {
+  console.log('Adding placeholder fields to contributors and commits tables...');
+  
+  try {
+    // Add is_placeholder to contributors table
+    const { error: contributorsError } = await supabase.rpc('exec_sql', {
+      sql: `
+        ALTER TABLE contributors 
+        ADD COLUMN IF NOT EXISTS is_placeholder BOOLEAN DEFAULT FALSE;
+        
+        COMMENT ON COLUMN contributors.is_placeholder IS 'Indicates if this is a placeholder contributor with unknown GitHub username';
+      `
+    });
+    
+    if (contributorsError) {
+      console.error('Error adding is_placeholder to contributors:', contributorsError);
+      return false;
+    }
+    
+    // Add is_placeholder_author to commits table
+    const { error: commitsError } = await supabase.rpc('exec_sql', {
+      sql: `
+        ALTER TABLE commits 
+        ADD COLUMN IF NOT EXISTS is_placeholder_author BOOLEAN DEFAULT FALSE;
+        
+        COMMENT ON COLUMN commits.is_placeholder_author IS 'Indicates if the author is a placeholder with unknown GitHub username';
+      `
+    });
+    
+    if (commitsError) {
+      console.error('Error adding is_placeholder_author to commits:', commitsError);
+      return false;
+    }
+    
+    console.log('Successfully added placeholder fields to database schema');
+    return true;
+  } catch (error) {
+    console.error('Error adding placeholder fields:', error);
+    return false;
+  }
+}
+
 // Run the migration
 runMigration()
   .then(() => {

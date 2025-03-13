@@ -351,4 +351,21 @@ export class MergeRequestService {
       throw error;
     }
   }
-} 
+}
+
+// Create an instance of the merge request service
+const mergeRequestService = new MergeRequestService(supabase);
+
+// Export the service instance as default
+export default mergeRequestService;
+
+// Export individual methods for backward compatibility
+export const storeMergeRequestData = mergeRequestService.storeMergeRequestData.bind(mergeRequestService);
+export const getMergeRequestById = mergeRequestService.getMergeRequestById.bind(mergeRequestService);
+export const updateMergeRequest = mergeRequestService.updateMergeRequest.bind(mergeRequestService);
+export const getAllMergeRequests = mergeRequestService.getAllMergeRequests.bind(mergeRequestService);
+export const getMergeRequestsByRepository = mergeRequestService.getMergeRequestsByRepository.bind(mergeRequestService);
+export const getMergeRequestsByAuthor = mergeRequestService.getMergeRequestsByAuthor.bind(mergeRequestService);
+export const getRecentMergeRequestsByStatus = mergeRequestService.getRecentMergeRequestsByStatus.bind(mergeRequestService);
+export const storePullRequestReview = mergeRequestService.storePullRequestReview.bind(mergeRequestService);
+export const storePullRequestComment = mergeRequestService.storePullRequestComment.bind(mergeRequestService); 

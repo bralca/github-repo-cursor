@@ -185,4 +185,17 @@ export class RepositoryService {
       throw error;
     }
   }
-} 
+}
+
+// Create an instance of the repository service
+const repositoryService = new RepositoryService(supabase);
+
+// Export the service instance as default
+export default repositoryService;
+
+// Export individual methods for backward compatibility
+export const storeRepositoryData = repositoryService.storeRepositoryData.bind(repositoryService);
+export const getRepositoryByName = repositoryService.getRepositoryByName.bind(repositoryService);
+export const getAllRepositories = repositoryService.getAllRepositories.bind(repositoryService);
+export const updateRepository = repositoryService.updateRepository.bind(repositoryService);
+export const deleteRepository = repositoryService.deleteRepository.bind(repositoryService); 

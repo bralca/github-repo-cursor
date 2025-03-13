@@ -355,7 +355,8 @@ async function extractEntities() {
         name: null,
         avatar: null,
         is_enriched: false,
-        source: 'pipeline-test'
+        source: 'pipeline-test',
+        is_placeholder: false
       });
       addedContributors.add(ownerId);
     } else if (repositoryData.owner && typeof repositoryData.owner === 'object') {
@@ -363,11 +364,12 @@ async function extractEntities() {
       if (!addedContributors.has(ownerId)) {
         contributors.push({
           id: ownerId,
-          username: repositoryData.owner.login,
+          username: repositoryData.owner.login || 'github-explorer-unknown-user',
           name: null,
           avatar: repositoryData.owner.avatar_url,
           is_enriched: false,
-          source: 'pipeline-test'
+          source: 'pipeline-test',
+          is_placeholder: !repositoryData.owner.login
         });
         addedContributors.add(ownerId);
       }
@@ -379,11 +381,12 @@ async function extractEntities() {
       if (!addedContributors.has(userId)) {
         contributors.push({
           id: userId,
-          username: prData.user.login,
+          username: prData.user.login || 'github-explorer-unknown-user',
           name: null,
           avatar: prData.user.avatar_url,
           is_enriched: false,
-          source: 'pipeline-test'
+          source: 'pipeline-test',
+          is_placeholder: !prData.user.login
         });
         addedContributors.add(userId);
       }
@@ -395,11 +398,12 @@ async function extractEntities() {
       if (!addedContributors.has(mergerId)) {
         contributors.push({
           id: mergerId,
-          username: prData.merged_by.login,
+          username: prData.merged_by.login || 'github-explorer-unknown-user',
           name: null,
           avatar: prData.merged_by.avatar_url,
           is_enriched: false,
-          source: 'pipeline-test'
+          source: 'pipeline-test',
+          is_placeholder: !prData.merged_by.login
         });
         addedContributors.add(mergerId);
       }
@@ -447,11 +451,24 @@ async function extractEntities() {
           commitTitle = messageParts[0] || "No message";
         }
         
+        // Determine author with proper fallback
+        const authorLogin = commitData.author?.login;
+        const authorName = commitData.commit?.author?.name;
+        const isPlaceholder = !authorLogin;
+        const authorUsername = authorLogin || 'github-explorer-unknown-user';
+        
+        // Get the contributor ID for this author if available
+        let contributorId = null;
+        if (commitData.author && commitData.author.id) {
+          contributorId = String(commitData.author.id);
+        }
+        
         commits.push({
           id: commitId,
           hash: commitData.sha,
           title: commitTitle,
-          author: commitData.author?.login || (commitData.commit?.author?.name || "Unknown"),
+          author: authorUsername, // Keep for backward compatibility
+          contributor_id: contributorId, // Use contributor_id as the primary identifier
           date: commitData.commit?.author?.date ? new Date(commitData.commit.author.date).toISOString() : new Date().toISOString(),
           diff: '',
           repository_id: repositoryData.id,
@@ -459,7 +476,9 @@ async function extractEntities() {
           is_analyzed: false,
           created_at: new Date().toISOString(),
           is_enriched: false,
-          source: 'pipeline-test'
+          source: 'pipeline-test',
+          is_placeholder_author: isPlaceholder,
+          author_name: authorName || null
         });
       }
     }
@@ -659,8 +678,22 @@ async function enrichEntities() {
     
     // Enrich contributors
     for (const contributor of contributors || []) {
-      if (!contributor.username) {
-        logger.warn(`Contributor ${contributor.id} has no username`);
+      // Skip contributors with placeholder usernames or the specific "unknown" username
+      if (!contributor.username || 
+          contributor.is_placeholder || 
+          contributor.username === 'unknown' ||
+          contributor.username === 'github-explorer-unknown-user') {
+        logger.warn(`Skipping enrichment for placeholder contributor ${contributor.id}`);
+        
+        // Mark as enriched to avoid repeated processing attempts
+        const { error: updateError } = await supabase
+          .from('contributors')
+          .update({ is_enriched: true })
+          .eq('id', contributor.id);
+        
+        if (updateError) {
+          logger.error(`Error marking placeholder contributor as enriched: ${contributor.id}`, { error: updateError.message });
+        }
         continue;
       }
       
@@ -685,7 +718,8 @@ async function enrichEntities() {
             followers: userData.followers || 0,
             repositories: userData.public_repos || 0,
             is_enriched: true,
-            source: contributor.source || 'pipeline-test'
+            source: contributor.source || 'pipeline-test',
+            is_placeholder: contributor.is_placeholder || false
           };
           
           // Update contributor in database
@@ -701,6 +735,16 @@ async function enrichEntities() {
         }
       } catch (error) {
         logger.error(`Error enriching contributor ${contributor.username}`, { error: error.message });
+        
+        // Mark as enriched to avoid repeated processing attempts
+        const { error: updateError } = await supabase
+          .from('contributors')
+          .update({ is_enriched: true })
+          .eq('id', contributor.id);
+        
+        if (updateError) {
+          logger.error(`Error marking failed contributor as enriched: ${contributor.id}`, { error: updateError.message });
+        }
       }
     }
     
@@ -800,12 +844,18 @@ async function enrichEntities() {
         const commitData = await githubClient.getCommit(owner, repoName, commit.hash);
         
         if (commitData) {
+          // Determine if author is a placeholder
+          const isPlaceholderAuthor = commit.is_placeholder_author || 
+                                     commit.author === 'unknown' || 
+                                     commit.author === 'github-explorer-unknown-user' ||
+                                     !commitData.author?.login;
+          
           // Update commit with enriched data
           const enrichedCommit = {
             id: commit.id,
             hash: commit.hash,
             title: commit.title,
-            author: commit.author,
+            author: isPlaceholderAuthor ? (commit.author || 'github-explorer-unknown-user') : commitData.author?.login,
             date: commit.date,
             diff: commit.diff || '',
             repository_id: commit.repository_id,
@@ -825,7 +875,8 @@ async function enrichEntities() {
             authored_date: commitData.commit?.author?.date,
             committed_date: commitData.commit?.committer?.date,
             is_enriched: true,
-            source: commit.source || 'pipeline-test'
+            source: commit.source || 'pipeline-test',
+            is_placeholder_author: isPlaceholderAuthor
           };
           
           // Update commit in database

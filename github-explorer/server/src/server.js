@@ -2,14 +2,17 @@ import 'dotenv/config'; // Load environment variables
 import { startServer } from './app.js';
 import { logger } from './utils/logger.js';
 
-// Get port from environment or use default
-const PORT = process.env.PORT || 3001;
+// Set the port for the server to listen on
+const PORT = process.env.PORT || 3002;
+
+// Log the port we're trying to use
+console.log(`Attempting to start server on port ${PORT}`);
 
 // Start the server
 try {
   startServer(PORT);
   logger.info(`Server is running at http://localhost:${PORT}`);
 } catch (error) {
-  logger.error('Server failed to start', { error });
+  logger.error('Failed to start server', { error });
   process.exit(1);
 } 

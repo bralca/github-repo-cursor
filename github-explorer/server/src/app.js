@@ -9,6 +9,16 @@ import { processWebhookPayload } from './pipeline/stages/webhook-processor-pipel
 import { processRepository } from './pipeline/stages/repository-processor-pipeline.js';
 import { supabaseClientFactory } from './services/supabase/supabase-client.js';
 
+// Import routes
+import healthRoutes from './routes/health.js';
+import githubRoutes from './routes/github.js';
+import webhookRoutes from './routes/webhook.js';
+import repositoryRoutes from './routes/repository.routes.js';
+import contributorRoutes from './routes/contributor.routes.js';
+import mergeRequestRoutes from './routes/merge-request.routes.js';
+import pipelineSchedulerRoutes from './routes/pipeline-scheduler-routes.js';
+import pipelineNotificationRoutes from './routes/pipeline-notification-routes.js';
+
 // Create Express app
 const app = express();
 
@@ -56,27 +66,13 @@ function initializePipelines() {
   logger.info('Data processing pipelines initialized successfully');
 }
 
-// Import routes
-import pipelineRoutes from './routes/pipeline-routes.js';
-import webhookRoutes from './routes/webhook-routes.js';
-import authRoutes from './routes/auth-routes.js';
-import repoRoutes from './routes/repository-routes.js';
-import contributorRoutes from './routes/contributor-routes.js';
-import mergeRequestRoutes from './routes/merge-request-routes.js';
-import commitRoutes from './routes/commit-routes.js';
-import adminRoutes from './routes/admin-routes.js';
-import pipelineSchedulerRoutes from './routes/pipeline-scheduler-routes.js';
-import pipelineNotificationRoutes from './routes/pipeline-notification-routes.js';
-
-// Register routes
-app.use('/api/auth', authRoutes);
-app.use('/api/pipeline', pipelineRoutes);
-app.use('/api/webhook', webhookRoutes);
-app.use('/api/repositories', repoRoutes);
+// Register API routes
+app.use('/api/health', healthRoutes);
+app.use('/api/github', githubRoutes);
+app.use('/api/webhooks', webhookRoutes);
+app.use('/api/repositories', repositoryRoutes);
 app.use('/api/contributors', contributorRoutes);
 app.use('/api/merge-requests', mergeRequestRoutes);
-app.use('/api/commits', commitRoutes);
-app.use('/api/admin', adminRoutes);
 app.use('/api/scheduler', pipelineSchedulerRoutes);
 app.use('/api/notifications', pipelineNotificationRoutes);
 
@@ -167,14 +163,51 @@ async function fetchRepositoryFromDatabase(repoId) {
   }
 }
 
-// Start the server
+/**
+ * Start the server
+ * @param {number} port - Port to listen on
+ * @returns {Object} Express server instance
+ */
 function startServer(port) {
   try {
+    logger.info(`Attempting to start server on port ${port}`);
+    
     // Initialize server components
     initializeServer();
     
     // Start listening on the specified port
-    const server = app.listen(port, () => {
+    const server = app.listen(port);
+    
+    // Handle specific errors like port in use
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        logger.error(`Port ${port} is already in use. Check if another instance is running.`);
+        
+        // Try another port (port+1) as a fallback
+        const alternativePort = port + 1;
+        logger.info(`Attempting to start on alternative port ${alternativePort}`);
+        
+        try {
+          const alternativeServer = app.listen(alternativePort, () => {
+            logger.info(`Server started successfully on alternative port ${alternativePort}`);
+          });
+          
+          // Handle graceful shutdown
+          process.on('SIGTERM', shutdownServer(alternativeServer));
+          process.on('SIGINT', shutdownServer(alternativeServer));
+        } catch (alternativeError) {
+          logger.error('Failed to start server on alternative port', { error: alternativeError });
+          process.exit(1);
+        }
+      } else {
+        // Handle other server errors
+        logger.error('Server error occurred', { error });
+        process.exit(1);
+      }
+    });
+    
+    // Log successful start when listening begins
+    server.on('listening', () => {
       logger.info(`Server started successfully on port ${port}`);
     });
     

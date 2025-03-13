@@ -6,7 +6,7 @@
 
 import express from 'express';
 import pipelineNotificationController from '../controllers/pipeline-notification-controller.js';
-import { authenticate } from '../middleware/auth-middleware.js';
+import { authenticate } from '../middleware/auth.middleware.js';
 
 // Create a router
 const router = express.Router();

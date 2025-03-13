@@ -210,6 +210,29 @@ export class GitHubApiClient {
   }
   
   /**
+   * Get user details by ID
+   * @param {number} userId - GitHub user ID
+   * @returns {Promise<Object>} User data
+   */
+  async getUserById(userId) {
+    try {
+      logger.info(`Fetching user by ID: ${userId}`);
+      
+      const { data } = await this.octokit.request('GET /user/{id}', {
+        id: userId,
+        headers: {
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      });
+      
+      return data;
+    } catch (error) {
+      logger.error(`Failed to fetch user by ID: ${userId}`, { error });
+      throw new Error(`Failed to fetch user by ID: ${error.message}`);
+    }
+  }
+  
+  /**
    * Get commit details
    * @param {string} owner - Repository owner
    * @param {string} repo - Repository name
