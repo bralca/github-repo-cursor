@@ -1,7 +1,7 @@
 ---
 description: When there is an error in the code and a fix need to be implemented, use this rule
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Your rule content

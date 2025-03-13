@@ -14,6 +14,7 @@ The documentation is organized into the following categories:
 - **Data Samples** - Reference data and GitHub API examples
 - **Epics** - Detailed implementation plans for each project phase
 - **Prompts** - Implementation guidance for specific tasks
+- **AI Collaboration** - AI-assisted development approach and patterns
 
 ## Documentation Files
 
@@ -21,6 +22,7 @@ The documentation is organized into the following categories:
 
 - [Next.js Architecture](core-architecture/NEXT_JS_ARCHITECTURE.md) - Frontend architecture using Next.js
 - [Supabase Integration](core-architecture/SUPABASE_INTEGRATION.md) - Database integration details
+- [AI Collaboration Architecture](AI_COLLABORATION_ARCHITECTURE.md) - AI-assisted development workflow and patterns
 
 ### Data Systems
 

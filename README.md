@@ -2,6 +2,7 @@
 
 A modern application for exploring GitHub repositories, analyzing contributors, tracking merge requests, and visualizing commit data.
 
+![GitHub Explorer](https://via.placeholder.com/800x400?text=GitHub+Explorer)
 
 ## 🌟 Project Overview
 
@@ -26,6 +27,7 @@ This repository contains the following key directories:
 - `github-explorer/`: The main Next.js application 
 - `DOCS/`: Comprehensive documentation for all aspects of the project
 - `LEGACY/`: Original Vite implementation for reference
+- `.cursor/`: AI development workflow rules and guidance
 - `.gitignore`: Git configuration to exclude unnecessary files
 - `package.json`: Root dependencies for the monorepo
 
@@ -76,8 +78,23 @@ Comprehensive documentation is available in the `DOCS/` directory:
 - **Data Systems**: Database schema and data pipeline documentation
 - **Server Architecture**: Backend services and serverless functions
 - **Implementation Guidelines**: Development roadmap, design principles, and coding standards
+- **AI Collaboration**: AI-assisted development workflow and patterns
 
 Start with the [`DOCS/DOCUMENTATION_INDEX.md`](DOCS/DOCUMENTATION_INDEX.md) for a complete overview.
+
+## 🤖 AI-Assisted Development
+
+This project implements a structured approach to AI-assisted development:
+
+- **[AI Collaboration Architecture](DOCS/AI_COLLABORATION_ARCHITECTURE.md)**: Comprehensive documentation of our AI-assisted workflow
+- **[Cursor Rules](.cursor/README.md)**: Context-specific guidance for AI tools
+- **Documentation as Prompts**: Our documentation is structured to provide optimal context for AI assistance
+
+The AI collaboration system provides:
+1. Consistent implementation patterns across the codebase
+2. Efficient use of AI capabilities for development tasks
+3. Automated context-switching based on development focus
+4. Built-in guidance for best practices and error prevention
 
 ## 🧪 Development
 
@@ -116,6 +133,8 @@ We welcome contributions to the GitHub Explorer project!
 4. Commit your changes (`git commit -m 'Add some amazing feature'`)
 5. Push to the branch (`git push origin feature/amazing-feature`)
 6. Open a Pull Request
+
+For detailed guidance on our development workflow, please review the [AI Collaboration Architecture](DOCS/AI_COLLABORATION_ARCHITECTURE.md) document.
 
 ## 📄 License
 
