@@ -11,6 +11,26 @@ The documentation in this file serves as the single source of truth for the data
 2. Then update this documentation to reflect the changes
 3. Finally, inform other team members about the change
 
+## Database Access Options
+
+GitHub Explorer supports two database backends:
+
+1. **Supabase (Primary)**: Used for production and team development
+2. **SQLite (Local Development)**: Used for local development and testing
+
+The application automatically selects the appropriate database based on the `DB_TYPE` environment variable:
+
+```
+# For Supabase (default)
+DB_TYPE=supabase
+SUPABASE_URL=your-supabase-url
+SUPABASE_KEY=your-supabase-key
+
+# For SQLite
+DB_TYPE=sqlite
+DB_PATH=path/to/github_explorer.db
+```
+
 ## Table of Contents
 
 - [Schema Overview](#schema-overview)
@@ -20,7 +40,7 @@ The documentation in this file serves as the single source of truth for the data
   - [Contributor_Repository](#contributor_repository)
   - [Merge Requests](#merge_requests)
   - [Commits](#commits)
-  - [Github_Raw_Data](#github_raw_data)
+  - [Closed_Merge_Requests_Raw](#closed_merge_requests_raw)
   - [Contribution_History](#contribution_history)
   - [Pull_Request_Activities](#pull_request_activities)
   - [Pull_Request_Comments](#pull_request_comments)
@@ -43,6 +63,7 @@ The documentation in this file serves as the single source of truth for the data
 - [Common Database Operations](#common-database-operations)
 - [Troubleshooting](#troubleshooting)
 - [Best Practices](#best-practices)
+- [SQLite Implementation](#sqlite-implementation)
 
 ## Schema Overview
 
@@ -195,23 +216,25 @@ Stores information about commits made to repositories.
 **Foreign Keys**: repository_id → repositories.id, contributor_id → contributors.id, pull_request_id → merge_requests.id  
 **Indexes**: Primary key index, index on sha, index on repository_id, index on contributor_id, index on committed_at
 
-### Github_Raw_Data
+### Closed_Merge_Requests_Raw
 
-Stores raw JSON data from GitHub API for future processing and reference.
+Stores raw JSON data from GitHub API specifically for closed merge requests.
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| id | integer | NO | nextval('github_raw_data_id_seq') | Primary key |
-| entity_type | text | NO | | Type of entity (repository, contributor, etc.) |
-| github_id | text | NO | | GitHub entity ID |
-| data | jsonb | NO | | Raw JSON data from GitHub API |
-| fetched_at | timestamp with time zone | NO | timezone('utc'::text, now()) | When data was fetched |
-| api_endpoint | text | YES | | API endpoint used to fetch data |
-| etag | text | YES | | GitHub API ETag for caching |
-| created_at | timestamp with time zone | NO | timezone('utc'::text, now()) | Creation timestamp |
+| id | INTEGER | NO | AUTOINCREMENT | Primary key (auto-incrementing integer) |
+| entity_type | TEXT | YES | | Type of entity (repository, contributor, etc.) |
+| github_id | TEXT | YES | | GitHub entity ID |
+| data | TEXT | NO | | Raw JSON data from GitHub API |
+| fetched_at | TEXT | YES | | When data was fetched |
+| api_endpoint | TEXT | YES | | API endpoint used to fetch data |
+| etag | TEXT | YES | | GitHub API ETag for caching |
+| created_at | TEXT | NO | datetime('now') | Creation timestamp |
 
-**Primary Key**: id  
-**Indexes**: Primary key index, index on (entity_type, github_id), index on fetched_at
+**Primary Key**: id (auto-incrementing integer)  
+**Indexes**: Index on (entity_type, github_id), index on fetched_at
+
+**Note**: This table replaced the previous `github_raw_data` table in the SQLite implementation to optimize storage and improve database structure with proper auto-incrementing integer IDs instead of storing JSON data as IDs.
 
 ### Contribution_History
 
@@ -533,6 +556,111 @@ ALTER TABLE existing_table ADD CONSTRAINT check_positive CHECK (value > 0);
 5. **Indexing Strategy**: Index frequently queried columns, but avoid over-indexing
 6. **Column Naming**: Use clear, consistent naming patterns
 7. **Testing**: Test schema changes thoroughly in development before applying to production
+
+## SQLite Implementation
+
+The GitHub Explorer application supports SQLite as an alternative database backend for local development and testing. This section describes the SQLite implementation details.
+
+### SQLite Schema
+
+The SQLite schema is a simplified version of the Supabase schema, focusing on the core tables needed for the application. The primary table is:
+
+#### closed_merge_requests_raw
+
+Stores raw JSON data from GitHub API specifically for closed merge requests.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | INTEGER | NO | AUTOINCREMENT | Primary key (auto-incrementing integer) |
+| entity_type | TEXT | YES | | Type of entity (repository, contributor, etc.) |
+| github_id | TEXT | YES | | GitHub entity ID |
+| data | TEXT | NO | | Raw JSON data from GitHub API stored as text |
+| fetched_at | TEXT | YES | | When data was fetched |
+| api_endpoint | TEXT | YES | | API endpoint used to fetch data |
+| etag | TEXT | YES | | GitHub API ETag for caching |
+| created_at | TEXT | NO | datetime('now') | Creation timestamp |
+
+Additional tables (contributors, repositories, merge_requests, commits, contributor_repository) follow the same structure as in Supabase but with SQLite-compatible data types.
+
+### Data Import/Export
+
+To facilitate data transfer between Supabase and SQLite:
+
+1. **Export from Supabase**:
+   ```
+   node export-raw-data-to-sqlite.js
+   ```
+   This script exports data from Supabase to a format that can be imported into SQLite.
+
+2. **Import to SQLite**:
+   ```
+   node migrate_table.js
+   ```
+   This script creates the `closed_merge_requests_raw` table with proper auto-incrementing IDs and imports the data.
+
+### Database Utility Functions
+
+The application includes utility functions in `lib/database.js` that abstract the database backend:
+
+```javascript
+// Functions for closed merge requests data
+export async function fetchClosedMergeRequest(entityType, githubId) {
+  // Implementation details...
+}
+
+export async function storeClosedMergeRequest(record) {
+  // Implementation details...
+}
+
+export async function queryClosedMergeRequests(entityType, options) {
+  // Implementation details...
+}
+
+// Generic database functions
+export async function getDb() {
+  // Implementation details...
+}
+
+export async function closeDb() {
+  // Implementation details...
+}
+```
+
+### Using SQLite in Development
+
+To use SQLite for local development:
+
+1. Set environment variables in `.env`:
+   ```
+   DB_TYPE=sqlite
+   DB_PATH=github_explorer.db
+   ```
+
+2. Initialize the database:
+   ```
+   sqlite3 github_explorer.db < manual_schema.sql
+   ```
+
+3. Import data:
+   ```
+   node migrate_table.js
+   ```
+
+4. Test the connection:
+   ```
+   node test-closed-merge-requests.js
+   ```
+
+The application code automatically detects the database type and uses the appropriate connection method.
+
+### Database Size Optimization
+
+We've optimized the SQLite database by:
+1. Using auto-incrementing integer IDs instead of large string IDs
+2. Properly indexing frequently queried columns
+3. Structuring the database to specifically handle closed merge requests
+
+These optimizations have resulted in a ~61% reduction in database size while maintaining full functionality.
 
 ---
 

@@ -1,0 +1,51 @@
+# Exclude large data files from Cursor indexing
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+github_raw_data_import.sql
+simplified_github_raw_data_import.sql
+github_explorer.db.*
+*.backup-*
+*_backup_*
+*.bak
+*.backup
+
+# SQLite journal files
+*-journal
+*-wal
+*-shm
+
+# Large generated data
+*.csv
+*.json.gz
+*.json.zip
+*.zip
+*.tar.gz
+*.parquet
+*.avro
+*.ndjson
+*.dump
+
+# Build output
+/.next/
+/out/
+/build/
+/dist/
+
+# Node modules
+/node_modules/
+
+# The actual database directory
+/data
+
+# Logs
+/logs/
+*.log
+
+# Backups
+/backups/
+
+# Add the following if you have a specific data directory
+# /path/to/your/data/directory 
