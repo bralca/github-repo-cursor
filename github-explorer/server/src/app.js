@@ -5,6 +5,11 @@ import compression from 'compression';
 import { logger } from './utils/logger.js';
 import { registerWebhookProcessorPipeline } from './pipeline/stages/webhook-processor-pipeline.js';
 import { registerRepositoryProcessorPipeline } from './pipeline/stages/repository-processor-pipeline.js';
+import { registerContributorProcessorPipeline } from './pipeline/stages/contributor-processor-pipeline.js';
+import { registerContributorRepositoryPipeline } from './pipeline/stages/contributor-repository-pipeline.js';
+import { registerMergeRequestProcessorPipeline } from './pipeline/stages/merge-request-processor-pipeline.js';
+import { registerCommitProcessorPipeline } from './pipeline/stages/commit-processor-pipeline.js';
+import { registerDatabaseWriterPipeline } from './pipeline/stages/database-writer-pipeline.js';
 import { processWebhookPayload } from './pipeline/stages/webhook-processor-pipeline.js';
 import { processRepository } from './pipeline/stages/repository-processor-pipeline.js';
 import { supabaseClientFactory } from './services/supabase/supabase-client.js';
@@ -18,6 +23,7 @@ import contributorRoutes from './routes/contributor.routes.js';
 import mergeRequestRoutes from './routes/merge-request.routes.js';
 import pipelineSchedulerRoutes from './routes/pipeline-scheduler-routes.js';
 import pipelineNotificationRoutes from './routes/pipeline-notification-routes.js';
+import pipelineOperationsRoutes from './routes/pipeline-operations-routes.js';
 
 // Create Express app
 const app = express();
@@ -63,6 +69,31 @@ function initializePipelines() {
     timeframeInDays: 30 // Process last 30 days of data by default
   });
   
+  // Register contributor processor pipeline
+  registerContributorProcessorPipeline({
+    // Any contributor processor configuration
+  });
+  
+  // Register contributor-repository processor pipeline
+  registerContributorRepositoryPipeline({
+    // Any contributor-repository processor configuration
+  });
+  
+  // Register merge request processor pipeline
+  registerMergeRequestProcessorPipeline({
+    // Any merge request processor configuration
+  });
+  
+  // Register commit processor pipeline
+  registerCommitProcessorPipeline({
+    // Any commit processor configuration
+  });
+  
+  // Register database writer pipeline
+  registerDatabaseWriterPipeline({
+    // Any database writer configuration
+  });
+  
   logger.info('Data processing pipelines initialized successfully');
 }
 
@@ -75,6 +106,7 @@ app.use('/api/contributors', contributorRoutes);
 app.use('/api/merge-requests', mergeRequestRoutes);
 app.use('/api/scheduler', pipelineSchedulerRoutes);
 app.use('/api/notifications', pipelineNotificationRoutes);
+app.use('/api/pipeline', pipelineOperationsRoutes);
 
 // API Routes
 app.get('/health', (req, res) => {

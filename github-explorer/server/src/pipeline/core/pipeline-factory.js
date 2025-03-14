@@ -168,6 +168,51 @@ class PipelineFactory {
     
     return this.pipelines.get(pipelineName);
   }
+
+  /**
+   * Get pipeline definition
+   * @param {string} pipelineType - Type/name of the pipeline
+   * @returns {Object|null} Pipeline definition or null if not found
+   */
+  getPipelineDefinition(pipelineType) {
+    return this.pipelines.has(pipelineType) 
+      ? this.pipelines.get(pipelineType) 
+      : null;
+  }
+
+  /**
+   * Create a pipeline instance
+   * @param {string} pipelineType - Type/name of the pipeline to create
+   * @returns {Object} Pipeline instance
+   */
+  createPipeline(pipelineType) {
+    if (!this.pipelines.has(pipelineType)) {
+      throw new Error(`Pipeline ${pipelineType} not registered`);
+    }
+
+    // Create a pipeline instance that can be executed
+    return {
+      type: pipelineType,
+      config: this.pipelines.get(pipelineType),
+      run: async (context = {}) => {
+        return this.execute(pipelineType, context);
+      },
+      stop: async () => {
+        // In a real implementation, this would stop the pipeline
+        logger.info(`Stopping pipeline: ${pipelineType}`);
+        return { stopped: true };
+      }
+    };
+  }
+
+  /**
+   * Alias for createPipeline for backward compatibility
+   * @param {string} pipelineType - Type/name of the pipeline
+   * @returns {Object} Pipeline instance
+   */
+  createPipelineInstance(pipelineType) {
+    return this.createPipeline(pipelineType);
+  }
 }
 
 // Create singleton instance
