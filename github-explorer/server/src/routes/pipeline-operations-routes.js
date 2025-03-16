@@ -15,7 +15,16 @@ const router = express.Router();
 router.use(authenticate);
 
 // Pipeline operation routes
-router.post('/start', pipelineOperationsController.startPipeline.bind(pipelineOperationsController));
-router.post('/stop', pipelineOperationsController.stopPipeline.bind(pipelineOperationsController));
+router.post('/start', async (req, res) => {
+  await pipelineOperationsController.startPipeline(req, res);
+});
+
+router.post('/stop', async (req, res) => {
+  await pipelineOperationsController.stopPipeline(req, res);
+});
+
+router.post('/restart', async (req, res) => {
+  await pipelineOperationsController.restartPipeline(req, res);
+});
 
 export default router; 

@@ -1,8 +1,8 @@
-# GitHub Explorer Database Documentation
+# GitHub Explorer Database Schema and Access Patterns
 
 ## Overview
 
-This document provides comprehensive documentation of the GitHub Explorer database schema. The application now uses SQLite as the primary database for data storage.
+This document serves as the **single source of truth** for the GitHub Explorer database schema and access patterns. It consolidates information from the database standardization plan and reflects the current state where SQLite is the primary database instead of Supabase.
 
 ## Database Configuration
 
@@ -35,18 +35,11 @@ Stores raw GitHub API data for closed merge requests before processing.
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | INTEGER | Primary key (auto-incremented) |
-| `entity_type` | TEXT | Entity type identifier (e.g., "merge_request") |
-| `github_id` | TEXT | GitHub's identifier for the entity |
 | `data` | TEXT | JSON blob of the raw API response |
-| `fetched_at` | TEXT | When the data was fetched from GitHub |
-| `api_endpoint` | TEXT | The API endpoint used to fetch the data |
-| `etag` | TEXT | GitHub API ETag for caching |
-| `created_at` | TEXT | When the record was created |
+| `is_processed` | INTEGER | Flag indicating whether this record has been processed (0=unprocessed, 1=processed) |
 
-**Indexes**:
-- `idx_closed_merge_requests_raw_entity_github_id` on `(entity_type, github_id)`
-- `idx_closed_merge_requests_raw_fetched_at` on `(fetched_at)`
-- `idx_cmr_raw_entity_type` on `(entity_type)`
+**Indices:**
+- `idx_closed_mr_is_processed` on the `is_processed` column - used for efficiently querying unprocessed items
 
 ### Core Entity Tables
 
@@ -82,17 +75,6 @@ Stores information about GitHub repositories.
 | `created_at` | TIMESTAMP | When this record was created |
 | `updated_at` | TIMESTAMP | When this record was last updated |
 
-**Indexes**:
-- `idx_repositories_github_id` on `(github_id)`
-- `idx_repositories_full_name` on `(full_name)`
-- `idx_repositories_owner_github_id` on `(owner_github_id)`
-- `idx_repositories_owner_id` on `(owner_id)`
-
-**Constraints**:
-- `UNIQUE(github_id)`
-- `UNIQUE(full_name)`
-- `FOREIGN KEY (owner_id) REFERENCES contributors(id) ON DELETE SET NULL`
-
 #### `contributors`
 
 Stores information about GitHub users who contribute to repositories.
@@ -125,13 +107,6 @@ Stores information about GitHub users who contribute to repositories.
 | `is_placeholder` | BOOLEAN | Whether this is a placeholder for an unknown contributor |
 | `created_at` | TIMESTAMP | When this record was created |
 | `updated_at` | TIMESTAMP | When this record was last updated |
-
-**Indexes**:
-- `idx_contributors_github_id` on `(github_id)`
-- `idx_contributors_username` on `(username)`
-
-**Constraints**:
-- `UNIQUE(github_id)`
 
 #### `merge_requests`
 
@@ -169,22 +144,6 @@ Stores information about pull/merge requests.
 | `review_count` | INTEGER | Number of reviews |
 | `comment_count` | INTEGER | Number of comments |
 
-**Indexes**:
-- `idx_merge_requests_github_id` on `(github_id)`
-- `idx_merge_requests_repository_id` on `(repository_id)`
-- `idx_merge_requests_repository_github_id` on `(repository_github_id)`
-- `idx_merge_requests_author_id` on `(author_id)`
-- `idx_merge_requests_author_github_id` on `(author_github_id)`
-- `idx_merge_requests_merged_by_github_id` on `(merged_by_github_id)`
-- `idx_merge_requests_state` on `(state)`
-- `idx_merge_requests_repo_pr` on `(repository_github_id, github_id)` (UNIQUE)
-
-**Constraints**:
-- `UNIQUE(repository_id, github_id)`
-- `FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE`
-- `FOREIGN KEY (author_id) REFERENCES contributors(id) ON DELETE CASCADE`
-- `FOREIGN KEY (merged_by_id) REFERENCES contributors(id) ON DELETE SET NULL`
-
 #### `commits`
 
 Stores information about repository commits.
@@ -214,24 +173,6 @@ Stores information about repository commits.
 | `created_at` | TIMESTAMP | When this record was created |
 | `updated_at` | TIMESTAMP | When this record was last updated |
 
-**Indexes**:
-- `idx_commits_github_id` on `(github_id)`
-- `idx_commits_sha` on `(sha)`
-- `idx_commits_repository_id` on `(repository_id)`
-- `idx_commits_repository_github_id` on `(repository_github_id)`
-- `idx_commits_contributor_id` on `(contributor_id)`
-- `idx_commits_contributor_github_id` on `(contributor_github_id)`
-- `idx_commits_pull_request_id` on `(pull_request_id)`
-- `idx_commits_pull_request_github_id` on `(pull_request_github_id)`
-- `idx_commits_committed_at` on `(committed_at)`
-- `idx_commits_repo_sha` on `(repository_github_id, github_id)` (UNIQUE)
-
-**Constraints**:
-- `UNIQUE(repository_id, github_id)`
-- `FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE`
-- `FOREIGN KEY (contributor_id) REFERENCES contributors(id) ON DELETE SET NULL`
-- `FOREIGN KEY (pull_request_id) REFERENCES merge_requests(id) ON DELETE SET NULL`
-
 #### `contributor_repository`
 
 Junction table to track contributor involvement in repositories.
@@ -254,23 +195,11 @@ Junction table to track contributor involvement in repositories.
 | `created_at` | TIMESTAMP | When this record was created |
 | `updated_at` | TIMESTAMP | When this record was last updated |
 
-**Indexes**:
-- `idx_contrib_repo_contributor_id` on `(contributor_id)`
-- `idx_contrib_repo_contributor_github_id` on `(contributor_github_id)`
-- `idx_contrib_repo_repository_id` on `(repository_id)`
-- `idx_contrib_repo_repository_github_id` on `(repository_github_id)`
-- `idx_contrib_repo_unique` on `(contributor_id, repository_id)` (UNIQUE)
-
-**Constraints**:
-- `UNIQUE(contributor_id, repository_id)`
-- `FOREIGN KEY (contributor_id) REFERENCES contributors(id) ON DELETE CASCADE`
-- `FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE`
-
 ### Pipeline Management Tables
 
-For pipeline management, the application uses a separate set of tables that will be created during the application server initialization:
+The following tables manage pipeline operations and execution tracking:
 
-#### `pipeline_schedules` (To Be Created)
+#### `pipeline_schedules`
 
 Schema for scheduled pipeline operations:
 
@@ -281,10 +210,11 @@ Schema for scheduled pipeline operations:
 | `cron_expression` | TEXT | Cron schedule expression |
 | `is_active` | BOOLEAN | Whether this schedule is currently active |
 | `parameters` | TEXT | JSON blob with pipeline parameters |
+| `description` | TEXT | Human-readable description of the schedule |
 | `created_at` | TIMESTAMP | When this record was created |
 | `updated_at` | TIMESTAMP | When this record was last updated |
 
-#### `pipeline_history` (To Be Created)
+#### `pipeline_history`
 
 Schema for tracking pipeline execution history:
 
@@ -299,44 +229,58 @@ Schema for tracking pipeline execution history:
 | `error_message` | TEXT | Error message if the pipeline failed |
 | `created_at` | TIMESTAMP | When this record was created |
 
-## Access Patterns and Database Operations
+#### `pipeline_status`
 
-### Entity Retrieval
+Schema for storing the current status of each pipeline type:
 
-For large tables like commits and merge requests, use indexed queries:
+| Column | Type | Description |
+|--------|------|-------------|
+| `pipeline_type` | TEXT | Primary key - Type of pipeline |
+| `status` | TEXT | Current status text (running, idle, failed, etc.) |
+| `is_running` | INTEGER | Whether the pipeline is currently running (0=stopped, 1=running) |
+| `last_run` | TIMESTAMP | When the pipeline was last run |
+| `updated_at` | TIMESTAMP | When this record was last updated |
 
-```sql
--- Get commits for a specific repository using indexed fields
-SELECT * FROM commits 
-WHERE repository_github_id = ? 
-ORDER BY committed_at DESC
-LIMIT 50;
+## Common Access Patterns
 
--- Get merge requests by contributor
-SELECT * FROM merge_requests
-WHERE author_github_id = ?
-ORDER BY created_at DESC;
-```
+### Pipeline Status and Control
 
-### Pipeline Status Queries
+1. **Pipeline Status Check**
+   - Get current pipeline status using the pipeline server API
+   - Count relevant items based on pipeline type (e.g., unprocessed repositories)
 
-For pipeline management, queries retrieve information about pending work:
+2. **Pipeline Control Operations**
+   - Start pipeline: POST request to pipeline server API
+   - Stop pipeline: POST request to pipeline server API with stop command
 
-```sql
--- Count unprocessed raw data
-SELECT COUNT(*) FROM closed_merge_requests_raw
-WHERE fetched_at IS NOT NULL;
+3. **Entity Counts**
+   - Count repositories, contributors, merge requests, and commits for dashboard metrics
 
--- Count entities needing enrichment
-SELECT COUNT(*) FROM repositories
-WHERE is_enriched = 0;
+### Data Processing Flow
 
--- Count commits needing AI analysis
-SELECT COUNT(*) FROM commits
-WHERE complexity_score IS NULL;
-```
+1. **GitHub Sync Pipeline**
+   - Fetches public events from GitHub API to find recently merged pull requests
+   - Stores raw data in the `closed_merge_requests_raw` table with `is_processed = 0`
+   - Checks for duplicates by examining the pull request ID in the JSON data
+   - Updates existing records if the same pull request is fetched again
 
-### Connection Management
+2. **Data Processing Pipeline**
+   - Reads from `closed_merge_requests_raw` where `is_processed = 0` 
+   - Extracts entities (repositories, contributors, merge requests, commits) from the raw JSON data
+   - Writes extracted entities to their respective tables
+   - Updates the `is_processed` flag to `1` after successful processing
+
+3. **Data Enrichment Pipeline**
+   - Reads entities where `is_enriched = false` from core tables
+   - Fetches additional data from GitHub API
+   - Updates records with enriched information
+
+4. **AI Analysis Pipeline**
+   - Reads `commits` where `complexity_score IS NULL`
+   - Generates scores with AI models
+   - Updates records with complexity metrics
+
+## Connection Management
 
 Database connections are managed through the `withDb` utility function in `lib/database/connection.ts` which:
 
@@ -356,7 +300,3 @@ export async function withDb<T>(operation: (db: any) => Promise<T>): Promise<T> 
   }
 }
 ```
-
-## API Integration
-
-The database schema is accessed through a set of API endpoints in `/app/api/sqlite/[...endpoint]/route.ts` with specialized handlers for different operations. The client uses these endpoints through the SQLite client interface in `lib/database/sqlite.ts`. 

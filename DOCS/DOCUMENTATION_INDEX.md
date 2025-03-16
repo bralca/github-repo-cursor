@@ -26,8 +26,9 @@ The documentation is organized into the following categories:
 
 ### Data Systems
 
-- [Database Documentation](data-systems/DATABASE_DOCUMENTATION.md) - Comprehensive database documentation including schema, migrations, and usage patterns
-- [Data Pipeline Architecture](data-systems/DATA_PIPELINE_ARCHITECTURE.md) - End-to-end data processing flow
+- [DATABASE_DOCUMENTATION.md](data-systems/DATABASE_DOCUMENTATION.md) - Comprehensive documentation for the SQLite database schema, including tables, fields, and relationships
+- [SQLITE_SETUP_GUIDE.md](data-systems/SQLITE_SETUP_GUIDE.md) - Guide for setting up and configuring SQLite for the GitHub Explorer project
+- [DATA_PIPELINE_ARCHITECTURE.md](data-systems/DATA_PIPELINE_ARCHITECTURE.md) - Overview of the data processing pipeline architecture
 - [Pipeline Architecture](data-systems/PIPELINE_ARCHITECTURE.md) - Pipeline implementation details
 
 ### Page Architecture
@@ -88,7 +89,7 @@ The documentation is organized into the following categories:
 ### For New Developers
 
 1. Start with the [Rebuild Guide](implementation-guidelines/REBUILD_GUIDE.md) for a complete overview of the project structure
-2. Review the [Database Documentation](data-systems/DATABASE_DOCUMENTATION.md) and [Data Pipeline Architecture](data-systems/DATA_PIPELINE_ARCHITECTURE.md) to understand the data flow
+2. Review the [DATABASE_DOCUMENTATION.md](data-systems/DATABASE_DOCUMENTATION.md) and [DATA_PIPELINE_ARCHITECTURE.md](data-systems/DATA_PIPELINE_ARCHITECTURE.md) to understand the data flow
 3. Explore individual page architecture documents based on your area of focus
 4. Reference the [Design Guidelines](implementation-guidelines/DESIGN_GUIDELINES.md) for UI implementation
 

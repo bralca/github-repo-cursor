@@ -10,6 +10,10 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Play, Pause, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSQLitePipelineSchedules } from '@/hooks/admin/use-sqlite-pipeline-schedules';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { formatDistanceToNow } from 'date-fns';
 
 const PIPELINE_TYPES = [
   { id: 'github_sync', name: 'GitHub Sync' },

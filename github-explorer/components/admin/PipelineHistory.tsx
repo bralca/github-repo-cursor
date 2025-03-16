@@ -16,52 +16,64 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { usePipelineHistory } from '@/hooks/admin/use-pipeline-history';
+import { useSQLitePipelineHistory } from '@/hooks/admin/use-sqlite-pipeline-history';
 
 interface PipelineRun {
   id: string;
-  pipeline_type: string;
-  started_at: string;
-  completed_at: string | null;
+  pipelineType: string;
+  startedAt: string;
+  completedAt: string | null;
   status: 'running' | 'completed' | 'failed';
-  items_processed: number;
-  error_message: string | null;
-  created_at: string;
+  itemsProcessed: number | null;
+  errorMessage: string | null;
+  duration: number | null;
 }
 
-export function PipelineHistory() {
+interface PipelineHistoryProps {
+  useSQLite?: boolean; // Flag to use SQLite instead of Supabase
+}
+
+export function PipelineHistory({ useSQLite = true }: PipelineHistoryProps) {
   const [pipelineType, setPipelineType] = useState<string | undefined>(undefined);
-  const [isCleaningUp, setIsCleaningUp] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   
-  const { data: pipelineHistory, isLoading, error, refetch } = useSupabaseQuery<PipelineRun[]>(
-    ['pipeline-history', pipelineType || 'all'],
-    async () => {
-      const url = pipelineType 
-        ? `/api/pipeline-history?pipeline_type=${pipelineType}&limit=10`
-        : '/api/pipeline-history?limit=10';
-        
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Failed to fetch pipeline history');
-      }
-      const data = await response.json();
-      return { data: data.history || [], error: null };
-    },
-    { refetchInterval: 30000 } // Refetch every 30 seconds
-  );
+  // Use either SQLite or Supabase hooks based on the flag
+  const { 
+    history: supabaseHistory, 
+    isLoading: isSupabaseLoading, 
+    error: supabaseError,
+    refetch: supabaseRefetch
+  } = usePipelineHistory();
+  
+  const { 
+    history: sqliteHistory, 
+    isLoading: isSqliteLoading, 
+    error: sqliteError,
+    refetch: sqliteRefetch
+  } = useSQLitePipelineHistory();
+  
+  // Determine which data to use
+  const history = useSQLite ? sqliteHistory : supabaseHistory;
+  const isLoading = useSQLite ? isSqliteLoading : isSupabaseLoading;
+  const error = useSQLite ? sqliteError : supabaseError;
+  const refetch = useSQLite ? sqliteRefetch : supabaseRefetch;
   
   // Format date for display
-  const formatDate = (date: string) => {
+  const formatDate = (date: string | null) => {
+    if (!date) return 'N/A';
+    
     try {
       return format(new Date(date), 'MMM d, yyyy HH:mm:ss');
     } catch (e) {
+      console.error('Error formatting date:', e);
       return 'Invalid date';
     }
   };
   
   // Format duration
-  const formatDuration = (startDate: string, endDate: string | null) => {
-    if (!endDate) return 'In progress';
+  const formatDuration = (startDate: string | null, endDate: string | null) => {
+    if (!startDate || !endDate) return 'In progress';
     
     try {
       const start = new Date(startDate).getTime();
@@ -102,44 +114,17 @@ export function PipelineHistory() {
     }
   };
   
-  // Handle cleanup of stale runs
-  const handleCleanupStaleRuns = async () => {
-    try {
-      setIsCleaningUp(true);
-      const response = await fetch('/api/pipeline-history/cleanup', {
-        method: 'POST',
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to clean up stale runs');
-      }
-      
-      const data = await response.json();
-      toast({
-        title: "Cleanup Successful",
-        description: data.message,
-      });
-      
-      // Refetch history to show updated data
-      refetch();
-    } catch (error) {
-      console.error('Error cleaning up stale runs:', error);
-      toast({
-        title: "Cleanup Failed",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCleaningUp(false);
-    }
-  };
-  
   // Handle clearing history
   const handleClearHistory = async () => {
     try {
       setIsClearing(true);
-      const response = await fetch('/api/pipeline-history/clear', {
+      
+      // Choose the appropriate endpoint based on whether we're using SQLite or Supabase
+      const endpoint = useSQLite 
+        ? '/api/sqlite/pipeline-history-clear'
+        : '/api/pipeline-history/clear';
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -205,20 +190,6 @@ export function PipelineHistory() {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={handleCleanupStaleRuns}
-            disabled={isCleaningUp}
-          >
-            {isCleaningUp ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-1" />
-            )}
-            Fix Stale Runs
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
             onClick={handleClearHistory}
             disabled={isClearing}
           >
@@ -240,7 +211,7 @@ export function PipelineHistory() {
           <div className="text-red-500 p-4 text-center">
             Failed to load pipeline history. Please try again later.
           </div>
-        ) : pipelineHistory && pipelineHistory.length > 0 ? (
+        ) : history && history.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -252,16 +223,16 @@ export function PipelineHistory() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pipelineHistory.map((run) => (
+              {history.map((run) => (
                 <TableRow key={run.id}>
                   <TableCell className="font-medium">
-                    {run.pipeline_type.replace(/_/g, ' ')}
+                    {run.pipelineType.replace(/_/g, ' ')}
                   </TableCell>
-                  <TableCell>{formatDate(run.started_at)}</TableCell>
+                  <TableCell>{formatDate(run.startedAt)}</TableCell>
                   <TableCell>
-                    {formatDuration(run.started_at, run.completed_at)}
+                    {formatDuration(run.startedAt, run.completedAt)}
                   </TableCell>
-                  <TableCell>{run.items_processed}</TableCell>
+                  <TableCell>{run.itemsProcessed}</TableCell>
                   <TableCell>{getStatusBadge(run.status)}</TableCell>
                 </TableRow>
               ))}

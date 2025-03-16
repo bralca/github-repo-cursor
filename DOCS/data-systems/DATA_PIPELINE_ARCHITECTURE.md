@@ -1,4 +1,3 @@
-
 # GitHub Explorer Data Pipeline Architecture
 
 This document provides a comprehensive overview of the data pipeline architecture implemented in the GitHub Explorer application. The pipeline is responsible for fetching, processing, enriching, and analyzing GitHub data to power the application's visualizations and insights.
@@ -26,7 +25,7 @@ The GitHub Explorer data pipeline is an ETL (Extract, Transform, Load) process t
 
 1. Extracts data from the GitHub API via edge functions
 2. Transforms raw data into structured entities (repositories, contributors, merge requests, commits)
-3. Loads the processed data into the application's database
+3. Loads the processed data into the application's SQLite database
 4. Enriches entities with additional metadata and analytics
 5. Maintains relationships between entities for efficient querying
 
@@ -39,12 +38,12 @@ The pipeline is designed to be fault-tolerant, scalable, and optimized for the s
 **Purpose**: Extract data from GitHub API and store it in raw format for later processing
 
 **Input**: GitHub API responses (repositories, pull requests, commits, users)
-**Output**: Raw JSON data stored in the `github_raw_data` table
+**Output**: Raw JSON data stored in the `closed_merge_requests_raw` table
 
 **Dependencies**: 
 - GitHub API (external)
 - GitHub API token (environment variable)
-- Supabase database
+- SQLite database
 
 **Execution Frequency**: 
 - On-demand via admin panel
@@ -54,7 +53,7 @@ The pipeline is designed to be fault-tolerant, scalable, and optimized for the s
 
 **Purpose**: Transform raw GitHub API data into structured application entities
 
-**Input**: Raw JSON data from `github_raw_data` table
+**Input**: Raw JSON data from `closed_merge_requests_raw` table
 **Output**: Populated entities in respective tables:
 - `repositories`
 - `contributors`
@@ -63,7 +62,7 @@ The pipeline is designed to be fault-tolerant, scalable, and optimized for the s
 
 **Dependencies**:
 - Raw data from GitHub Data Synchronization
-- Supabase database functions
+- SQLite database functions
 
 **Execution Frequency**:
 - Automatically after GitHub Data Synchronization
@@ -115,7 +114,7 @@ The pipeline is designed to be fault-tolerant, scalable, and optimized for the s
 
 **Dependencies**:
 - Enriched entity data
-- Database functions for complex calculations
+- SQLite functions for complex calculations
 
 **Execution Frequency**:
 - Scheduled background jobs
@@ -126,7 +125,7 @@ The pipeline is designed to be fault-tolerant, scalable, and optimized for the s
 ```
 +----------------+     +-------------------+     +------------------+
 | GitHub API     | --> | Raw Data Storage  | --> | Data Processing  |
-| (Edge Function)|     | (github_raw_data) |     | (Process Edge Fn)|
+| (Edge Function)|     | (closed_merge_requests_raw) |     | (Process Edge Fn)|
 +----------------+     +-------------------+     +------------------+
                                                           |
                                                           v
@@ -145,7 +144,7 @@ The pipeline is designed to be fault-tolerant, scalable, and optimized for the s
 ```
 function extractAndSaveData():
     // Initialize clients
-    initialize Supabase client
+    initialize SQLite connection
     initialize Octokit client with GitHub token
     
     // Fetch recent merged pull requests
@@ -185,8 +184,8 @@ function extractAndSaveData():
                     parse patch to count added and deleted lines
                     add to linesChanged, addedLines, deletedLines
         
-        // Store data in github_raw_data table
-        create record in github_raw_data with:
+        // Store data in closed_merge_requests_raw table
+        create record in closed_merge_requests_raw with:
             repo_id = event.repo.id
             repo_name = event.repo.name
             pr_number = pullRequest.number
@@ -228,7 +227,7 @@ function getCommitContent(owner, repo, commitSha):
 function processRawData(requestItems?, batchSize = 100):
     // Fetch unprocessed items if not provided
     if requestItems not provided:
-        rawItems = fetch up to batchSize unprocessed records from github_raw_data
+        rawItems = fetch up to batchSize unprocessed records from closed_merge_requests_raw
     else:
         rawItems = requestItems
     
@@ -294,7 +293,7 @@ function processRawData(requestItems?, batchSize = 100):
     
     // Mark items as processed
     if processedIds not empty:
-        update github_raw_data set processed=true where id in processedIds
+        update closed_merge_requests_raw set processed=true where id in processedIds
     
     return {
         success: true,
@@ -573,7 +572,7 @@ Several performance optimization strategies are implemented:
 The data pipeline heavily integrates with the application's database schema:
 
 1. **Raw Data Storage**:
-   - The `github_raw_data` table stores JSON blobs from GitHub API
+   - The `closed_merge_requests_raw` table stores JSON blobs from GitHub API
    - Processed flag tracks pipeline progress
    - Repository and PR information links to structured tables
 

@@ -1,10 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StatsCard } from '@/components/ui/stats-card';
 import { formatDistanceToNow } from 'date-fns';
 import { usePipelineStatus } from '@/hooks/admin/use-pipeline-status';
 import { usePipelineOperations } from '@/hooks/admin/use-pipeline-operations';
+import { useSQLitePipelineStatus } from '@/hooks/admin/use-sqlite-pipeline-status';
+import { useSQLitePipelineOperations } from '@/hooks/admin/use-sqlite-pipeline-operations';
 import { 
   GitBranch, 
   Database, 
@@ -23,15 +25,79 @@ export interface PipelineControlCardProps {
   pipelineType: PipelineType;
   title: string;
   description: string;
+  useSQLite?: boolean; // Flag to use SQLite instead of Supabase
 }
 
 export function PipelineControlCard({ 
   pipelineType,
   title,
-  description
+  description,
+  useSQLite = true // Default to SQLite
 }: PipelineControlCardProps) {
-  const { status, isLoading, error, refetch } = usePipelineStatus(pipelineType);
-  const { startPipeline, stopPipeline, isStarting, isStopping } = usePipelineOperations();
+  // Use either SQLite or Supabase hooks based on the flag
+  const { 
+    status: supabaseStatus, 
+    isLoading: isSupabaseLoading, 
+    error: supabaseError, 
+    refetch: refetchSupabase 
+  } = usePipelineStatus(pipelineType);
+  
+  const { 
+    status: sqliteStatus, 
+    isLoading: isSqliteLoading, 
+    error: sqliteError, 
+    refetch: refetchSqlite 
+  } = useSQLitePipelineStatus(pipelineType);
+  
+  const { 
+    startPipeline: startSupabasePipeline, 
+    stopPipeline: stopSupabasePipeline, 
+    isStarting: isSupabaseStarting, 
+    isStopping: isSupabaseStopping 
+  } = usePipelineOperations();
+  
+  const { 
+    startPipeline: startSqlitePipeline, 
+    stopPipeline: stopSqlitePipeline, 
+    isStarting: isSqliteStarting, 
+    isStopping: isSqliteStopping 
+  } = useSQLitePipelineOperations();
+  
+  // Determine which status and operations to use
+  const status = useSQLite ? sqliteStatus : supabaseStatus;
+  const isLoading = useSQLite ? isSqliteLoading : isSupabaseLoading;
+  const error = useSQLite ? sqliteError : supabaseError;
+  const refetch = useSQLite ? refetchSqlite : refetchSupabase;
+  const startPipeline = useSQLite ? startSqlitePipeline : startSupabasePipeline;
+  const stopPipeline = useSQLite ? stopSqlitePipeline : stopSupabasePipeline;
+  const isStarting = useSQLite ? isSqliteStarting : isSupabaseStarting;
+  const isStopping = useSQLite ? isSqliteStopping : isSupabaseStopping;
+  
+  // Use ref to track polling interval
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Set up polling when the pipeline is running
+  useEffect(() => {
+    // Clear any existing interval
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    
+    // If the pipeline is running, start polling for updates
+    if (status?.isRunning) {
+      pollingIntervalRef.current = setInterval(() => {
+        refetch();
+      }, 2000); // Poll every 2 seconds
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [status?.isRunning, refetch]);
   
   // Get the updated title based on pipeline type
   const getUpdatedTitle = () => {
@@ -116,8 +182,16 @@ export function PipelineControlCard({
   
   // Handle start button click
   const handleStart = async () => {
-    await startPipeline(pipelineType);
-    refetch();
+    try {
+      // Start the pipeline
+      await startPipeline(pipelineType);
+      
+      // Immediately refetch status to potentially clear "running" state
+      // if the execution completed directly
+      refetch();
+    } catch (error) {
+      console.error("Error starting pipeline:", error);
+    }
   };
   
   // Handle stop button click

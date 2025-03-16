@@ -203,7 +203,7 @@ SELECT
   fetched_at,
   data
 FROM 
-  github_raw_data
+  closed_merge_requests_raw
 WHERE 
   entity_type = 'repository'
   AND github_id = '12345678';
