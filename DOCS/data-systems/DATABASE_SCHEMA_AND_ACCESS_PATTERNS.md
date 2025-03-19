@@ -195,6 +195,35 @@ Junction table to track contributor involvement in repositories.
 | `created_at` | TIMESTAMP | When this record was created |
 | `updated_at` | TIMESTAMP | When this record was last updated |
 
+#### `files_commits`
+
+Stores information about files changed in commits.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | TEXT | Primary key (UUID) |
+| `commit_id` | TEXT | Reference to the commit ID |
+| `commit_github_id` | TEXT | GitHub SHA of the commit |
+| `commit_author_id` | TEXT | Reference to the contributor ID who authored the commit |
+| `commit_author_github_id` | BIGINT | GitHub ID of the commit author |
+| `merge_request_id` | TEXT | Reference to the merge request ID (if applicable) |
+| `merge_request_github_id` | INTEGER | GitHub PR number (if applicable) |
+| `repository_id` | TEXT | Reference to the repository ID |
+| `repository_github_id` | BIGINT | GitHub ID of the repository |
+| `filename` | TEXT | Path of the file that was changed |
+| `status` | TEXT | Status of the file change (added, modified, removed, etc.) |
+| `additions` | INTEGER | Number of lines added to this file |
+| `deletions` | INTEGER | Number of lines removed from this file |
+| `patch` | TEXT | The actual diff/patch content |
+| `created_at` | TIMESTAMP | When this record was created |
+| `updated_at` | TIMESTAMP | When this record was last updated |
+
+**Indices:**
+- `idx_files_commits_commit_id` on the `commit_id` column
+- `idx_files_commits_repository_id` on the `repository_id` column
+- `idx_files_commits_merge_request_id` on the `merge_request_id` column
+- `idx_files_commits_filename` on the `filename` column
+
 ### Pipeline Management Tables
 
 The following tables manage pipeline operations and execution tracking:

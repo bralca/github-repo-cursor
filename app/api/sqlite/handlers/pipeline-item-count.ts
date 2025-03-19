@@ -23,18 +23,46 @@ export async function handlePipelineItemCount(request: NextRequest) {
       switch (pipelineType) {
         case 'github_sync':
           // Count all items in closed_merge_requests_raw table
-          const rawCount = await db.get(
-            'SELECT COUNT(*) as count FROM closed_merge_requests_raw'
-          );
-          count = rawCount?.count || 0;
+          try {
+            const tableExists = await db.get(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='closed_merge_requests_raw'"
+            );
+            
+            if (!tableExists) {
+              console.log("Table closed_merge_requests_raw does not exist");
+              return 0;
+            }
+            
+            const rawCount = await db.get(
+              'SELECT COUNT(*) as count FROM closed_merge_requests_raw'
+            );
+            count = rawCount?.count || 0;
+          } catch (e) {
+            console.warn('Error counting github_sync items:', e);
+            return 0;
+          }
           break;
           
         case 'data_processing':
-          // Count of unprocessed raw data (specifically merge requests)
-          const unprocessedCount = await db.get(
-            'SELECT COUNT(*) as count FROM closed_merge_requests_raw WHERE entity_type = "merge_request"'
-          );
-          count = unprocessedCount?.count || 0;
+          // Count of unprocessed raw data
+          try {
+            const tableExists = await db.get(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='closed_merge_requests_raw'"
+            );
+            
+            if (!tableExists) {
+              console.log("Table closed_merge_requests_raw does not exist");
+              return 0;
+            }
+            
+            const unprocessedCount = await db.get(
+              'SELECT COUNT(*) as count FROM closed_merge_requests_raw WHERE is_processed = 0'
+            );
+            count = unprocessedCount?.count || 0;
+          } catch (e) {
+            console.warn('Error counting data_processing items:', e);
+            return 0;
+          }
           break;
           
         case 'data_enrichment':
@@ -42,31 +70,52 @@ export async function handlePipelineItemCount(request: NextRequest) {
           let totalUnenrichedCount = 0;
           
           try {
-            // Count unenriched repositories
-            const repoCount = await db.get(
-              'SELECT COUNT(*) as count FROM repositories WHERE is_enriched = 0'
+            // Check if repositories table exists
+            const repoTableExists = await db.get(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='repositories'"
             );
-            totalUnenrichedCount += repoCount?.count || 0;
+            
+            if (repoTableExists) {
+              // Count unenriched repositories
+              const repoCount = await db.get(
+                'SELECT COUNT(*) as count FROM repositories WHERE is_enriched = 0'
+              );
+              totalUnenrichedCount += repoCount?.count || 0;
+            }
           } catch (e) {
             console.warn('Error counting unenriched repositories:', e);
           }
           
           try {
-            // Count unenriched contributors
-            const contribCount = await db.get(
-              'SELECT COUNT(*) as count FROM contributors WHERE is_enriched = 0'
+            // Check if contributors table exists
+            const contribTableExists = await db.get(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='contributors'"
             );
-            totalUnenrichedCount += contribCount?.count || 0;
+            
+            if (contribTableExists) {
+              // Count unenriched contributors
+              const contribCount = await db.get(
+                'SELECT COUNT(*) as count FROM contributors WHERE is_enriched = 0'
+              );
+              totalUnenrichedCount += contribCount?.count || 0;
+            }
           } catch (e) {
             console.warn('Error counting unenriched contributors:', e);
           }
           
           try {
-            // Count unenriched merge requests
-            const mrCount = await db.get(
-              'SELECT COUNT(*) as count FROM merge_requests WHERE is_enriched = 0'
+            // Check if merge_requests table exists
+            const mrTableExists = await db.get(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='merge_requests'"
             );
-            totalUnenrichedCount += mrCount?.count || 0;
+            
+            if (mrTableExists) {
+              // Count unenriched merge requests
+              const mrCount = await db.get(
+                'SELECT COUNT(*) as count FROM merge_requests WHERE is_enriched = 0'
+              );
+              totalUnenrichedCount += mrCount?.count || 0;
+            }
           } catch (e) {
             console.warn('Error counting unenriched merge requests:', e);
           }
@@ -77,22 +126,22 @@ export async function handlePipelineItemCount(request: NextRequest) {
         case 'ai_analysis':
           // Count commits where complexity_score is null
           try {
+            // Check if commits table exists
+            const commitsTableExists = await db.get(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='commits'"
+            );
+            
+            if (!commitsTableExists) {
+              return 0;
+            }
+            
             const commitCount = await db.get(
               'SELECT COUNT(*) as count FROM commits WHERE complexity_score IS NULL'
             );
             count = commitCount?.count || 0;
           } catch (e) {
             console.warn('Error counting commits for AI analysis:', e);
-            
-            // Fallback: count all commits
-            try {
-              const totalCommitCount = await db.get(
-                'SELECT COUNT(*) as count FROM commits'
-              );
-              count = totalCommitCount?.count || 0;
-            } catch (e2) {
-              console.error('Error counting all commits:', e2);
-            }
+            return 0;
           }
           break;
           

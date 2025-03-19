@@ -55,24 +55,71 @@ export async function handlePipelineItemCount(request: NextRequest) {
           // Count entities that need enrichment (sum across tables)
           let totalCount = 0;
           
-          // Count repositories needing enrichment
-          const repoEnrichResult = await db.get('SELECT COUNT(*) as count FROM repositories WHERE is_enriched = 0');
-          totalCount += repoEnrichResult?.count || 0;
+          try {
+            // Check if repositories table exists
+            const repoTableExists = await db.get(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='repositories'"
+            );
+            
+            if (repoTableExists) {
+              // Count repositories needing enrichment
+              const repoEnrichResult = await db.get('SELECT COUNT(*) as count FROM repositories WHERE is_enriched = 0');
+              totalCount += repoEnrichResult?.count || 0;
+            }
+          } catch (e) {
+            console.warn('Error counting unenriched repositories:', e);
+          }
           
-          // Count contributors needing enrichment
-          const contribResult = await db.get('SELECT COUNT(*) as count FROM contributors WHERE is_enriched = 0');
-          totalCount += contribResult?.count || 0;
+          try {
+            // Check if contributors table exists
+            const contribTableExists = await db.get(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='contributors'"
+            );
+            
+            if (contribTableExists) {
+              // Count contributors needing enrichment
+              const contribResult = await db.get('SELECT COUNT(*) as count FROM contributors WHERE is_enriched = 0');
+              totalCount += contribResult?.count || 0;
+            }
+          } catch (e) {
+            console.warn('Error counting unenriched contributors:', e);
+          }
           
-          // Count merge requests needing enrichment
-          const mrResult = await db.get('SELECT COUNT(*) as count FROM merge_requests WHERE is_enriched = 0');
-          totalCount += mrResult?.count || 0;
+          try {
+            // Check if merge_requests table exists
+            const mrTableExists = await db.get(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='merge_requests'"
+            );
+            
+            if (mrTableExists) {
+              // Count merge requests needing enrichment
+              const mrResult = await db.get('SELECT COUNT(*) as count FROM merge_requests WHERE is_enriched = 0');
+              totalCount += mrResult?.count || 0;
+            }
+          } catch (e) {
+            console.warn('Error counting unenriched merge requests:', e);
+          }
           
           return totalCount;
           
         case 'ai_analysis':
           // Count commits that need AI analysis
-          const commitResult = await db.get('SELECT COUNT(*) as count FROM commits WHERE complexity_score IS NULL');
-          return commitResult?.count || 0;
+          try {
+            // Check if commits table exists
+            const commitsTableExists = await db.get(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='commits'"
+            );
+            
+            if (!commitsTableExists) {
+              return 0;
+            }
+            
+            const commitResult = await db.get('SELECT COUNT(*) as count FROM commits WHERE complexity_score IS NULL');
+            return commitResult?.count || 0;
+          } catch (e) {
+            console.warn('Error counting commits for AI analysis:', e);
+            return 0;
+          }
           
         default:
           throw new Error(`Unknown pipeline type: ${pipelineType}`);

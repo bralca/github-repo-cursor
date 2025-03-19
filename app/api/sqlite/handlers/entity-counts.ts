@@ -14,35 +14,52 @@ export async function handleEntityCounts(request: NextRequest) {
         merge_requests: 0,
         commits: 0
       };
+
+      // Helper function to check if a table exists
+      async function tableExists(tableName: string): Promise<boolean> {
+        const result = await db.get(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+          [tableName]
+        );
+        return !!result;
+      }
       
       // Get repository count
       try {
-        const repoCount = await db.get('SELECT COUNT(*) as count FROM repositories');
-        counts.repositories = repoCount?.count || 0;
+        if (await tableExists('repositories')) {
+          const repoCount = await db.get('SELECT COUNT(*) as count FROM repositories');
+          counts.repositories = repoCount?.count || 0;
+        }
       } catch (e) {
         console.warn('Error counting repositories:', e);
       }
       
       // Get contributors count
       try {
-        const contributorCount = await db.get('SELECT COUNT(*) as count FROM contributors');
-        counts.contributors = contributorCount?.count || 0;
+        if (await tableExists('contributors')) {
+          const contributorCount = await db.get('SELECT COUNT(*) as count FROM contributors');
+          counts.contributors = contributorCount?.count || 0;
+        }
       } catch (e) {
         console.warn('Error counting contributors:', e);
       }
       
       // Get merge requests count
       try {
-        const mrCount = await db.get('SELECT COUNT(*) as count FROM merge_requests');
-        counts.merge_requests = mrCount?.count || 0;
+        if (await tableExists('merge_requests')) {
+          const mrCount = await db.get('SELECT COUNT(*) as count FROM merge_requests');
+          counts.merge_requests = mrCount?.count || 0;
+        }
       } catch (e) {
         console.warn('Error counting merge requests:', e);
       }
       
       // Get commits count
       try {
-        const commitCount = await db.get('SELECT COUNT(*) as count FROM commits');
-        counts.commits = commitCount?.count || 0;
+        if (await tableExists('commits')) {
+          const commitCount = await db.get('SELECT COUNT(*) as count FROM commits');
+          counts.commits = commitCount?.count || 0;
+        }
       } catch (e) {
         console.warn('Error counting commits:', e);
       }
