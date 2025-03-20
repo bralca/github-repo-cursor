@@ -51,7 +51,7 @@ export async function handleEntityCounts(request: NextRequest) {
       // Count entities from each table
       await countEntities('repositories', 'repositories', true);
       await countEntities('contributors', 'contributors', true);
-      await countEntities('merge_requests', 'mergeRequests', true);
+      await countEntities('merge_requests', 'merge_requests', true);
       await countEntities('commits', 'commits', true);
       await countEntities('files', 'files');
       await countEntities('comments', 'comments');

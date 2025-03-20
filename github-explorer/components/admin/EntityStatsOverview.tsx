@@ -83,9 +83,9 @@ export function EntityStatsOverview({ useSQLite = true }: EntityStatsOverviewPro
             <GitPullRequestIcon className="mr-3 h-5 w-5 text-purple-500" />
             <div>
               <p className="text-sm font-medium">Merge Requests</p>
-              <p className="text-2xl font-bold">{formatNumber(counts.mergeRequests)}</p>
+              <p className="text-2xl font-bold">{formatNumber(counts.mergeRequests || counts.merge_requests || 0)}</p>
               <p className="text-xs text-muted-foreground">
-                {formatNumber(counts.enriched_merge_requests || 0)} enriched
+                {formatNumber((counts.enriched_merge_requests || counts.enriched_mergeRequests || 0))} enriched
               </p>
             </div>
           </div>

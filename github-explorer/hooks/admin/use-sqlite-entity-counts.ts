@@ -5,12 +5,14 @@ interface EntityCounts {
   repositories: number;
   contributors: number;
   mergeRequests: number;
+  merge_requests?: number;
   commits: number;
   files?: number;
   comments?: number;
   enriched_repositories?: number;
   enriched_contributors?: number;
   enriched_merge_requests?: number;
+  enriched_mergeRequests?: number;
   enriched_commits?: number;
 }
 
