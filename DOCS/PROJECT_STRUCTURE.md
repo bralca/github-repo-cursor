@@ -74,7 +74,8 @@ The GitHub Explorer project is organized with distinct separation between fronte
 
 - **File**: `/github_explorer.db` (at workspace root level)
 - **Type**: SQLite
-- **Configuration**: Connection managed through `/github-explorer/lib/database/connection.ts`
+- **Path Resolution**: Standardized through `github-explorer/server/src/utils/db-path.js`
+- **Configuration**: Connection managed through `github-explorer/lib/database/connection.ts`
 - **Documentation**: `DOCS/data-systems/DATABASE_SCHEMA_AND_ACCESS_PATTERNS.md`
 
 ## Development Guidelines
@@ -107,6 +108,7 @@ The GitHub Explorer project is organized with distinct separation between fronte
 ## Important Notes
 
 1. Do not confuse the root-level `app/` and `lib/` directories with those in the `github-explorer/` directory
-2. Always use the correct database connection path when accessing the SQLite database
+2. Database access is standardized through `github-explorer/server/src/utils/db-path.js` utility
 3. The SQLite database file is stored at the workspace root, not in the `github-explorer/` directory
-4. Frontend code should only interact with the database through API endpoints 
+4. Use the `DB_PATH` environment variable to override the default database location
+5. Frontend code should only interact with the database through API endpoints 

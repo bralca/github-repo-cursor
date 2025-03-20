@@ -20,8 +20,9 @@ export async function getSQLiteDb(): Promise<Database> {
     return dbInstance;
   }
   
-  // Use the exact same DB_PATH as specified in the environment variable
-  const dbPath = process.env.DB_PATH || process.env.SQLITE_DB_PATH || '/Users/alessiocarra/Desktop/github-repo-cursor/github_explorer.db';
+  // Use the standardized database path resolution
+  // We use a relative path from the current working directory to the workspace root
+  const dbPath = process.env.DB_PATH || path.resolve(process.cwd(), '../../github_explorer.db');
   
   // Log database connection for debugging
   console.log(`Opening SQLite database at: ${dbPath}`);

@@ -1,6 +1,18 @@
 #!/bin/bash
+# Use relative path to workspace root
+DB_PATH="../../github_explorer.db"
 
-DB_PATH="/Users/alessiocarra/Desktop/github-repo-cursor/github_explorer.db"
+echo "Checking for database file at $DB_PATH"
+if [ ! -f "$DB_PATH" ]; then
+  echo "Database file not found at $DB_PATH"
+  exit 1
+fi
+
+echo "Running update script against database at $DB_PATH"
+# Add your database update commands here
+# Example: sqlite3 $DB_PATH < update.sql
+
+echo "Database update completed"
 
 # Create SQL commands
 sql_commands="

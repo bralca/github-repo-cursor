@@ -1,63 +1,73 @@
 # Database Migrations
 
-This directory contains all database migrations for the GitHub Explorer application. 
+This directory contains database migration scripts for the GitHub Explorer application.
 
-## Migration Naming Convention
+## Available Migrations
 
-Migrations should follow this naming pattern:
-
-```
-YYYYMMDD_HHMMSS_description.sql
-```
-
-For example:
-- `20240315_120000_create_pipeline_schedules.sql`
-- `20240315_120100_create_pipeline_configurations.sql`
-- `20240315_120200_add_timezone_column.sql`
-
-This ensures that migrations are executed in the correct chronological order.
-
-## Migration Types
-
-We use the following types of migrations:
-
-1. **Schema migrations**: Create or alter database tables and structures
-2. **Reference data migrations**: Add or update reference data
-3. **Function migrations**: Create or update database functions or procedures
+- `combine-commits-tables.sql`: Combines the `commits` and `files_commits` tables into a single `commits` table to simplify the database schema and improve performance.
 
 ## Running Migrations
 
-Migrations can be run using the setup script:
+To run a migration:
+
+1. Make sure the server is not running to avoid data corruption
+2. Navigate to the migrations directory
+3. Run the migration script using Node.js
 
 ```bash
-npm run setup:db
+cd github-explorer/server/src/migrations
+node run-migration.js combine-commits-tables.sql
 ```
 
-The SupabaseSchemaManager handles migration execution:
-- Tracks which migrations have been executed
-- Ensures migrations are run in the correct order
-- Handles errors during migration
+## Migration: Combining Commits Tables
 
-## Creating New Migrations
+The `combine-commits-tables.sql` migration merges the `commits` and `files_commits` tables into a single `commits` table with the following structure:
 
-When adding a new migration:
+- `id`: Primary key (UUID)
+- `github_id`: Commit SHA hash
+- `repository_id`: Repository UUID foreign key
+- `repository_github_id`: GitHub's internal ID for the repository
+- `contributor_id`: Contributor UUID foreign key
+- `contributor_github_id`: GitHub's internal ID for the contributor
+- `pull_request_id`: Pull request UUID foreign key
+- `pull_request_github_id`: Pull request number within the repository
+- `message`: Commit message
+- `committed_at`: When the commit was made
+- `parents`: JSON array of parent commit SHAs
+- `filename`: Path of the file that was changed
+- `status`: Status of the file change (added, modified, removed)
+- `additions`: Number of lines added to this file
+- `deletions`: Number of lines removed from this file
+- `patch`: The actual diff/patch content
+- `complexity_score`: AI-generated complexity score
+- `is_merge_commit`: Whether this is a merge commit
+- `is_enriched`: Whether the commit has been enriched with additional data
+- `created_at`: When this record was created
+- `updated_at`: When this record was last updated
 
-1. Create a new SQL file in this directory with the appropriate timestamp
-2. Add the necessary SQL statements
-3. Test the migration locally before committing
+### Changes to Database Structure
 
-## Best Practices
+This migration:
 
-1. Each migration should be atomic and focused on a single change
-2. Always include `IF NOT EXISTS` or `IF EXISTS` checks to make migrations idempotent
-3. Include comments explaining complex changes
-4. Use transactions for complex migrations
-5. Consider backward compatibility when altering existing tables
-6. Add appropriate indexes for performance
+1. Preserves all data from both tables
+2. Removes redundant fields:
+   - `sha` (duplicate of `github_id`)
+   - `author` (we use `contributor_id` instead)
+3. Standardizes field naming
+4. The combined table includes proper foreign key constraints
 
-## Manual Migration Rollback
+### Impact on Queries
 
-If a migration needs to be rolled back, create a new migration with a `rollback_` prefix, for example:
-`20240315_130000_rollback_add_timezone_column.sql`
+After this migration:
 
-The rollback migration should undo the changes made in the original migration. 
+- Each commit that changes multiple files will have multiple rows, one per file
+- Queries for commit metadata need to be conscious of this 1:many relationship
+- Use distinct when querying metadata to avoid duplicates
+
+### Backup Recommendation
+
+Before running this migration, it's recommended to create a backup of your database:
+
+```bash
+cp github_explorer.db github_explorer.db.backup
+``` 

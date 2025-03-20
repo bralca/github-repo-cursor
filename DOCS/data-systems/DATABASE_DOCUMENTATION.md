@@ -12,7 +12,7 @@ The SQLite database is configured in the `.env` file:
 DB_PATH=/path/to/your/github_explorer.db
 ```
 
-If not specified, the database will be created in the project root directory as `github_explorer.db`.
+If not specified, the database will be located at the workspace root as `github_explorer.db`. A standardized utility module (`github-explorer/server/src/utils/db-path.js`) is used throughout the application to ensure consistent database path resolution.
 
 ## Core Schema Principles
 

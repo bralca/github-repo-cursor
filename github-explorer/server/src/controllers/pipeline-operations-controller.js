@@ -26,7 +26,7 @@ import fs from 'fs';
  * @returns {Promise<Object>} SQLite database connection
  */
 async function openSQLiteConnection() {
-  const dbPath = process.env.DB_PATH || path.join(process.cwd(), 'github_explorer.db');
+  const dbPath = process.env.DB_PATH || path.join(process.cwd(), '../../../../github_explorer.db');
   
   logger.info(`Opening SQLite database at: ${dbPath}`);
   
