@@ -122,17 +122,37 @@ export class GitHubApiClient {
    */
   async getPullRequest(owner, repo, pullNumber) {
     try {
-      logger.info(`Fetching pull request #${pullNumber} for ${owner}/${repo}`);
+      // Validate inputs
+      if (!owner || typeof owner !== 'string') {
+        throw new Error(`Invalid owner parameter: ${owner}`);
+      }
+      
+      if (!repo || typeof repo !== 'string') {
+        throw new Error(`Invalid repo parameter: ${repo}`);
+      }
+      
+      // Ensure pullNumber is a number
+      const prNumber = parseInt(pullNumber, 10);
+      if (isNaN(prNumber) || prNumber <= 0) {
+        throw new Error(`Invalid pull request number: ${pullNumber}`);
+      }
+      
+      logger.info(`Fetching pull request #${prNumber} for ${owner}/${repo}`);
       
       const { data } = await this.octokit.pulls.get({
         owner,
         repo,
-        pull_number: pullNumber
+        pull_number: prNumber
       });
       
       return data;
     } catch (error) {
-      logger.error(`Failed to fetch pull request #${pullNumber}`, { error });
+      logger.error(`Failed to fetch pull request #${pullNumber} for ${owner}/${repo}`, { 
+        error,
+        owner,
+        repo,
+        pullNumber 
+      });
       throw new Error(`Failed to fetch pull request: ${error.message}`);
     }
   }
@@ -146,12 +166,27 @@ export class GitHubApiClient {
    */
   async getPullRequestCommits(owner, repo, pullNumber) {
     try {
-      logger.info(`Fetching commits for pull request #${pullNumber}`);
+      // Validate inputs
+      if (!owner || typeof owner !== 'string') {
+        throw new Error(`Invalid owner parameter: ${owner}`);
+      }
+      
+      if (!repo || typeof repo !== 'string') {
+        throw new Error(`Invalid repo parameter: ${repo}`);
+      }
+      
+      // Ensure pullNumber is a number
+      const prNumber = parseInt(pullNumber, 10);
+      if (isNaN(prNumber) || prNumber <= 0) {
+        throw new Error(`Invalid pull request number: ${pullNumber}`);
+      }
+      
+      logger.info(`Fetching commits for pull request #${prNumber} for ${owner}/${repo}`);
       
       const response = await this.octokit.pulls.listCommits({
         owner,
         repo,
-        pull_number: pullNumber,
+        pull_number: prNumber,
         per_page: 100
       });
       
@@ -160,7 +195,12 @@ export class GitHubApiClient {
         headers: response.headers
       };
     } catch (error) {
-      logger.error(`Failed to fetch commits for PR #${pullNumber}`, { error });
+      logger.error(`Failed to fetch commits for PR #${pullNumber} for ${owner}/${repo}`, {
+        error,
+        owner,
+        repo,
+        pullNumber
+      });
       throw new Error(`Failed to fetch pull request commits: ${error.message}`);
     }
   }
@@ -174,18 +214,83 @@ export class GitHubApiClient {
    */
   async getPullRequestReviews(owner, repo, pullNumber) {
     try {
-      logger.info(`Fetching reviews for pull request #${pullNumber}`);
+      // Validate inputs
+      if (!owner || typeof owner !== 'string') {
+        throw new Error(`Invalid owner parameter: ${owner}`);
+      }
+      
+      if (!repo || typeof repo !== 'string') {
+        throw new Error(`Invalid repo parameter: ${repo}`);
+      }
+      
+      // Ensure pullNumber is a number
+      const prNumber = parseInt(pullNumber, 10);
+      if (isNaN(prNumber) || prNumber <= 0) {
+        throw new Error(`Invalid pull request number: ${pullNumber}`);
+      }
+      
+      logger.info(`Fetching reviews for pull request #${prNumber} for ${owner}/${repo}`);
       
       const { data } = await this.octokit.pulls.listReviews({
         owner,
         repo,
-        pull_number: pullNumber
+        pull_number: prNumber
       });
       
       return data;
     } catch (error) {
-      logger.error(`Failed to fetch reviews for PR #${pullNumber}`, { error });
+      logger.error(`Failed to fetch reviews for PR #${pullNumber} for ${owner}/${repo}`, {
+        error,
+        owner,
+        repo,
+        pullNumber
+      });
       throw new Error(`Failed to fetch pull request reviews: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Get review comments for a specific pull request
+   * @param {string} owner - Repository owner
+   * @param {string} repo - Repository name
+   * @param {number} pullNumber - Pull request number
+   * @returns {Promise<Array>} Comment data
+   */
+  async getPullRequestComments(owner, repo, pullNumber) {
+    try {
+      // Validate inputs
+      if (!owner || typeof owner !== 'string') {
+        throw new Error(`Invalid owner parameter: ${owner}`);
+      }
+      
+      if (!repo || typeof repo !== 'string') {
+        throw new Error(`Invalid repo parameter: ${repo}`);
+      }
+      
+      // Ensure pullNumber is a number
+      const prNumber = parseInt(pullNumber, 10);
+      if (isNaN(prNumber) || prNumber <= 0) {
+        throw new Error(`Invalid pull request number: ${pullNumber}`);
+      }
+      
+      logger.info(`Fetching comments for pull request #${prNumber} for ${owner}/${repo}`);
+      
+      const { data } = await this.octokit.pulls.listReviewComments({
+        owner,
+        repo,
+        pull_number: prNumber,
+        per_page: 100
+      });
+      
+      return data;
+    } catch (error) {
+      logger.error(`Failed to fetch comments for PR #${pullNumber} for ${owner}/${repo}`, {
+        error,
+        owner,
+        repo,
+        pullNumber
+      });
+      throw new Error(`Failed to fetch pull request comments: ${error.message}`);
     }
   }
   
@@ -241,7 +346,20 @@ export class GitHubApiClient {
    */
   async getCommit(owner, repo, commitSha) {
     try {
-      logger.info(`Fetching commit: ${commitSha.substring(0, 7)}`);
+      // Validate inputs
+      if (!owner || typeof owner !== 'string') {
+        throw new Error(`Invalid owner parameter: ${owner}`);
+      }
+      
+      if (!repo || typeof repo !== 'string') {
+        throw new Error(`Invalid repo parameter: ${repo}`);
+      }
+      
+      if (!commitSha || typeof commitSha !== 'string') {
+        throw new Error(`Invalid commit SHA: ${commitSha}`);
+      }
+      
+      logger.info(`Fetching commit: ${commitSha.substring(0, 7)} for ${owner}/${repo}`);
       
       const { data } = await this.octokit.repos.getCommit({
         owner,
@@ -251,7 +369,12 @@ export class GitHubApiClient {
       
       return data;
     } catch (error) {
-      logger.error(`Failed to fetch commit: ${commitSha.substring(0, 7)}`, { error });
+      logger.error(`Failed to fetch commit: ${commitSha ? commitSha.substring(0, 7) : 'unknown'} for ${owner}/${repo}`, {
+        error,
+        owner, 
+        repo,
+        commitSha
+      });
       throw new Error(`Failed to fetch commit: ${error.message}`);
     }
   }

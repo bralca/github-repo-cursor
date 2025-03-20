@@ -37,6 +37,8 @@ Stores raw GitHub API data for closed merge requests before processing.
 | `id` | INTEGER | Primary key (auto-incremented) |
 | `data` | TEXT | JSON blob of the raw API response |
 | `is_processed` | INTEGER | Flag indicating whether this record has been processed (0=unprocessed, 1=processed) |
+| `created_at` | TIMESTAMP | When this record was created |
+| `updated_at` | TIMESTAMP | When this record was last updated |
 
 **Indices:**
 - `idx_closed_mr_is_processed` on the `is_processed` column - used for efficiently querying unprocessed items
@@ -146,32 +148,40 @@ Stores information about pull/merge requests.
 
 #### `commits`
 
-Stores information about repository commits.
+Stores information about repository commits and their file changes.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | TEXT | Primary key (UUID) |
 | `github_id` | TEXT | GitHub's SHA for the commit |
-| `sha` | TEXT | SHA hash (duplicate for compatibility) |
 | `repository_id` | TEXT | Reference to the repository ID |
 | `repository_github_id` | BIGINT | GitHub ID of the repository |
 | `contributor_id` | TEXT | Reference to the contributor who authored the commit |
 | `contributor_github_id` | BIGINT | GitHub ID of the contributor |
-| `author` | TEXT | Author name (for compatibility) |
-| `message` | TEXT | Commit message |
-| `additions` | INTEGER | Number of lines added |
-| `deletions` | INTEGER | Number of lines removed |
-| `files_changed` | INTEGER | Number of files changed |
-| `is_merge_commit` | BOOLEAN | Whether this is a merge commit |
-| `committed_at` | TIMESTAMP | When the commit was made |
 | `pull_request_id` | TEXT | Reference to the merge request ID (if applicable) |
 | `pull_request_github_id` | INTEGER | GitHub PR number (if applicable) |
-| `complexity_score` | INTEGER | AI-generated complexity score |
-| `is_placeholder_author` | BOOLEAN | Whether the author is a placeholder |
+| `message` | TEXT | Commit message |
+| `committed_at` | TIMESTAMP | When the commit was made |
 | `parents` | TEXT | JSON array of parent commit SHAs |
+| `filename` | TEXT | Path of the changed file |
+| `status` | TEXT | Status of change (added, modified, deleted) |
+| `additions` | INTEGER | Number of lines added to this file |
+| `deletions` | INTEGER | Number of lines removed from this file |
+| `patch` | TEXT | The actual diff/patch content |
+| `complexity_score` | INTEGER | AI-generated complexity score |
+| `is_merge_commit` | BOOLEAN | Whether this is a merge commit |
 | `is_enriched` | BOOLEAN | Whether additional data has been fetched |
 | `created_at` | TIMESTAMP | When this record was created |
 | `updated_at` | TIMESTAMP | When this record was last updated |
+
+**Indices:**
+- `idx_commits_github_id` on the `github_id` column
+- `idx_commits_repository_id` on the `repository_id` column
+- `idx_commits_contributor_id` on the `contributor_id` column
+- `idx_commits_pull_request_id` on the `pull_request_id` column
+- `idx_commits_filename` on the `filename` column
+- `idx_commits_committed_at` on the `committed_at` column
+- `idx_commits_is_enriched` on the `is_enriched` column
 
 #### `contributor_repository`
 
@@ -194,35 +204,6 @@ Junction table to track contributor involvement in repositories.
 | `lines_removed` | INTEGER | Total lines of code removed |
 | `created_at` | TIMESTAMP | When this record was created |
 | `updated_at` | TIMESTAMP | When this record was last updated |
-
-#### `files_commits`
-
-Stores information about files changed in commits.
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | TEXT | Primary key (UUID) |
-| `commit_id` | TEXT | Reference to the commit ID |
-| `commit_github_id` | TEXT | GitHub SHA of the commit |
-| `commit_author_id` | TEXT | Reference to the contributor ID who authored the commit |
-| `commit_author_github_id` | BIGINT | GitHub ID of the commit author |
-| `merge_request_id` | TEXT | Reference to the merge request ID (if applicable) |
-| `merge_request_github_id` | INTEGER | GitHub PR number (if applicable) |
-| `repository_id` | TEXT | Reference to the repository ID |
-| `repository_github_id` | BIGINT | GitHub ID of the repository |
-| `filename` | TEXT | Path of the file that was changed |
-| `status` | TEXT | Status of the file change (added, modified, removed, etc.) |
-| `additions` | INTEGER | Number of lines added to this file |
-| `deletions` | INTEGER | Number of lines removed from this file |
-| `patch` | TEXT | The actual diff/patch content |
-| `created_at` | TIMESTAMP | When this record was created |
-| `updated_at` | TIMESTAMP | When this record was last updated |
-
-**Indices:**
-- `idx_files_commits_commit_id` on the `commit_id` column
-- `idx_files_commits_repository_id` on the `repository_id` column
-- `idx_files_commits_merge_request_id` on the `merge_request_id` column
-- `idx_files_commits_filename` on the `filename` column
 
 ### Pipeline Management Tables
 

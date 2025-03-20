@@ -4,7 +4,7 @@ DELETE FROM contributors;
 DELETE FROM merge_requests;
 DELETE FROM commits;
 DELETE FROM contributor_repository;
-DELETE FROM files_commits;
+
 
 -- Delete all content from pipeline management tables
 DELETE FROM pipeline_schedules;

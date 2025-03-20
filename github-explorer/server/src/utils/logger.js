@@ -28,6 +28,48 @@ function formatLogMessage(level, message, meta = {}) {
   return `[${timestamp}] [${level.toUpperCase()}] ${message}${metaString}`;
 }
 
+/**
+ * Creates a logger instance for a specific component
+ * @param {string} componentName - Name of the component using the logger
+ * @returns {object} Logger instance with component context
+ */
+export function setupLogger(componentName) {
+  return {
+    debug: (message, meta = {}) => {
+      if (currentLogLevel <= LOG_LEVELS.DEBUG) {
+        console.debug(formatLogMessage('debug', `[${componentName}] ${message}`, meta));
+      }
+    },
+    
+    info: (message, meta = {}) => {
+      if (currentLogLevel <= LOG_LEVELS.INFO) {
+        console.info(formatLogMessage('info', `[${componentName}] ${message}`, meta));
+      }
+    },
+    
+    warn: (message, meta = {}) => {
+      if (currentLogLevel <= LOG_LEVELS.WARN) {
+        console.warn(formatLogMessage('warn', `[${componentName}] ${message}`, meta));
+      }
+    },
+    
+    error: (message, meta = {}) => {
+      if (currentLogLevel <= LOG_LEVELS.ERROR) {
+        // If meta contains an error object, extract message and stack
+        if (meta.error instanceof Error) {
+          const { error, ...restMeta } = meta;
+          meta = {
+            ...restMeta,
+            errorMessage: error.message,
+            errorStack: error.stack
+          };
+        }
+        console.error(formatLogMessage('error', `[${componentName}] ${message}`, meta));
+      }
+    }
+  };
+}
+
 // Logger implementation
 export const logger = {
   debug: (message, meta = {}) => {

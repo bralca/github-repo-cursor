@@ -5,6 +5,8 @@
  * the correct format for storage in the database, following the expected schema.
  */
 
+import { v4 as uuidv4 } from 'uuid';
+
 /**
  * Transform a GitHub repository object
  * @param {Object} rawRepo - Raw repository data from GitHub API
@@ -124,58 +126,35 @@ export function createRepositoryContributor(repositoryId, contributorId, stats =
 export function transformMergeRequest(rawPullRequest, repositoryId) {
   if (!rawPullRequest) return null;
   
+  // Use the repository-specific PR number (pr_number) as github_id instead of the internal GitHub ID (id)
+  // If pr_number is not available, fall back to number (which should be the PR number in the repo)
+  const prNumber = rawPullRequest.pr_number || rawPullRequest.number;
+  
   return {
-    id: rawPullRequest.id,
+    id: uuidv4(), // Generate a UUID for our database PK
+    github_id: prNumber, // Use PR number as the github_id (for API calls)
     repository_id: repositoryId,
-    number: rawPullRequest.number,
-    state: rawPullRequest.state,
+    repository_github_id: rawPullRequest.base?.repo?.id,
+    author_id: null, // Will be linked later after contributor is created
+    author_github_id: rawPullRequest.user?.id,
     title: rawPullRequest.title,
-    body: rawPullRequest.body,
-    user_id: rawPullRequest.user?.id,
-    user_login: rawPullRequest.user?.login,
-    html_url: rawPullRequest.html_url,
-    api_url: rawPullRequest.url,
-    diff_url: rawPullRequest.diff_url,
-    patch_url: rawPullRequest.patch_url,
-    issue_url: rawPullRequest.issue_url,
-    merged: rawPullRequest.merged,
-    mergeable: rawPullRequest.mergeable,
-    mergeable_state: rawPullRequest.mergeable_state,
-    merged_by_id: rawPullRequest.merged_by?.id,
-    merged_by_login: rawPullRequest.merged_by?.login,
-    merged_at: rawPullRequest.merged_at,
-    comments_count: rawPullRequest.comments,
-    review_comments_count: rawPullRequest.review_comments,
-    commits_count: rawPullRequest.commits,
-    additions: rawPullRequest.additions,
-    deletions: rawPullRequest.deletions,
-    changed_files: rawPullRequest.changed_files,
-    base_ref: rawPullRequest.base?.ref,
-    base_sha: rawPullRequest.base?.sha,
-    head_ref: rawPullRequest.head?.ref,
-    head_sha: rawPullRequest.head?.sha,
-    head_repo_id: rawPullRequest.head?.repo?.id,
-    head_repo_full_name: rawPullRequest.head?.repo?.full_name,
+    description: rawPullRequest.body || '',
+    state: rawPullRequest.state,
+    is_draft: rawPullRequest.draft || false,
     created_at: rawPullRequest.created_at,
     updated_at: rawPullRequest.updated_at,
-    closed_at: rawPullRequest.closed_at,
-    last_fetched_at: new Date().toISOString(),
-    labels: (rawPullRequest.labels || []).map(label => ({
-      id: label.id,
-      name: label.name,
-      color: label.color,
-      description: label.description
-    })),
-    requested_reviewers: (rawPullRequest.requested_reviewers || []).map(reviewer => ({
-      id: reviewer.id,
-      login: reviewer.login
-    })),
-    metadata: {
-      author_association: rawPullRequest.author_association,
-      draft: rawPullRequest.draft,
-      rebaseable: rawPullRequest.rebaseable,
-      maintainer_can_modify: rawPullRequest.maintainer_can_modify
-    }
+    closed_at: rawPullRequest.closed_at || null,
+    merged_at: rawPullRequest.merged_at || null,
+    merged_by_id: null, // Will be linked later after contributor is created
+    merged_by_github_id: rawPullRequest.merged_by?.id || null,
+    commits_count: rawPullRequest.commits || 0,
+    additions: rawPullRequest.additions || 0,
+    deletions: rawPullRequest.deletions || 0,
+    changed_files: rawPullRequest.changed_files || 0,
+    labels: JSON.stringify((rawPullRequest.labels || []).map(label => label.name)),
+    source_branch: rawPullRequest.head?.ref,
+    target_branch: rawPullRequest.base?.ref,
+    is_enriched: false
   };
 }
 

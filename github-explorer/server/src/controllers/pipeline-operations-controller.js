@@ -693,6 +693,13 @@ class PipelineOperationsController extends BaseController {
           notFound: 0,
           skipped: 0
         },
+        mergeRequests: {
+          processed: 0,
+          successful: 0,
+          failed: 0,
+          commitsProcessed: 0,
+          filesProcessed: 0
+        },
         rateLimited: false
       };
       
@@ -704,6 +711,7 @@ class PipelineOperationsController extends BaseController {
         const { GitHubApiClient } = await import('../services/github/github-api-client.js');
         const { RepositoryEnricher } = await import('../pipeline/enrichers/repository-enricher.js');
         const { ContributorEnricher } = await import('../pipeline/enrichers/contributor-enricher.js');
+        const { default: MergeRequestEnricher } = await import('../pipeline/enrichers/merge-request-enricher.js');
         
         // Create a GitHub API client for enrichment
         const githubClient = new GitHubApiClient({
@@ -714,7 +722,7 @@ class PipelineOperationsController extends BaseController {
         // 1. First, enrich repositories
         logger.info('Starting repository enrichment phase');
         let repoProcessAttempts = 0;
-        let repoUnenrichedCount = 1; // Initialize to non-zero to enter the loop
+        let repoUnenrichedCount = 1;
         
         while (repoUnenrichedCount > 0 && repoProcessAttempts < 5) { // Limit attempts to prevent infinite loops
           // Check if there are still unenriched repositories
@@ -782,7 +790,7 @@ class PipelineOperationsController extends BaseController {
         logger.info(`Marked ${stats.contributors.skipped} contributors without github_id as enriched`);
         
         let contribProcessAttempts = 0;
-        let contribUnenrichedCount = 1; // Initialize to non-zero to enter the loop
+        let contribUnenrichedCount = 1;
         
         while (contribUnenrichedCount > 0 && contribProcessAttempts < 5) { // Limit attempts to prevent infinite loops
           // Check if there are still unenriched contributors
@@ -835,11 +843,62 @@ class PipelineOperationsController extends BaseController {
           contribProcessAttempts++;
         }
         
+        // 3. Finally, enrich merge requests and their commits
+        logger.info('Starting merge request enrichment phase');
+        
+        let mrProcessAttempts = 0;
+        let mrUnenrichedCount = 1;
+        
+        while (mrUnenrichedCount > 0 && mrProcessAttempts < 5) { // Limit attempts to prevent infinite loops
+          // Check if there are still unenriched merge requests
+          const mrCountQuery = `SELECT COUNT(*) as count FROM merge_requests WHERE is_enriched = 0`;
+          const mrCountResult = await db.get(mrCountQuery);
+          mrUnenrichedCount = mrCountResult?.count || 0;
+          
+          if (mrUnenrichedCount === 0) {
+            logger.info('No more unenriched merge requests to process');
+            break;
+          }
+          
+          logger.info(`Starting merge request enrichment pass #${mrProcessAttempts + 1}. ${mrUnenrichedCount} merge requests remain to be enriched`);
+          
+          // Create merge request enricher
+          const mrEnricher = new MergeRequestEnricher(db, githubClient);
+          
+          // Run the merge request enrichment process
+          const mrStats = await mrEnricher.enrichAllMergeRequests();
+          
+          // Update stats
+          stats.mergeRequests.processed += mrStats.processed;
+          stats.mergeRequests.successful += mrStats.successful;
+          stats.mergeRequests.failed += mrStats.failed;
+          stats.mergeRequests.commitsProcessed += mrStats.commitsProcessed;
+          stats.mergeRequests.filesProcessed += mrStats.filesProcessed;
+          
+          // Check for rate limits
+          if (mrStats.rateLimited) {
+            stats.rateLimited = true;
+            stats.rateLimitReset = mrStats.rateLimitReset;
+            
+            // Wait for rate limit to reset before checking again
+            const now = new Date();
+            const resetTime = new Date(mrStats.rateLimitReset);
+            
+            if (now < resetTime) {
+              const waitTimeMs = resetTime.getTime() - now.getTime() + 1000; // Add 1 second buffer
+              logger.info(`Rate limited by GitHub API. Waiting ${Math.ceil(waitTimeMs / 1000)} seconds until ${resetTime.toISOString()}`);
+              await new Promise(resolve => setTimeout(resolve, waitTimeMs));
+            }
+          }
+          
+          mrProcessAttempts++;
+        }
+        
         logger.info('Data enrichment function executed successfully', { stats });
         
         return { 
           success: true, 
-          itemsProcessed: stats.repositories.enriched + stats.contributors.enriched,
+          itemsProcessed: stats.repositories.enriched + stats.contributors.enriched + stats.mergeRequests.successful,
           stats,
           message: 'Data enrichment completed successfully' 
         };
@@ -1308,13 +1367,17 @@ class PipelineOperationsController extends BaseController {
         logger.info(`Processing merge request for item ${item.id}`);
         
         const pr = data.pull_request;
-        const githubId = parseInt(pr.id, 10);
+        // Use PR number instead of GitHub's internal ID
+        // PR number is what's visible in GitHub URLs and is repository-specific
+        const githubId = pr.pr_number || pr.number || parseInt(pr.id, 10);
         
         if (!githubId) {
           logger.warn(`Pull request ID missing or invalid for item ${item.id}, skipping merge request processing`);
         } else {
           // Check if repository and contributor IDs exist
           const repoGithubId = parseInt(data.repository.id, 10);
+          
+          logger.info(`Processing pull request #${githubId} (internal ID: ${pr.id})`);
           
           // Check if merge request already exists
           const existingMR = await db.get(
