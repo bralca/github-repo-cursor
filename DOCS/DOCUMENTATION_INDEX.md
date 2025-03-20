@@ -84,6 +84,15 @@ The documentation is organized into the following categories:
 - [Epic 8: Admin Dashboard Prompts](prompts/EPIC_8_ADMIN_DASHBOARD_PROMPTS.md) - Admin interface implementation guides
 - [Implementation Guidelines](prompts/IMPLEMENTATION_GUIDELINES.md) - General implementation guidance
 
+## Navigation and Pages
+
+### SEO and URL Architecture
+- [SEO-Optimized URL Architecture](./SEO/URL_ARCHITECTURE.md) - Guidelines for SEO-friendly URL structure
+- [SEO Implementation Plan](./SEO/SEO_IMPLEMENTATION_PLAN.md) - Detailed plan for implementing the SEO architecture
+
+### Page Architecture
+- [Repository Page Architecture](./page-architecture/REPOSITORY_PAGE_ARCHITECTURE.md) - Architecture for the Repository page
+
 ## How To Use This Documentation
 
 ### For New Developers

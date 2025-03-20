@@ -45,6 +45,12 @@ export async function getSQLiteDb(): Promise<Database> {
 }
 
 /**
+ * Alias for getSQLiteDb for better readability in query files
+ * @returns A database connection
+ */
+export const getDBConnection = getSQLiteDb;
+
+/**
  * Execute a database operation with a connection and ensure it's closed properly
  * @param callback The operation to execute with the database connection
  * @returns The result of the callback

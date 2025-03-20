@@ -1,0 +1,15 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Use this rule when following a structured plan to implement a feature or a task
+
+- When you start a new tasks from a structured plan always start by repeating the prompt specified in the task document. 
+- When there are docs attached to the tasks ALWAYS read the documents before starting the implementation to refresh your memory and context on important rules to follow. 
+- Only after you did all the above start implementing the task by following the prompts step by step
+- At the end of story in a structured plan always provide a test to verify that the implementation is working as expected.
+- Always report which tasks number you are following during the implementation. 
+- Always use common patterns in the codebase when you are following a plan. 
+- Make sure to provide textual feedback along the way for long implementations.
