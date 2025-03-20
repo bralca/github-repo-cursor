@@ -8,6 +8,10 @@ interface EntityCounts {
   commits: number;
   files?: number;
   comments?: number;
+  enriched_repositories?: number;
+  enriched_contributors?: number;
+  enriched_merge_requests?: number;
+  enriched_commits?: number;
 }
 
 /**
@@ -29,7 +33,16 @@ export function useSQLiteEntityCounts() {
   });
 
   return {
-    counts: data || { repositories: 0, contributors: 0, mergeRequests: 0, commits: 0 },
+    counts: data || { 
+      repositories: 0, 
+      contributors: 0, 
+      mergeRequests: 0, 
+      commits: 0,
+      enriched_repositories: 0,
+      enriched_contributors: 0,
+      enriched_merge_requests: 0,
+      enriched_commits: 0
+    },
     isLoading,
     error,
     refetch,

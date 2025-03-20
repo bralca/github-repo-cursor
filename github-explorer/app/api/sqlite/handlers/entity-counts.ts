@@ -13,7 +13,7 @@ export async function handleEntityCounts(request: NextRequest) {
       const entityCounts: Record<string, number> = {};
       
       // Helper function to safely count entities from a table
-      async function countEntities(tableName: string, outputKey: string) {
+      async function countEntities(tableName: string, outputKey: string, countEnriched = false) {
         try {
           // First check if the table exists
           const tableExists = await db.get(
@@ -24,22 +24,35 @@ export async function handleEntityCounts(request: NextRequest) {
           if (!tableExists) {
             console.log(`Table ${tableName} does not exist`);
             entityCounts[outputKey] = 0;
+            if (countEnriched) {
+              entityCounts[`enriched_${outputKey}`] = 0;
+            }
             return;
           }
           
+          // Count total
           const result = await db.get(`SELECT COUNT(*) as count FROM ${tableName}`);
           entityCounts[outputKey] = result?.count || 0;
+          
+          // Count enriched if requested
+          if (countEnriched) {
+            const enrichedResult = await db.get(`SELECT COUNT(*) as count FROM ${tableName} WHERE is_enriched = 1`);
+            entityCounts[`enriched_${outputKey}`] = enrichedResult?.count || 0;
+          }
         } catch (e) {
           console.error(`Error counting ${tableName}:`, e);
           entityCounts[outputKey] = 0;
+          if (countEnriched) {
+            entityCounts[`enriched_${outputKey}`] = 0;
+          }
         }
       }
       
       // Count entities from each table
-      await countEntities('repositories', 'repositories');
-      await countEntities('contributors', 'contributors');
-      await countEntities('merge_requests', 'mergeRequests');
-      await countEntities('commits', 'commits');
+      await countEntities('repositories', 'repositories', true);
+      await countEntities('contributors', 'contributors', true);
+      await countEntities('merge_requests', 'mergeRequests', true);
+      await countEntities('commits', 'commits', true);
       await countEntities('files', 'files');
       await countEntities('comments', 'comments');
       

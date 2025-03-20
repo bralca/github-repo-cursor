@@ -62,6 +62,9 @@ export function EntityStatsOverview({ useSQLite = true }: EntityStatsOverviewPro
             <div>
               <p className="text-sm font-medium">Repositories</p>
               <p className="text-2xl font-bold">{formatNumber(counts.repositories)}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatNumber(counts.enriched_repositories || 0)} enriched
+              </p>
             </div>
           </div>
           
@@ -70,6 +73,9 @@ export function EntityStatsOverview({ useSQLite = true }: EntityStatsOverviewPro
             <div>
               <p className="text-sm font-medium">Contributors</p>
               <p className="text-2xl font-bold">{formatNumber(counts.contributors)}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatNumber(counts.enriched_contributors || 0)} enriched
+              </p>
             </div>
           </div>
           
@@ -78,6 +84,9 @@ export function EntityStatsOverview({ useSQLite = true }: EntityStatsOverviewPro
             <div>
               <p className="text-sm font-medium">Merge Requests</p>
               <p className="text-2xl font-bold">{formatNumber(counts.mergeRequests)}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatNumber(counts.enriched_merge_requests || 0)} enriched
+              </p>
             </div>
           </div>
           
@@ -86,6 +95,9 @@ export function EntityStatsOverview({ useSQLite = true }: EntityStatsOverviewPro
             <div>
               <p className="text-sm font-medium">Commits</p>
               <p className="text-2xl font-bold">{formatNumber(counts.commits)}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatNumber(counts.enriched_commits || 0)} enriched
+              </p>
             </div>
           </div>
         </div>

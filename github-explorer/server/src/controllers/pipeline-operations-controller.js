@@ -230,7 +230,7 @@ class PipelineOperationsController extends BaseController {
       }
       
       // Check if pipeline type is valid
-      const validPipelineTypes = ['github_sync', 'data_processing', 'data_enrichment', 'ai_analysis'];
+      const validPipelineTypes = ['github_sync', 'data_processing', 'data_enrichment', 'contributor_enrichment', 'ai_analysis'];
       if (!validPipelineTypes.includes(actualPipelineType)) {
         return this.sendError(res, `Invalid pipeline type: ${actualPipelineType}`, 400);
       }
@@ -248,6 +248,9 @@ class PipelineOperationsController extends BaseController {
           break;
         case 'data_enrichment':
           result = await this.executeDataEnrichment();
+          break;
+        case 'contributor_enrichment':
+          result = await this.executeContributorEnrichment();
           break;
         case 'ai_analysis':
           result = await this.executeAIAnalysis();
@@ -295,6 +298,9 @@ class PipelineOperationsController extends BaseController {
           break;
         case 'data_enrichment':
           result = await this.executeDataEnrichment();
+          break;
+        case 'contributor_enrichment':
+          result = await this.executeContributorEnrichment();
           break;
         case 'ai_analysis':
           result = await this.executeAIAnalysis();
@@ -535,6 +541,135 @@ class PipelineOperationsController extends BaseController {
   }
   
   /**
+   * Execute Contributor Enrichment functionality
+   * @returns {Promise<object>} Result object with success status and metrics
+   * @private
+   */
+  async executeContributorEnrichment() {
+    logger.info('Executing contributor enrichment function directly');
+    
+    try {
+      // Initialize the stats counter
+      const stats = {
+        contributors: {
+          processed: 0,
+          enriched: 0,
+          failed: 0,
+          notFound: 0,
+          skipped: 0
+        },
+        rateLimited: false
+      };
+      
+      // Open a database connection
+      const db = await openSQLiteConnection();
+      
+      try {
+        // First, mark all contributors without github_id as enriched to prevent repeated processing
+        logger.info('Marking contributors without github_id as enriched');
+        const markQuery = `
+          UPDATE contributors 
+          SET is_enriched = 1, updated_at = ?
+          WHERE is_enriched = 0 AND (github_id IS NULL OR github_id = 0)
+        `;
+        const markResult = await db.run(markQuery, [new Date().toISOString()]);
+        stats.contributors.skipped = markResult.changes || 0;
+        logger.info(`Marked ${stats.contributors.skipped} contributors without github_id as enriched`);
+        
+        // Import the GitHub API client and contributor enricher
+        const { GitHubApiClient } = await import('../services/github/github-api-client.js');
+        const { ContributorEnricher } = await import('../pipeline/enrichers/contributor-enricher.js');
+        
+        // Create a GitHub API client for enrichment
+        const githubClient = new GitHubApiClient({
+          clientId: 'contributor-enrichment',
+          token: process.env.GITHUB_TOKEN
+        });
+        
+        // Keep enriching contributors until none are left
+        let continuousProcessing = true;
+        let processAttempts = 0;
+        let unenrichedCount = 1; // Initialize to non-zero to enter the loop
+        
+        while (continuousProcessing && processAttempts < 5) { // Limit attempts to prevent infinite loops
+          // Check if there are still unenriched contributors
+          const countQuery = `SELECT COUNT(*) as count FROM contributors WHERE is_enriched = 0`;
+          const countResult = await db.get(countQuery);
+          unenrichedCount = countResult?.count || 0;
+          
+          if (unenrichedCount === 0) {
+            logger.info('No more unenriched contributors to process');
+            continuousProcessing = false;
+            break;
+          }
+          
+          logger.info(`Starting contributor enrichment pass #${processAttempts + 1}. ${unenrichedCount} contributors remain to be enriched`);
+          
+          // Enrich contributors
+          const contributorEnricher = new ContributorEnricher({
+            githubClient,
+            db,
+            config: {
+              batchSize: 10,
+              abortOnError: false
+            }
+          });
+          
+          // Run the contributor enrichment process
+          const contribStats = await contributorEnricher.enrichAllContributors();
+          
+          // Update stats
+          stats.contributors.processed += contribStats.processed;
+          stats.contributors.enriched += contribStats.success;
+          stats.contributors.failed += contribStats.failed;
+          stats.contributors.notFound += contribStats.notFound;
+          
+          // Check if we hit rate limits
+          if (contribStats.rateLimited) {
+            stats.rateLimited = true;
+            stats.rateLimitReset = contribStats.rateLimitReset;
+            
+            // Wait for rate limit to reset before checking again
+            const now = new Date();
+            const resetTime = new Date(contribStats.rateLimitReset);
+            
+            if (now < resetTime) {
+              const waitTimeMs = resetTime.getTime() - now.getTime() + 1000; // Add 1 second buffer
+              logger.info(`Rate limited by GitHub API. Waiting ${Math.ceil(waitTimeMs / 1000)} seconds until ${resetTime.toISOString()}`);
+              await new Promise(resolve => setTimeout(resolve, waitTimeMs));
+            }
+          }
+          
+          processAttempts++;
+        }
+        
+        logger.info('Contributor enrichment function executed successfully', { stats });
+        
+        return { 
+          success: true, 
+          itemsProcessed: stats.contributors.enriched,
+          stats,
+          message: 'Contributor enrichment completed successfully' 
+        };
+      } finally {
+        // Ensure the database connection is closed
+        if (db) {
+          await db.close();
+          logger.info('Database connection closed');
+        }
+      }
+    } catch (error) {
+      logger.error('Error in direct contributor enrichment function:', { error });
+      
+      return { 
+        success: false, 
+        error,
+        message: `Failed to enrich contributors: ${error.message}` 
+      };
+    }
+  }
+
+  /**
    * Execute Data Enrichment functionality directly
    * @returns {Promise<object>} Result object with success status and metrics
    * @private
@@ -543,17 +678,178 @@ class PipelineOperationsController extends BaseController {
     logger.info('Executing data enrichment function directly');
     
     try {
-      // In a real implementation, this would fetch entities that need enrichment
-      // and add additional details by making API calls
-      
-      // For now, return a mock result
-      logger.info('Data enrichment function executed successfully');
-      
-      return { 
-        success: true, 
-        itemsProcessed: 0,
-        message: 'Data enrichment completed successfully (mock implementation)' 
+      // Initialize the stats counter
+      const stats = {
+        repositories: {
+          processed: 0,
+          enriched: 0,
+          failed: 0,
+          notFound: 0
+        },
+        contributors: {
+          processed: 0,
+          enriched: 0,
+          failed: 0,
+          notFound: 0,
+          skipped: 0
+        },
+        rateLimited: false
       };
+      
+      // Open a database connection
+      const db = await openSQLiteConnection();
+      
+      try {
+        // Import the GitHub API client and enrichers
+        const { GitHubApiClient } = await import('../services/github/github-api-client.js');
+        const { RepositoryEnricher } = await import('../pipeline/enrichers/repository-enricher.js');
+        const { ContributorEnricher } = await import('../pipeline/enrichers/contributor-enricher.js');
+        
+        // Create a GitHub API client for enrichment
+        const githubClient = new GitHubApiClient({
+          clientId: 'data-enrichment',
+          token: process.env.GITHUB_TOKEN
+        });
+        
+        // 1. First, enrich repositories
+        logger.info('Starting repository enrichment phase');
+        let repoProcessAttempts = 0;
+        let repoUnenrichedCount = 1; // Initialize to non-zero to enter the loop
+        
+        while (repoUnenrichedCount > 0 && repoProcessAttempts < 5) { // Limit attempts to prevent infinite loops
+          // Check if there are still unenriched repositories
+          const repoCountQuery = `SELECT COUNT(*) as count FROM repositories WHERE is_enriched = 0`;
+          const repoCountResult = await db.get(repoCountQuery);
+          repoUnenrichedCount = repoCountResult?.count || 0;
+          
+          if (repoUnenrichedCount === 0) {
+            logger.info('No more unenriched repositories to process');
+            break;
+          }
+          
+          logger.info(`Starting repository enrichment pass #${repoProcessAttempts + 1}. ${repoUnenrichedCount} repositories remain to be enriched`);
+          
+          // Create repository enricher
+          const repoEnricher = new RepositoryEnricher({
+            githubClient,
+            db,
+            config: {
+              batchSize: 10,
+              abortOnError: false
+            }
+          });
+          
+          // Run the repository enrichment process
+          const repoStats = await repoEnricher.enrichAllRepositories();
+          
+          // Update stats
+          stats.repositories.processed += repoStats.processed;
+          stats.repositories.enriched += repoStats.success;
+          stats.repositories.failed += repoStats.failed;
+          stats.repositories.notFound += repoStats.notFound;
+          
+          // Check if we hit rate limits
+          if (repoStats.rateLimited) {
+            stats.rateLimited = true;
+            stats.rateLimitReset = repoStats.rateLimitReset;
+            
+            // Wait for rate limit to reset before checking again
+            const now = new Date();
+            const resetTime = new Date(repoStats.rateLimitReset);
+            
+            if (now < resetTime) {
+              const waitTimeMs = resetTime.getTime() - now.getTime() + 1000; // Add 1 second buffer
+              logger.info(`Rate limited by GitHub API. Waiting ${Math.ceil(waitTimeMs / 1000)} seconds until ${resetTime.toISOString()}`);
+              await new Promise(resolve => setTimeout(resolve, waitTimeMs));
+            }
+          }
+          
+          repoProcessAttempts++;
+        }
+        
+        // 2. Next, enrich contributors
+        logger.info('Starting contributor enrichment phase');
+        
+        // First, mark all contributors without github_id as enriched to prevent repeated processing
+        logger.info('Marking contributors without github_id as enriched');
+        const markQuery = `
+          UPDATE contributors 
+          SET is_enriched = 1, updated_at = ?
+          WHERE is_enriched = 0 AND (github_id IS NULL OR github_id = 0)
+        `;
+        const markResult = await db.run(markQuery, [new Date().toISOString()]);
+        stats.contributors.skipped = markResult.changes || 0;
+        logger.info(`Marked ${stats.contributors.skipped} contributors without github_id as enriched`);
+        
+        let contribProcessAttempts = 0;
+        let contribUnenrichedCount = 1; // Initialize to non-zero to enter the loop
+        
+        while (contribUnenrichedCount > 0 && contribProcessAttempts < 5) { // Limit attempts to prevent infinite loops
+          // Check if there are still unenriched contributors
+          const contribCountQuery = `SELECT COUNT(*) as count FROM contributors WHERE is_enriched = 0`;
+          const contribCountResult = await db.get(contribCountQuery);
+          contribUnenrichedCount = contribCountResult?.count || 0;
+          
+          if (contribUnenrichedCount === 0) {
+            logger.info('No more unenriched contributors to process');
+            break;
+          }
+          
+          logger.info(`Starting contributor enrichment pass #${contribProcessAttempts + 1}. ${contribUnenrichedCount} contributors remain to be enriched`);
+          
+          // Create contributor enricher
+          const contribEnricher = new ContributorEnricher({
+            githubClient,
+            db,
+            config: {
+              batchSize: 10,
+              abortOnError: false
+            }
+          });
+          
+          // Run the contributor enrichment process
+          const contribStats = await contribEnricher.enrichAllContributors();
+          
+          // Update stats
+          stats.contributors.processed += contribStats.processed;
+          stats.contributors.enriched += contribStats.success;
+          stats.contributors.failed += contribStats.failed;
+          stats.contributors.notFound += contribStats.notFound;
+          
+          // Check if we hit rate limits
+          if (contribStats.rateLimited) {
+            stats.rateLimited = true;
+            stats.rateLimitReset = contribStats.rateLimitReset;
+            
+            // Wait for rate limit to reset before checking again
+            const now = new Date();
+            const resetTime = new Date(contribStats.rateLimitReset);
+            
+            if (now < resetTime) {
+              const waitTimeMs = resetTime.getTime() - now.getTime() + 1000; // Add 1 second buffer
+              logger.info(`Rate limited by GitHub API. Waiting ${Math.ceil(waitTimeMs / 1000)} seconds until ${resetTime.toISOString()}`);
+              await new Promise(resolve => setTimeout(resolve, waitTimeMs));
+            }
+          }
+          
+          contribProcessAttempts++;
+        }
+        
+        logger.info('Data enrichment function executed successfully', { stats });
+        
+        return { 
+          success: true, 
+          itemsProcessed: stats.repositories.enriched + stats.contributors.enriched,
+          stats,
+          message: 'Data enrichment completed successfully' 
+        };
+      } finally {
+        // Ensure the database connection is closed
+        if (db) {
+          await db.close();
+          logger.info('Database connection closed');
+        }
+      }
     } catch (error) {
       logger.error('Error in direct data enrichment function:', { error });
       

@@ -3,6 +3,8 @@
  * This module provides a client-side interface to the SQLite API endpoints
  */
 
+import { Database } from '@/types/database';
+
 interface PipelineStatus {
   itemCount: number;
   lastRun: string | null;
@@ -43,6 +45,20 @@ interface APIResponse<T> {
   data?: T;
   error?: string;
   message?: string;
+}
+
+// Types for entity counts
+export interface EntityCountsResponse {
+  repositories: number;
+  contributors: number;
+  mergeRequests: number;
+  commits: number;
+  files: number;
+  comments: number;
+  enriched_repositories: number;
+  enriched_contributors: number;
+  enriched_merge_requests: number;
+  enriched_commits: number;
 }
 
 /**
