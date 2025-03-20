@@ -56,6 +56,34 @@ export async function handleEntityCounts(request: NextRequest) {
       await countEntities('files', 'files');
       await countEntities('comments', 'comments');
       
+      // Count unprocessed raw merge requests
+      try {
+        const tableExists = await db.get(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='closed_merge_requests_raw'"
+        );
+        
+        if (tableExists) {
+          // Count all raw merge requests
+          const totalResult = await db.get(
+            "SELECT COUNT(*) as count FROM closed_merge_requests_raw"
+          );
+          entityCounts.total_raw_merge_requests = totalResult?.count || 0;
+          
+          // Count unprocessed raw merge requests
+          const result = await db.get(
+            "SELECT COUNT(*) as count FROM closed_merge_requests_raw WHERE is_processed = 0"
+          );
+          entityCounts.unprocessed_merge_requests = result?.count || 0;
+        } else {
+          entityCounts.total_raw_merge_requests = 0;
+          entityCounts.unprocessed_merge_requests = 0;
+        }
+      } catch (e) {
+        console.error('Error counting raw merge requests:', e);
+        entityCounts.total_raw_merge_requests = 0;
+        entityCounts.unprocessed_merge_requests = 0;
+      }
+      
       return entityCounts;
     });
     

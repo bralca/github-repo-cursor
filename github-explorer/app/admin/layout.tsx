@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { AdminEventProvider } from '@/components/admin/AdminEventContext';
 
 export const metadata = {
   title: 'Admin Dashboard | GitHub Explorer',
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  return children;
+  return (
+    <AdminEventProvider>
+      {children}
+    </AdminEventProvider>
+  );
 } 

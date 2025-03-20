@@ -1,8 +1,12 @@
 'use client';
 
+import React, { useEffect } from 'react';
 import { useSQLiteEntityCounts } from '@/hooks/admin/use-sqlite-entity-counts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Grid2X2Icon, UsersIcon, GitPullRequestIcon, GitCommitIcon, Loader2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Grid2X2Icon, UsersIcon, GitPullRequestIcon, GitCommitIcon, Loader2, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { formatDistanceToNow } from 'date-fns';
+import { useAdminEvents } from './AdminEventContext';
 
 interface EntityStatsOverviewProps {
   useSQLite?: boolean; // Flag to use SQLite instead of Supabase
@@ -10,7 +14,42 @@ interface EntityStatsOverviewProps {
 
 export function EntityStatsOverview({ useSQLite = true }: EntityStatsOverviewProps) {
   // Use the SQLite hook for entity counts
-  const { counts, isLoading, error } = useSQLiteEntityCounts();
+  const { counts, isLoading, error, refetch } = useSQLiteEntityCounts();
+  
+  // Use the admin events context for real-time updates
+  const { connectionStatus, lastEventTimestamp, latestEventsByType } = useAdminEvents();
+  
+  // Trigger a refetch when pipeline events are received
+  useEffect(() => {
+    // These are the event types that should trigger a refetch
+    const refetchTriggerEvents = [
+      'pipeline_execution_completed',
+      'pipeline_status_changed',
+      'pipeline_progress'
+    ];
+    
+    // Check if we have any of these events in the latest events
+    const shouldRefetch = refetchTriggerEvents.some(
+      eventType => latestEventsByType[eventType]
+    );
+    
+    if (shouldRefetch) {
+      refetch();
+    }
+  }, [latestEventsByType, refetch]);
+  
+  // Format the last updated timestamp
+  const getLastUpdatedText = () => {
+    if (!lastEventTimestamp) {
+      return 'Never updated';
+    }
+    
+    try {
+      return `Last updated ${formatDistanceToNow(new Date(lastEventTimestamp), { addSuffix: true })}`;
+    } catch (e) {
+      return 'Last updated: Unknown';
+    }
+  };
   
   // Show loading state
   if (isLoading) {
@@ -51,9 +90,20 @@ export function EntityStatsOverview({ useSQLite = true }: EntityStatsOverviewPro
   
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Entity Statistics</CardTitle>
-        <CardDescription>Overview of entities in the system</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Entity Statistics</CardTitle>
+          <CardDescription>Overview of entities in the system</CardDescription>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          className="ml-auto"
+        >
+          <RefreshCw className="h-4 w-4 mr-1" />
+          Refresh
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -102,6 +152,19 @@ export function EntityStatsOverview({ useSQLite = true }: EntityStatsOverviewPro
           </div>
         </div>
       </CardContent>
+      <CardFooter className="flex justify-between items-center text-xs text-muted-foreground">
+        <div>{getLastUpdatedText()}</div>
+        <div className="flex items-center">
+          <div className={`w-2 h-2 rounded-full mr-2 ${
+            connectionStatus === 'connected' ? 'bg-green-500' : 
+            connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-gray-500'
+          }`} />
+          <span>
+            {connectionStatus === 'connected' ? 'Live updates active' : 
+             connectionStatus === 'connecting' ? 'Connecting...' : 'Live updates inactive'}
+          </span>
+        </div>
+      </CardFooter>
     </Card>
   );
 } 

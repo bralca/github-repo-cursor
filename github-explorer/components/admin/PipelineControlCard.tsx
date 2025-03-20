@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StatsCard } from '@/components/ui/stats-card';
 import { formatDistanceToNow } from 'date-fns';
 import { usePipelineStatus } from '@/hooks/admin/use-pipeline-status';
 import { usePipelineOperations } from '@/hooks/admin/use-pipeline-operations';
 import { useSQLitePipelineStatus } from '@/hooks/admin/use-sqlite-pipeline-status';
 import { useSQLitePipelineOperations } from '@/hooks/admin/use-sqlite-pipeline-operations';
+import { useAdminEvents } from './AdminEventContext';
+import { useSQLiteEntityCounts } from '@/hooks/admin/use-sqlite-entity-counts';
 import { 
   GitBranch, 
   Database, 
@@ -15,7 +17,8 @@ import {
   Loader2, 
   AlertCircle,
   PlayCircle,
-  StopCircle 
+  StopCircle,
+  Activity
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -63,6 +66,9 @@ export function PipelineControlCard({
     isStopping: isSqliteStopping 
   } = useSQLitePipelineOperations();
   
+  // Get entity counts for displaying numbers
+  const { counts } = useSQLiteEntityCounts();
+  
   // Determine which status and operations to use
   const status = useSQLite ? sqliteStatus : supabaseStatus;
   const isLoading = useSQLite ? isSqliteLoading : isSupabaseLoading;
@@ -75,6 +81,13 @@ export function PipelineControlCard({
   
   // Use ref to track polling interval
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Use the admin events context for real-time updates
+  const { latestEventsByType } = useAdminEvents();
+  
+  // State to track live activity progress
+  const [currentActivity, setCurrentActivity] = useState<string | null>(null);
+  const [itemsProcessed, setItemsProcessed] = useState<number | null>(null);
   
   // Set up polling when the pipeline is running
   useEffect(() => {
@@ -98,6 +111,49 @@ export function PipelineControlCard({
       }
     };
   }, [status?.isRunning, refetch]);
+  
+  // Update state based on real-time events
+  useEffect(() => {
+    // Look for events related to this pipeline type
+    const relevantEvents = [
+      'pipeline_started',
+      'pipeline_progress',
+      'pipeline_execution_completed',
+      'pipeline_error',
+      'pipeline_stopped'
+    ];
+    
+    for (const eventType of relevantEvents) {
+      const event = latestEventsByType[eventType];
+      if (event && event.data && event.data.pipelineType === pipelineType) {
+        // We found an event for this pipeline
+        
+        // Update UI based on event type
+        if (eventType === 'pipeline_progress' && event.data.progress) {
+          setCurrentActivity(event.data.progress.currentStep || event.data.progress.phase || null);
+          setItemsProcessed(event.data.progress.itemsProcessed || null);
+        } else if (eventType === 'pipeline_execution_completed') {
+          setCurrentActivity(null);
+          setItemsProcessed(event.data.itemsProcessed || null);
+          // Refetch to update status
+          refetch();
+        } else if (eventType === 'pipeline_started') {
+          setCurrentActivity('Starting pipeline...');
+          setItemsProcessed(null);
+          // Refetch to update status
+          refetch();
+        } else if (eventType === 'pipeline_stopped' || eventType === 'pipeline_error') {
+          setCurrentActivity(null);
+          setItemsProcessed(null);
+          // Refetch to update status
+          refetch();
+        }
+        
+        // No need to check further events
+        break;
+      }
+    }
+  }, [latestEventsByType, pipelineType, refetch]);
   
   // Get the updated title based on pipeline type
   const getUpdatedTitle = () => {
@@ -169,15 +225,42 @@ export function PipelineControlCard({
     return 'gray';
   };
   
-  // Get the status text
+  // Get the count of relevant items for this pipeline
+  const getItemCount = () => {
+    if (!counts) return 0;
+    
+    switch (pipelineType) {
+      case 'github_sync':
+        // Show total count of all raw merge requests
+        return counts.total_raw_merge_requests || 0;
+      case 'data_processing':
+        // Show count of unprocessed raw merge requests
+        return counts.unprocessed_merge_requests || 0;
+      case 'data_enrichment':
+        // Count of entities waiting to be enriched
+        const unenrichedRepos = (counts.repositories || 0) - (counts.enriched_repositories || 0);
+        const unenrichedContributors = (counts.contributors || 0) - (counts.enriched_contributors || 0);
+        const unenrichedMRs = (counts.mergeRequests || 0) - (counts.enriched_mergeRequests || 0);
+        return unenrichedRepos + unenrichedContributors + unenrichedMRs;
+      case 'ai_analysis':
+        // All enriched items waiting for AI analysis
+        return counts.enriched_repositories || 0;
+      default:
+        return 0;
+    }
+  };
+  
+  // Get the status text with count
   const getStatusText = () => {
     if (!status) return 'Unknown';
     
-    if (status.isActive) {
-      return status.isRunning ? 'Running' : 'Active';
+    if (status.isActive && status.isRunning) {
+      return 'Running';
     }
     
-    return 'Inactive';
+    // Show only the count number
+    const count = getItemCount();
+    return count > 0 ? `${count}` : '0';
   };
   
   // Handle start button click
@@ -240,6 +323,21 @@ export function PipelineControlCard({
     );
   };
   
+  // Render live activity indicator
+  const renderLiveActivity = () => {
+    if (!currentActivity) return null;
+    
+    return (
+      <div className="flex items-center mt-2 text-xs text-muted-foreground">
+        <Activity className="h-3 w-3 mr-1 animate-pulse text-yellow-500" />
+        <span>
+          {currentActivity}
+          {itemsProcessed !== null && ` (${itemsProcessed} items)`}
+        </span>
+      </div>
+    );
+  };
+  
   if (error) {
     return (
       <StatsCard
@@ -257,13 +355,20 @@ export function PipelineControlCard({
   return (
     <StatsCard
       title={getUpdatedTitle()}
-      value={isLoading ? '...' : status?.itemCount?.toString() || '0'}
+      icon={getIcon()}
       description={getUpdatedDescription()}
-      icon={isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : getIcon()}
-      footer={isLoading ? 'Loading...' : `Last run: ${getFormattedDate()}`}
-      color={getStatusColor()}
-      statusText={getStatusText()}
-      actionButtons={renderActionButtons()}
+      value={isLoading ? 'Loading...' : getStatusText()}
+      valueColor={getStatusColor()}
+      footer={
+        <div className="flex w-full justify-between items-center">
+          <div className="text-xs text-muted-foreground">
+            Last run: {isLoading ? '...' : getFormattedDate()}
+          </div>
+          <div className="flex gap-2">
+            {renderActionButtons()}
+          </div>
+        </div>
+      }
     />
   );
 } 

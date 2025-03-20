@@ -7,8 +7,9 @@ export interface StatsCardProps {
   value: string;
   description: string;
   icon?: React.ReactNode;
-  footer?: string;
+  footer?: React.ReactNode;
   color?: 'green' | 'yellow' | 'red' | 'blue' | 'gray';
+  valueColor?: 'green' | 'yellow' | 'red' | 'blue' | 'gray';
   statusText?: string;
   className?: string;
   actionButtons?: React.ReactNode;
@@ -21,13 +22,14 @@ export function StatsCard({
   icon,
   footer,
   color = 'gray',
+  valueColor,
   statusText,
   className,
   actionButtons,
 }: StatsCardProps) {
   // Map color to Tailwind classes
-  const getColorClasses = () => {
-    switch (color) {
+  const getColorClasses = (colorValue: string = color) => {
+    switch (colorValue) {
       case 'green':
         return 'bg-green-50 text-green-700 ring-green-600/20';
       case 'yellow':
@@ -42,13 +44,32 @@ export function StatsCard({
     }
   };
 
+  // Map color to text color
+  const getTextColorClass = (colorValue: string = color) => {
+    switch (colorValue) {
+      case 'green':
+        return 'text-green-600';
+      case 'yellow':
+        return 'text-yellow-600';
+      case 'red':
+        return 'text-red-600';
+      case 'blue':
+        return 'text-blue-600';
+      case 'gray':
+      default:
+        return 'text-gray-600';
+    }
+  };
+
   return (
     <Card className={cn("overflow-hidden h-full flex flex-col", className)}>
       <CardContent className="p-6 flex-grow flex flex-col">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <h3 className="mt-1 text-2xl font-semibold">{value}</h3>
+            <h3 className={cn("mt-1 text-2xl font-semibold", valueColor && getTextColorClass(valueColor))}>
+              {value}
+            </h3>
           </div>
           {icon && (
             <div className="rounded-full bg-muted p-2 flex-shrink-0">
@@ -80,7 +101,11 @@ export function StatsCard({
       
       {footer && (
         <CardFooter className="border-t bg-muted/50 px-6 py-3 mt-auto">
-          <p className="text-xs text-muted-foreground">{footer}</p>
+          {typeof footer === 'string' ? (
+            <p className="text-xs text-muted-foreground">{footer}</p>
+          ) : (
+            footer
+          )}
         </CardFooter>
       )}
     </Card>

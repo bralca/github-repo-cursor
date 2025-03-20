@@ -15,22 +15,7 @@ export interface PipelineStatus {
  * @returns The pipeline status data, loading state, and error
  */
 export function useSQLitePipelineStatus(pipelineType: string) {
-  // Get the item count
-  const itemCountQuery = useQuery({
-    queryKey: ['sqlite-pipeline-item-count', pipelineType],
-    queryFn: async () => {
-      try {
-        return await sqliteClient.pipeline.getItemCount(pipelineType);
-      } catch (error: any) {
-        console.error(`Error fetching pipeline item count for ${pipelineType}:`, error);
-        return { count: 0 };
-      }
-    },
-    refetchInterval: 30000, // Refetch every 30 seconds
-    retry: 3,
-  });
-  
-  // Get the pipeline status
+  // First get the pipeline status to check if it's running
   const statusQuery = useQuery({
     queryKey: ['sqlite-pipeline-status', pipelineType],
     queryFn: async () => {
@@ -41,7 +26,29 @@ export function useSQLitePipelineStatus(pipelineType: string) {
         return null;
       }
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: (data) => {
+      // Refetch more frequently if the pipeline is running
+      return data && 'isRunning' in data && data.isRunning ? 5000 : 30000;
+    },
+    retry: 3,
+  });
+  
+  // Get the item count, adjusting the refetch interval based on pipeline status
+  const itemCountQuery = useQuery({
+    queryKey: ['sqlite-pipeline-item-count', pipelineType],
+    queryFn: async () => {
+      try {
+        return await sqliteClient.pipeline.getItemCount(pipelineType);
+      } catch (error: any) {
+        console.error(`Error fetching pipeline item count for ${pipelineType}:`, error);
+        return { count: 0 };
+      }
+    },
+    refetchInterval: () => {
+      // Refetch more frequently if the pipeline is running
+      // Use the status from the statusQuery
+      return statusQuery.data && statusQuery.data.isRunning ? 5000 : 30000;
+    },
     retry: 3,
   });
   

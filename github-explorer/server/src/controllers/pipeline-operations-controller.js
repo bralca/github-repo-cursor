@@ -20,38 +20,8 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import path from 'path';
 import fs from 'fs';
-
-/**
- * Open a connection to the SQLite database
- * @returns {Promise<Object>} SQLite database connection
- */
-async function openSQLiteConnection() {
-  const dbPath = process.env.DB_PATH || path.join(process.cwd(), '../../../../github_explorer.db');
-  
-  logger.info(`Opening SQLite database at: ${dbPath}`);
-  
-  try {
-    // Open the database connection
-    const db = await open({
-      filename: dbPath,
-      driver: sqlite3.Database
-    });
-    
-    // Set pragmas for better performance
-    await db.exec('PRAGMA journal_mode = WAL;');
-    await db.exec('PRAGMA synchronous = NORMAL;');
-    await db.exec('PRAGMA foreign_keys = ON;');
-    
-    logger.info('Successfully opened SQLite database connection');
-    return db;
-  } catch (error) {
-    logger.error(`Failed to open SQLite database: ${error.message}`, {
-      error,
-      dbPath
-    });
-    throw error;
-  }
-}
+import { openSQLiteConnection, closeSQLiteConnection } from '../utils/sqlite.js';
+import { pipelineEvents } from '../utils/event-emitter.js';
 
 /**
  * Fetches recent merged pull requests using the GitHub API
@@ -237,6 +207,13 @@ class PipelineOperationsController extends BaseController {
       
       logger.info(`Starting direct execution of ${actualPipelineType}...`);
       
+      // Emit pipeline started event
+      pipelineEvents.emit('pipeline_started', {
+        pipelineType,
+        historyId: null,
+        parameters
+      });
+      
       // Execute the function directly - no history tracking
       let result;
       switch (actualPipelineType) {
@@ -269,6 +246,11 @@ class PipelineOperationsController extends BaseController {
       });
     } catch (error) {
       logger.error('Error in direct execution', { error });
+      // Emit pipeline error event
+      pipelineEvents.emit('pipeline_error', {
+        pipelineType: req.body.pipeline_type,
+        error: error.message
+      });
       return this.sendError(res, `Error in execution: ${error.message}`, 500);
     }
   }
@@ -286,6 +268,12 @@ class PipelineOperationsController extends BaseController {
       // Create a simple history entry to track execution
       // We'll update this when the function completes
       const startTime = new Date();
+      
+      // Emit pipeline execution started event
+      pipelineEvents.emit('pipeline_execution_started', {
+        pipelineType,
+        historyId
+      });
       
       // Execute the appropriate function based on pipeline type
       let result;
@@ -322,6 +310,14 @@ class PipelineOperationsController extends BaseController {
       
       logger.info(`Direct execution of ${pipelineType} completed in ${executionTime.toFixed(2)}s with status: ${result.success ? 'success' : 'failure'}`);
       
+      // Emit pipeline execution completed event
+      pipelineEvents.emit('pipeline_execution_completed', {
+        pipelineType,
+        historyId,
+        itemsProcessed: result.itemsProcessed || 0,
+        stats: result.stats
+      });
+      
     } catch (error) {
       logger.error(`Error in direct execution of ${pipelineType}:`, { error });
       
@@ -330,6 +326,12 @@ class PipelineOperationsController extends BaseController {
         status: 'failed',
         completed_at: new Date().toISOString(),
         error_message: error.message || 'Unknown error'
+      });
+      // Emit pipeline execution error event
+      pipelineEvents.emit('pipeline_execution_error', {
+        pipelineType,
+        historyId,
+        error: error.message
       });
     }
   }
@@ -341,6 +343,14 @@ class PipelineOperationsController extends BaseController {
    */
   async executeGitHubSync() {
     logger.info('Executing GitHub sync function directly');
+    
+    // Initialize stats to track processing metrics
+    const stats = {
+      processed: 0,
+      saved: 0,
+      errors: 0,
+      skipped: 0
+    };
     
     try {
       // Step 1: Import required modules
@@ -386,53 +396,66 @@ class PipelineOperationsController extends BaseController {
       logger.info('Fetching merged pull requests from GitHub...');
       const mergedPRs = await getRecentMergedPullRequests(githubClient);
       logger.info(`Found ${mergedPRs.length} recently merged pull requests`);
+      stats.processed = mergedPRs.length;
       
       // Step 6: Process each PR
       // Important: We now fetch commit data for each PR and store it with the PR data
       // This ensures we can process all commits, not just their count
       logger.info('Processing pull requests with complete commit data');
       
-      let itemsProcessed = 0;
       for (const pr of mergedPRs) {
         try {
           // Pass the githubClient to storeMergedPullRequest to fetch commit data
           await storeMergedPullRequest(pr, db);
-          itemsProcessed++;
+          stats.saved++;
         } catch (prError) {
           logger.error(`Error processing PR (${pr.payload?.pull_request?.html_url || 'unknown PR'})`, { 
             error: prError 
           });
+          stats.errors++;
           // Continue processing other PRs even if one fails
         }
       }
       
-      logger.info(`GitHub sync completed. Processed ${itemsProcessed} pull requests.`);
+      logger.info(`GitHub sync completed. Processed ${stats.processed} pull requests.`);
       
       // Step 7: Close the database connection
       await db.close();
       
-      // Step 8: Get stats
+      // Step 8: Get stats for unprocessed items
       const statsDb = await openSQLiteConnection();
       const statsQuery = "SELECT COUNT(*) as count FROM closed_merge_requests_raw WHERE is_processed = 0";
       const statsResult = await statsDb.get(statsQuery);
       const unprocessedCount = statsResult?.count || 0;
       await statsDb.close();
       
+      // Emit pipeline progress event
+      pipelineEvents.emit('pipeline_progress', {
+        pipelineType: 'github_sync',
+        progress: {
+          currentStep: 'Fetching recent merged pull requests',
+          itemsProcessed: stats.processed
+        },
+        stats
+      });
+      
       // Step 9: Document the changes
       logger.info('GitHub sync process complete. Documentation update recommended to reflect changes.');
       
       return { 
-        success: true, 
-        itemsProcessed,
+        success: true,
+        itemsProcessed: stats.processed,
+        stats,
         unprocessedCount,
-        message: `Successfully processed ${itemsProcessed} pull requests. ${unprocessedCount} ready for data extraction.`
+        message: `Successfully processed ${stats.processed} pull requests. ${unprocessedCount} ready for data extraction.`
       };
     } catch (error) {
       logger.error('Error in direct GitHub sync function:', { error });
       
-      return { 
-        success: false, 
-        error,
+      return {
+        success: false,
+        stats,
+        error: error.message,
         message: `Failed to sync GitHub data: ${error.message}` 
       };
     }
@@ -520,6 +543,19 @@ class PipelineOperationsController extends BaseController {
       await db.close();
       
       logger.info("Completed data processing", { stats });
+      
+      // Emit progress event after processing some items
+      if (processedIds.length > 0 && processedIds.length % 10 === 0) { // Every 10 items
+        pipelineEvents.emit('pipeline_progress', {
+          pipelineType: 'data_processing',
+          progress: {
+            currentStep: 'Processing raw merge requests',
+            itemsProcessed: processedIds.length,
+            totalItems: itemCount
+          },
+          stats
+        });
+      }
       
       return {
         success: true,
@@ -676,6 +712,12 @@ class PipelineOperationsController extends BaseController {
    */
   async executeDataEnrichment() {
     logger.info('Executing data enrichment function directly');
+    // Remove duplicate event emission and use our standard format
+    pipelineEvents.emit('pipeline_started', { 
+      pipelineType: 'data_enrichment',
+      historyId: null,
+      parameters: {}
+    });
     
     try {
       // Initialize the stats counter
@@ -721,8 +763,17 @@ class PipelineOperationsController extends BaseController {
         
         // 1. First, enrich repositories
         logger.info('Starting repository enrichment phase');
+        pipelineEvents.emit('pipeline_progress', {
+          pipelineType: 'data_enrichment',
+          progress: {
+            currentStep: 'Starting repository enrichment',
+            phase: 'repository_enrichment'
+          },
+          stats
+        });
+        
         let repoProcessAttempts = 0;
-        let repoUnenrichedCount = 1;
+        let repoUnenrichedCount = stats.repositories.notFound;
         
         while (repoUnenrichedCount > 0 && repoProcessAttempts < 5) { // Limit attempts to prevent infinite loops
           // Check if there are still unenriched repositories
@@ -775,8 +826,28 @@ class PipelineOperationsController extends BaseController {
           repoProcessAttempts++;
         }
         
+        // After repository enrichment
+        pipelineEvents.emit('pipeline_progress', {
+          pipelineType: 'data_enrichment',
+          progress: {
+            currentStep: 'Repository enrichment completed',
+            phase: 'repository_enrichment'
+          },
+          stats
+        });
+        
+        pipelineEvents.emit('pipeline_progress', {
+          pipelineType: 'data_enrichment',
+          progress: {
+            currentStep: 'Starting contributor enrichment',
+            phase: 'contributor_enrichment'
+          },
+          stats
+        });
+        
         // 2. Next, enrich contributors
         logger.info('Starting contributor enrichment phase');
+        pipelineEvents.emit('contributor_enrichment_started', { unenrichedCount: stats.contributors.notFound });
         
         // First, mark all contributors without github_id as enriched to prevent repeated processing
         logger.info('Marking contributors without github_id as enriched');
@@ -845,6 +916,14 @@ class PipelineOperationsController extends BaseController {
         
         // 3. Finally, enrich merge requests and their commits
         logger.info('Starting merge request enrichment phase');
+        pipelineEvents.emit('pipeline_progress', {
+          pipelineType: 'data_enrichment',
+          progress: {
+            currentStep: 'Starting merge request enrichment',
+            phase: 'merge_request_enrichment'
+          },
+          stats
+        });
         
         let mrProcessAttempts = 0;
         let mrUnenrichedCount = 1;
@@ -995,6 +1074,11 @@ class PipelineOperationsController extends BaseController {
         logger.error('Error updating pipeline history:', { error });
       }
       
+      // Emit pipeline stopped event
+      pipelineEvents.emit('pipeline_stopped', {
+        pipelineType: req.body.pipeline_type
+      });
+      
       return this.sendSuccess(res, {
         message: `Pipeline ${actualPipelineType} stop request acknowledged`,
         history_id: actualHistoryId
@@ -1034,6 +1118,12 @@ class PipelineOperationsController extends BaseController {
       
       // For restarting, we use the same logic as starting
       setTimeout(() => this.executeDirectFunction(actualHistoryId, actualPipelineType), 100);
+      
+      // Emit pipeline restarted event
+      pipelineEvents.emit('pipeline_restarted', {
+        pipelineType: req.body.pipeline_type,
+        historyId
+      });
       
       return this.sendSuccess(res, {
         message: `Direct execution of ${actualPipelineType} restarted successfully`,
@@ -1075,6 +1165,14 @@ class PipelineOperationsController extends BaseController {
         } catch (e) {
           logger.error('Error updating pipeline history:', { error: e });
         }
+      }
+      // Emit history updated event for significant status changes
+      if (data.status) {
+        pipelineEvents.emit('pipeline_status_changed', {
+          historyId,
+          status: data.status,
+          itemsProcessed: data.items_processed
+        });
       }
     } catch (error) {
       logger.error('Error in updatePipelineHistory:', { error });
