@@ -200,7 +200,7 @@ class PipelineOperationsController extends BaseController {
       }
       
       // Check if pipeline type is valid
-      const validPipelineTypes = ['github_sync', 'data_processing', 'data_enrichment', 'contributor_enrichment', 'ai_analysis'];
+      const validPipelineTypes = ['github_sync', 'data_processing', 'data_enrichment', 'contributor_enrichment', 'ai_analysis', 'sitemap_generation'];
       if (!validPipelineTypes.includes(actualPipelineType)) {
         return this.sendError(res, `Invalid pipeline type: ${actualPipelineType}`, 400);
       }
@@ -231,6 +231,9 @@ class PipelineOperationsController extends BaseController {
           break;
         case 'ai_analysis':
           result = await this.executeAIAnalysis();
+          break;
+        case 'sitemap_generation':
+          result = await this.executeSitemapGeneration();
           break;
         default:
           throw new Error(`Unknown pipeline type: ${actualPipelineType}`);
@@ -292,6 +295,9 @@ class PipelineOperationsController extends BaseController {
           break;
         case 'ai_analysis':
           result = await this.executeAIAnalysis();
+          break;
+        case 'sitemap_generation':
+          result = await this.executeSitemapGeneration();
           break;
         default:
           throw new Error(`Unknown pipeline type: ${pipelineType}`);
@@ -2254,6 +2260,108 @@ class PipelineOperationsController extends BaseController {
       return {
         success: false,
         message: `Failed to store merged pull request: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Execute sitemap generation pipeline
+   * @returns {Promise<Object>} Result of the operation
+   */
+  async executeSitemapGeneration() {
+    logger.info('Starting sitemap generation pipeline...');
+    
+    try {
+      // Create and execute the sitemap pipeline
+      const pipeline = global.pipelines['sitemap_generation'];
+      
+      if (!pipeline) {
+        throw new Error('Sitemap generation pipeline not found');
+      }
+      
+      // Update the pipeline status to running
+      let db = null;
+      try {
+        db = await openSQLiteConnection();
+        
+        // Check if there's an entry in the pipeline_status table
+        const existingStatus = await db.get(
+          'SELECT * FROM pipeline_status WHERE pipeline_type = ?',
+          ['sitemap_generation']
+        );
+        
+        if (existingStatus) {
+          // Update existing status
+          await db.run(
+            'UPDATE pipeline_status SET status = ?, is_running = 1, last_run = CURRENT_TIMESTAMP WHERE pipeline_type = ?',
+            ['running', 'sitemap_generation']
+          );
+        } else {
+          // Insert new status
+          await db.run(
+            'INSERT INTO pipeline_status (pipeline_type, status, is_running, last_run, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+            ['sitemap_generation', 'running', 1]
+          );
+        }
+      } catch (dbError) {
+        logger.error('Database error updating pipeline status:', { error: dbError });
+      } finally {
+        if (db) await closeSQLiteConnection(db);
+      }
+      
+      // Execute the pipeline
+      const context = new PipelineContext({});
+      
+      // Add a utility function to update status
+      context.updateStatus = (status) => {
+        logger.info(`Sitemap generation status update: ${status.message || 'In progress'}`, status);
+      };
+      
+      // Add a logger reference to the context
+      context.logger = logger;
+      
+      // Run the pipeline
+      const result = await pipeline.run(context);
+      
+      // Update the pipeline status to completed
+      try {
+        db = await openSQLiteConnection();
+        await db.run(
+          'UPDATE pipeline_status SET status = ?, is_running = 0 WHERE pipeline_type = ?',
+          ['completed', 'sitemap_generation']
+        );
+      } catch (dbError) {
+        logger.error('Database error updating pipeline status:', { error: dbError });
+      } finally {
+        if (db) await closeSQLiteConnection(db);
+      }
+      
+      logger.info('Sitemap generation pipeline completed successfully');
+      
+      // Return success
+      return {
+        success: true,
+        itemsProcessed: result.generatedSitemaps ? result.generatedSitemaps.length : 0
+      };
+    } catch (error) {
+      logger.error('Error executing sitemap generation pipeline:', { error });
+      
+      // Update the pipeline status to failed
+      try {
+        const db = await openSQLiteConnection();
+        await db.run(
+          'UPDATE pipeline_status SET status = ?, is_running = 0 WHERE pipeline_type = ?',
+          ['failed', 'sitemap_generation']
+        );
+        await closeSQLiteConnection(db);
+      } catch (dbError) {
+        logger.error('Database error updating pipeline status:', { error: dbError });
+      }
+      
+      // Return error
+      return {
+        success: false,
+        error: error
       };
     }
   }

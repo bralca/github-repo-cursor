@@ -9,6 +9,8 @@ import { handlePipelineItemCount } from '../handlers/pipeline-item-count';
 import { handlePipelineSchedules } from '../handlers/pipeline-schedules';
 import { handleEntityCounts } from '../handlers/entity-counts';
 import { handlePipelineHistoryClear } from '../handlers/pipeline-history-clear';
+import { getSitemapStatus } from '../handlers/get-sitemap-status';
+import { triggerSitemapGeneration } from '../handlers/trigger-sitemap-generation';
 
 /**
  * Checks if the user is authenticated, considering that they might already be
@@ -53,6 +55,8 @@ export async function GET(
         return await handlePipelineSchedules(request);
       case 'entity-counts':
         return await handleEntityCounts(request);
+      case 'sitemap-status':
+        return await getSitemapStatus(request);
       default:
         return NextResponse.json(
           { error: `Unknown endpoint: ${endpoint}` },
@@ -90,6 +94,8 @@ export async function POST(
         return await handlePipelineOperations(request);
       case 'pipeline-history-clear':
         return await handlePipelineHistoryClear(request);
+      case 'generate-sitemap':
+        return await triggerSitemapGeneration(request);
       default:
         return NextResponse.json(
           { error: `Unknown endpoint: ${endpoint}` },

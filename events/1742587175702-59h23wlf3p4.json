@@ -1,0 +1,9 @@
+{
+  "type": "pipeline_started",
+  "data": {
+    "pipelineType": "data_enrichment",
+    "historyId": null,
+    "parameters": {}
+  },
+  "timestamp": "2025-03-21T19:59:35.702Z"
+}

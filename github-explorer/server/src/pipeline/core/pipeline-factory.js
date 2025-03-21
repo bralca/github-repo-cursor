@@ -6,7 +6,7 @@ import { logger } from '../../utils/logger.js';
  * Factory for creating and managing data processing pipelines.
  * Handles registration of pipeline stages and execution of pipelines.
  */
-class PipelineFactory {
+export class PipelineFactory {
   constructor() {
     this.stages = new Map();
     this.pipelines = new Map();

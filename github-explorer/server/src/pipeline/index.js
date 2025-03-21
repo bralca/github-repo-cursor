@@ -15,4 +15,7 @@ export * from './processors/index.js';
 export * from './stages/index.js';
 
 // Export utilities
-export * from './utils/index.js'; 
+export * from './utils/index.js';
+
+// Export sitemap pipeline
+export { default as createSitemapPipeline } from './sitemap-pipeline.js'; 

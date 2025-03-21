@@ -12,6 +12,7 @@ import { registerCommitProcessorPipeline } from './pipeline/stages/commit-proces
 import { registerDatabaseWriterPipeline } from './pipeline/stages/database-writer-pipeline.js';
 import { processWebhookPayload } from './pipeline/stages/webhook-processor-pipeline.js';
 import { processRepository } from './pipeline/stages/repository-processor-pipeline.js';
+import { createSitemapPipeline } from './pipeline/index.js';
 import { supabaseClientFactory } from './services/supabase/supabase-client.js';
 
 // Import routes
@@ -93,6 +94,12 @@ function initializePipelines() {
   registerDatabaseWriterPipeline({
     // Any database writer configuration
   });
+  
+  // Register sitemap generation pipeline
+  const sitemapPipeline = createSitemapPipeline();
+  // Add the pipeline to the pipeline server's available pipelines
+  global.pipelines = global.pipelines || {};
+  global.pipelines['sitemap_generation'] = sitemapPipeline;
   
   logger.info('Data processing pipelines initialized successfully');
 }

@@ -1,15 +1,10 @@
-import { ReactNode } from 'react';
-import { AdminEventProvider } from '@/components/admin/AdminEventContext';
+import { Metadata } from 'next';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Admin Dashboard | GitHub Explorer',
-  description: 'Administrative dashboard for GitHub Explorer.',
+  description: 'Manage pipeline operations and monitor system status',
 };
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
-  return (
-    <AdminEventProvider>
-      {children}
-    </AdminEventProvider>
-  );
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return children;
 } 

@@ -1,14 +1,17 @@
-import { Metadata } from 'next';
+"use client";
+
 import { PipelineControlCard } from '@/components/admin/PipelineControlCard';
 import { CronJobManager } from '@/components/admin/CronJobManager';
 import { EntityStatsOverview } from '@/components/admin/EntityStatsOverview';
 import { PipelineHistory } from '@/components/admin/PipelineHistory';
+import { SitemapControlCard } from '@/components/admin/SitemapControlCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export const metadata: Metadata = {
-  title: 'Admin Dashboard | GitHub Explorer',
-  description: 'Manage pipeline operations and monitor system status',
-};
+// Metadata must be moved to a separate layout.tsx file for client components
+// export const metadata: Metadata = {
+//   title: 'Admin Dashboard | GitHub Explorer',
+//   description: 'Manage pipeline operations and monitor system status',
+// };
 
 export default function AdminDashboardPage() {
   // Set to true to use SQLite, false to use Supabase
@@ -49,6 +52,14 @@ export default function AdminDashboardPage() {
             description="Analyze data with AI for insights"
             useSQLite={useSQLite}
           />
+        </div>
+        
+        {/* Add Sitemap Control Card */}
+        <div className="mt-4">
+          <h2 className="text-xl font-semibold mb-4">SEO Tools</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <SitemapControlCard />
+          </div>
         </div>
         
         <Tabs defaultValue="entity-stats" className="w-full">
