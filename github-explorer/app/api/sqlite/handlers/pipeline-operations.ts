@@ -81,7 +81,8 @@ async function startPipeline(pipelineType: string) {
       },
       body: JSON.stringify({
         pipeline_type: pipelineType,
-        direct_execution: true // Signal that this is a direct execution
+        direct_execution: true, // Signal that this is a direct execution
+        process_all_items: true // Signal to process all items until completion
       })
     });
     

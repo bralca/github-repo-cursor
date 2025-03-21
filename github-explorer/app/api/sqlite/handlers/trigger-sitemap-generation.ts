@@ -109,8 +109,17 @@ function generateCommitUrl(
   commitId: string
 ): string | null {
   // Skip if any required components are missing
-  if (!mrTitle || !mrGithubId || !contributorUsername || !contributorGithubId || !filename) {
-    console.log(`SERVER-SIDE: Skipping commit ${commitId} due to missing data for full URL pattern`);
+  if (!repoName || !repoGithubId || !contributorUsername || !contributorGithubId || !filename || !mrTitle || !mrGithubId) {
+    const missingFields = [];
+    if (!repoName) missingFields.push('repoName');
+    if (!repoGithubId) missingFields.push('repoGithubId');
+    if (!contributorUsername) missingFields.push('contributorUsername');
+    if (!contributorGithubId) missingFields.push('contributorGithubId');
+    if (!filename) missingFields.push('filename');
+    if (!mrTitle) missingFields.push('mrTitle');
+    if (!mrGithubId) missingFields.push('mrGithubId');
+    
+    console.log(`SERVER-SIDE: Skipping commit ${commitId} due to missing fields: ${missingFields.join(', ')}`);
     return null;
   }
   
@@ -357,12 +366,12 @@ async function generateCommitsSitemap(): Promise<SitemapResult> {
           con.github_id as contributor_github_id,
           con.name as contributor_name,
           con.username as contributor_username,
-          c.filename
+          MIN(c.filename) as filename
         FROM commits c
         JOIN repositories r ON c.repository_id = r.id
         LEFT JOIN merge_requests mr ON c.pull_request_id = mr.id
         LEFT JOIN contributors con ON c.contributor_id = con.id
-        GROUP BY c.github_id, r.full_name
+        GROUP BY c.github_id, r.id
         LIMIT 49000
       `);
     });
@@ -374,7 +383,27 @@ async function generateCommitsSitemap(): Promise<SitemapResult> {
     const baseUrl = getBaseUrl();
     let skippedCount = 0;
     
+    // Track missing field statistics
+    const missingFieldStats = {
+      repoName: 0,
+      repoGithubId: 0,
+      contributorUsername: 0,
+      contributorGithubId: 0,
+      filename: 0,
+      mrTitle: 0,
+      mrGithubId: 0
+    };
+    
     const urlEntries = result.map((commit: CommitRecord) => {
+      // Check missing fields before calling generateCommitUrl to track statistics
+      if (!commit.repository_name && !commit.full_name) missingFieldStats.repoName++;
+      if (!commit.repository_github_id) missingFieldStats.repoGithubId++;
+      if (!commit.contributor_username) missingFieldStats.contributorUsername++;
+      if (!commit.contributor_github_id) missingFieldStats.contributorGithubId++;
+      if (!commit.filename) missingFieldStats.filename++;
+      if (!commit.merge_request_title) missingFieldStats.mrTitle++;
+      if (!commit.merge_request_github_id) missingFieldStats.mrGithubId++;
+      
       const commitPath = generateCommitUrl(
         commit.repository_name || commit.full_name.split('/').pop() || '',
         commit.repository_github_id,
@@ -407,6 +436,15 @@ async function generateCommitsSitemap(): Promise<SitemapResult> {
     
     const includedCommits = uniqueCommits - skippedCount;
     console.log(`SERVER-SIDE: Included ${includedCommits} commits in sitemap, skipped ${skippedCount} commits with incomplete data`);
+    console.log(`SERVER-SIDE: Missing field statistics:`, missingFieldStats);
+    
+    // Calculate percentages
+    if (uniqueCommits > 0) {
+      const percentages = Object.entries(missingFieldStats).map(([field, count]) => {
+        return `${field}: ${Math.round((count / uniqueCommits) * 100)}%`;
+      }).join(', ');
+      console.log(`SERVER-SIDE: Missing field percentages: ${percentages}`);
+    }
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
       <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

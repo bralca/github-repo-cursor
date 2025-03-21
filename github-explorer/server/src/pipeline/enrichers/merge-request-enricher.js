@@ -115,7 +115,7 @@ class MergeRequestEnricher {
     
     // First, check if this is a problem with GitHub's internal ID vs PR number
     const sampleMR = await this.db.get(`
-      SELECT mr.id, mr.github_id, mr.title, r.full_name as repository_full_name
+      SELECT mr.id, mr.github_id, mr.title, r.full_name as repository_full_name, mr.enrichment_attempts
       FROM merge_requests mr
       JOIN repositories r ON mr.repository_id = r.id
       WHERE mr.is_enriched = 0
@@ -131,7 +131,7 @@ class MergeRequestEnricher {
         // Mark these as enriched since we can't process them without the actual PR number
         await this.db.run(`
           UPDATE merge_requests
-          SET is_enriched = 1
+          SET is_enriched = 1, enrichment_attempts = 3
           WHERE id = ?`, [sampleMR.id]);
           
         this.logger.info(`Marked merge request ${sampleMR.id} as enriched to skip it.`);
@@ -141,10 +141,11 @@ class MergeRequestEnricher {
     const query = `
       SELECT mr.id, mr.github_id, mr.title, r.full_name as repository_full_name, 
              r.id as repository_id, r.github_id as repository_github_id,
-             mr.author_id, mr.author_github_id
+             mr.author_id, mr.author_github_id, mr.enrichment_attempts
       FROM merge_requests mr
       JOIN repositories r ON mr.repository_id = r.id
-      WHERE mr.is_enriched = 0
+      WHERE mr.is_enriched = 0 AND mr.enrichment_attempts < 3
+      ORDER BY mr.enrichment_attempts ASC, mr.github_id ASC
       LIMIT ? OFFSET ?`;
     
     return await this.db.all(query, [batchSize, offset]);
@@ -188,6 +189,19 @@ class MergeRequestEnricher {
       throw new Error(`Invalid repository name format: ${repository_full_name}`);
     }
     
+    // First, increment the attempt counter
+    try {
+      await this.db.run(
+        'UPDATE merge_requests SET enrichment_attempts = enrichment_attempts + 1 WHERE id = ?',
+        [id]
+      );
+      
+      this.logger.info(`Incrementing enrichment attempt for merge request ${repository_full_name}#${github_id} (ID: ${id}), attempt #${mergeRequest.enrichment_attempts + 1}`);
+    } catch (error) {
+      this.logger.error(`Error updating enrichment attempt counter for merge request ${id}`, { error });
+      // Continue with enrichment even if counter update fails
+    }
+    
     try {
       // First get the PR number from the raw data
       const rawData = await this.db.get(`
@@ -198,92 +212,156 @@ class MergeRequestEnricher {
       if (!rawData) {
         this.logger.warn(`No raw data found for merge request with github_id ${github_id}. Setting enriched=1 to skip.`);
         await this.db.run(`UPDATE merge_requests SET is_enriched = 1 WHERE id = ?`, [id]);
-        return;
+        return false;
       }
       
-      // Parse the JSON data
-      const pullRequestData = JSON.parse(rawData.data);
-      // Since we now store the PR number directly in github_id, use it directly
-      const prNumber = github_id;
-      
-      this.logger.info(`Using PR number ${prNumber} for merge request with github_id ${github_id}`);
-      
-      // Fetch PR data from GitHub API using the correct PR number
-      this.logger.info(`Fetching PR data: owner=${owner}, repo=${repo}, pr_number=${prNumber}`);
-      const prData = await this.githubClient.getPullRequest(owner, repo, prNumber);
-      
-      // Process the PR author to ensure we have a contributor record
-      if (prData.user) {
-        await this.processContributor(prData.user);
+      // Parse the raw data
+      let prData;
+      try {
+        prData = JSON.parse(rawData.data);
+        if (!prData || !prData.pull_request) {
+          throw new Error('Invalid PR data structure');
+        }
+      } catch (parseError) {
+        this.logger.error(`Error parsing raw PR data for ${github_id}`, { error: parseError });
+        
+        // Check if this is the third attempt
+        if (mergeRequest.enrichment_attempts >= 2) {
+          this.logger.warn(`Maximum enrichment attempts reached for merge request ${repository_full_name}#${github_id}, marking as enriched`);
+          await this.db.run(`UPDATE merge_requests SET is_enriched = 1 WHERE id = ?`, [id]);
+        }
+        
+        return false;
       }
       
-      // Process merged_by user if PR was merged
-      let mergedById = null;
-      if (prData.merged_by) {
-        mergedById = await this.processContributor(prData.merged_by);
+      // Get PR number - try both fields since data structure might vary
+      const prNumber = prData.pull_request.pr_number || prData.pull_request.number;
+      
+      if (!prNumber) {
+        this.logger.error(`Could not determine PR number for ${github_id}`);
+        
+        // Check if this is the third attempt
+        if (mergeRequest.enrichment_attempts >= 2) {
+          this.logger.warn(`Maximum enrichment attempts reached for merge request ${repository_full_name}#${github_id}, marking as enriched`);
+          await this.db.run(`UPDATE merge_requests SET is_enriched = 1 WHERE id = ?`, [id]);
+        }
+        
+        return false;
       }
       
-      // Get additional data - reviews and comments
-      this.logger.info(`Fetching reviews for PR: owner=${owner}, repo=${repo}, pr_number=${prNumber}`);
-      const reviews = await this.githubClient.getPullRequestReviews(owner, repo, prNumber);
-      this.logger.info(`Fetching comments for PR: owner=${owner}, repo=${repo}, pr_number=${prNumber}`);
-      const comments = await this.githubClient.getPullRequestComments(owner, repo, prNumber);
+      this.logger.info(`Found PR number ${prNumber} for merge request with github_id ${github_id}`);
       
-      // Prepare the merge request update with enriched data
-      const mergeRequestUpdate = {
-        title: prData.title,
-        description: prData.body || '',
-        state: prData.state,
-        is_draft: prData.draft || false,
-        closed_at: prData.closed_at || null,
-        merged_at: prData.merged_at || null,
-        merged_by_id: mergedById,
-        merged_by_github_id: prData.merged_by ? prData.merged_by.id : null,
-        commits_count: prData.commits,
-        additions: prData.additions,
-        deletions: prData.deletions,
-        changed_files: prData.changed_files,
-        labels: JSON.stringify(prData.labels.map(label => label.name)),
-        source_branch: prData.head.ref,
-        target_branch: prData.base.ref,
-        review_count: reviews.length,
-        comment_count: comments.length,
-        is_enriched: 1,
-        updated_at: new Date().toISOString()
-      };
-      
-      // Update the merge request record
-      await this.updateMergeRequest(mergeRequest.id, mergeRequestUpdate);
-      
-      // Fetch and process all commits for this PR
-      this.logger.info(`Fetching commits for PR: owner=${owner}, repo=${repo}, pr_number=${prNumber}`);
+      // Get commits for the PR
+      await this.handleRateLimiting();
       const commitsResponse = await this.githubClient.getPullRequestCommits(owner, repo, prNumber);
-      const commits = commitsResponse.data;
-      this.logger.info(`Processing ${commits.length} commits for PR ${repository_full_name}#${prNumber}`);
+      
+      // Extract commits array from the response
+      const commits = commitsResponse && commitsResponse.data ? commitsResponse.data : null;
+      
+      this.logger.info(`Found ${commits ? commits.length : 'undefined'} commits for PR #${prNumber}`);
+      
+      // Check if commits is undefined or null
+      if (!commits || !Array.isArray(commits)) {
+        this.logger.warn(`No valid commits array returned for PR #${prNumber}. Marking as enriched with minimal data.`);
+        await this.updateMergeRequest(id, {
+          commits_count: 0,
+          is_enriched: 1,
+          updated_at: new Date().toISOString()
+        });
+        return true;
+      }
+      
+      // Update merge request with commit count
+      await this.updateMergeRequest(id, {
+        commits_count: commits.length,
+        is_enriched: 1, // Mark as enriched now that we have the data
+        updated_at: new Date().toISOString()
+      });
+      
+      // Process each commit
+      let totalAdditions = 0;
+      let totalDeletions = 0;
       
       for (const commit of commits) {
+        await this.handleRateLimiting();
+        
+        // Process commit data
         try {
-          // For each commit, get its files
-          this.logger.debug(`Fetching files for commit: ${commit.sha.substring(0, 7)}`);
-          const commitWithFiles = await this.githubClient.getCommit(owner, repo, commit.sha);
-          await this.processCommit(commitWithFiles, mergeRequest);
+          // Get contributor information
+          const contributorData = await this.processContributor(commit.author);
+          
+          // Process each file in the commit
+          await this.processCommit(commit, mergeRequest);
+          
+          // Update additions/deletions totals from commit stats
+          if (commit.stats) {
+            totalAdditions += commit.stats.additions || 0;
+            totalDeletions += commit.stats.deletions || 0;
+          }
+          
           this.stats.commitsProcessed++;
-        } catch (error) {
-          this.logger.error(`Error processing commit ${commit.sha} for PR ${repository_full_name}#${prNumber}: ${error.message}`);
+        } catch (commitError) {
+          this.logger.error(`Error processing commit ${commit.sha} for PR #${prNumber}`, { error: commitError });
+          // Continue with next commit
         }
       }
       
-      this.logger.info(`Successfully enriched merge request ${repository_full_name}#${prNumber}`);
-    } catch (error) {
-      this.logger.error(`Failed to enrich merge request ${repository_full_name} with ID ${id}`, {
-        error: error.message,
-        repository: repository_full_name,
-        owner: owner,
-        repo: repo,
-        id: id,
-        github_id: github_id
+      // Update merge request with additions/deletions totals
+      await this.updateMergeRequest(id, {
+        additions: totalAdditions,
+        deletions: totalDeletions,
+        updated_at: new Date().toISOString()
       });
-      throw error;
+      
+      this.logger.info(`Successfully enriched merge request ${repository_full_name}#${prNumber}`);
+      this.stats.successful++;
+      return true;
+    } catch (error) {
+      // Check if this is a rate limit error
+      const isRateLimitError = error.status === 403 && 
+        (error.message.includes('rate limit') || 
+         (error.response && error.response.headers && 
+          error.response.headers['x-ratelimit-remaining'] === '0'));
+      
+      if (isRateLimitError) {
+        this.logger.warn(`Rate limit hit when enriching merge request ${repository_full_name}#${github_id}`, { error });
+        
+        // Don't increment the attempt counter for rate limit errors
+        // Revert the attempt counter increment we did at the start
+        try {
+          await this.db.run(
+            'UPDATE merge_requests SET enrichment_attempts = enrichment_attempts - 1 WHERE id = ?',
+            [id]
+          );
+        } catch (counterError) {
+          this.logger.error(`Error reverting enrichment attempt counter for merge request ${id}`, { counterError });
+          // Continue even if counter update fails
+        }
+        
+        throw error; // Re-throw to trigger rate limit handling
+      }
+      
+      this.logger.error(`Error enriching merge request ${repository_full_name}#${github_id}`, { error });
+      this.stats.failed++;
+      
+      // If this was the 3rd attempt, mark as enriched to prevent further attempts
+      if (mergeRequest.enrichment_attempts >= 2) { // This is already the 3rd attempt (0-indexed)
+        this.logger.warn(`Maximum enrichment attempts reached for merge request ${repository_full_name}#${github_id}, marking as failed but enriched`);
+        
+        try {
+          await this.db.run(
+            `UPDATE merge_requests SET 
+             is_enriched = 1,
+             updated_at = ? 
+             WHERE id = ?`,
+            [new Date().toISOString(), id]
+          );
+        } catch (updateError) {
+          this.logger.error(`Error marking merge request ${id} as enriched after max attempts`, { updateError });
+        }
+      }
+      
+      return false;
     }
   }
   
@@ -348,8 +426,43 @@ class MergeRequestEnricher {
       contributorGithubId = commit.author.id;
     }
     
+    // Get repository details for the API call
+    const [owner, repo] = mergeRequest.repository_full_name.split('/');
+    
+    // Fetch full commit details to get files information
+    try {
+      // Get full commit details from GitHub API which includes files
+      await this.handleRateLimiting();
+      const fullCommitDetails = await this.githubClient.getCommit(owner, repo, commit.sha);
+      
+      // Update commit with full details
+      if (fullCommitDetails) {
+        // Merge the commit objects, prioritizing fullCommitDetails
+        Object.assign(commit, fullCommitDetails);
+      }
+    } catch (error) {
+      this.logger.warn(`Could not fetch full commit details for ${commit.sha} in ${mergeRequest.repository_full_name}`, { error: error.message });
+      // Continue with what we have
+    }
+    
     // We need to process each file separately since our schema has one row per file
-    const files = commit.files || [];
+    let files = commit.files || [];
+    
+    // Fallback strategy: If we still don't have files, try to get PR files
+    if (files.length === 0 && mergeRequest.github_id) {
+      try {
+        this.logger.info(`No files found for commit ${commit.sha}, attempting to fetch PR files as fallback`);
+        await this.handleRateLimiting();
+        const prFilesResponse = await this.githubClient.getPullRequestFiles(owner, repo, mergeRequest.github_id);
+        
+        if (prFilesResponse && prFilesResponse.data && prFilesResponse.data.length > 0) {
+          files = prFilesResponse.data;
+          this.logger.info(`Found ${files.length} files from PR #${mergeRequest.github_id} to use as fallback`);
+        }
+      } catch (fallbackError) {
+        this.logger.warn(`Failed to fetch PR files as fallback for commit ${commit.sha}`, { error: fallbackError.message });
+      }
+    }
     
     if (files.length === 0) {
       // No file data - create one commit record with null filename
@@ -411,6 +524,11 @@ class MergeRequestEnricher {
     const message = commit.commit ? commit.commit.message : '';
     const committedAt = commit.commit && commit.commit.author ? commit.commit.author.date : null;
     
+    // Log warning for missing filename
+    if (!filename) {
+      this.logger.warn(`Missing filename for commit ${commit.sha} in ${mergeRequest.repository_full_name}. This might indicate an issue with GitHub API response or a commit with no file changes.`);
+    }
+    
     try {
       // Upsert the commit record
       await this.db.run(`
@@ -470,32 +588,34 @@ class MergeRequestEnricher {
    * @param {object} updateData - New data to update
    */
   async updateMergeRequest(id, updateData) {
-    try {
-      // Get the existing merge request data
-      const mergeRequest = await this.db.get('SELECT * FROM merge_requests WHERE id = ?', [id]);
-      
-      if (!mergeRequest) {
-        this.logger.error(`Merge request with ID ${id} not found for update`);
-        return;
-      }
-      
-      // Prepare the fields to update
-      const fields = Object.keys(updateData)
-        .map(field => `${field} = ?`)
-        .join(', ');
-      
-      // Prepare the values to update
-      const values = Object.values(updateData);
-      values.push(id);
-      
-      // Update the merge request
-      await this.db.run(`UPDATE merge_requests SET ${fields} WHERE id = ?`, values);
-      
-      this.logger.debug(`Updated merge request ${mergeRequest.github_id} with enriched data`);
-    } catch (error) {
-      this.logger.error(`Error updating merge request ${id}: ${error.message}`);
-      throw error;
-    }
+    const queryParams = [];
+    const updateFields = [];
+    
+    // Build update statement dynamically
+    Object.keys(updateData).forEach(key => {
+      updateFields.push(`${key} = ?`);
+      queryParams.push(updateData[key]);
+    });
+    
+    // Add the ID as the last parameter
+    queryParams.push(id);
+    
+    const query = `UPDATE merge_requests SET ${updateFields.join(', ')} WHERE id = ?`;
+    await this.db.run(query, queryParams);
+  }
+  
+  /**
+   * Close the database connection
+   * Note: In this implementation, we don't actually close the DB connection
+   * since it's passed in from the controller and closed there.
+   * This method exists for API consistency with other enrichers.
+   * 
+   * @returns {Promise<void>}
+   */
+  async close() {
+    // Don't close the connection here as it's managed by the controller
+    this.logger.debug('MergeRequestEnricher close() called - connection managed by controller');
+    return Promise.resolve();
   }
 }
 

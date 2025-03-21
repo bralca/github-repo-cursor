@@ -104,6 +104,51 @@ export class RepositoryEnricher {
   }
   
   /**
+   * Enrich repositories (simplified method that processes a single batch)
+   * @returns {Promise<Object>} Enrichment statistics
+   */
+  async enrichRepositories() {
+    logger.info('Starting repository enrichment batch');
+    
+    // Reset stats for this batch
+    this.stats = {
+      processed: 0,
+      success: 0,
+      failed: 0,
+      notFound: 0,
+      rateLimited: false,
+      rateLimitReset: null
+    };
+    
+    try {
+      // Fetch a batch of unenriched repositories
+      const repositories = await this.getUnenrichedRepositories(0);
+      
+      if (repositories.length === 0) {
+        logger.info('No unenriched repositories found');
+        return this.stats;
+      }
+      
+      logger.info(`Found ${repositories.length} unenriched repositories to process`);
+      
+      // Process the batch
+      await this.processBatch(repositories);
+      
+      logger.info('Repository enrichment batch completed', { stats: this.stats });
+      return this.stats;
+    } catch (error) {
+      logger.error('Error in repository enrichment batch', { error });
+      
+      // If this is not a rate limit error, increment the failed count
+      if (!this.stats.rateLimited) {
+        this.stats.failed += 1;
+      }
+      
+      return this.stats;
+    }
+  }
+  
+  /**
    * Get unenriched repositories from the database
    * @param {number} offset - Offset for pagination
    * @returns {Promise<Array>} Array of unenriched repositories
@@ -111,11 +156,12 @@ export class RepositoryEnricher {
    */
   async getUnenrichedRepositories(offset = 0) {
     try {
-      // Query for repositories with is_enriched = 0
+      // Query for repositories with is_enriched = 0 and enrichment_attempts < 3
       const query = `
-        SELECT id, github_id, name, full_name 
+        SELECT id, github_id, name, full_name, enrichment_attempts
         FROM repositories 
-        WHERE is_enriched = 0
+        WHERE is_enriched = 0 AND enrichment_attempts < 3
+        ORDER BY enrichment_attempts ASC, github_id ASC
         LIMIT ? OFFSET ?
       `;
       
@@ -180,101 +226,131 @@ export class RepositoryEnricher {
   }
   
   /**
-   * Enrich a single repository
+   * Enrich a single repository with additional data from GitHub API
    * @param {Object} repository - Repository to enrich
-   * @returns {Promise<boolean>} Success status
+   * @returns {Promise<boolean>} True if enrichment was successful
    * @private
    */
   async enrichRepository(repository) {
+    const { id, github_id, full_name } = repository;
+    
+    // First, increment the attempt counter
     try {
-      // Extract owner and name from full_name
-      const [owner, repo] = (repository.full_name || '').split('/');
+      await this.db.run(
+        'UPDATE repositories SET enrichment_attempts = enrichment_attempts + 1 WHERE id = ?',
+        [id]
+      );
       
-      if (!owner || !repo) {
-        logger.warn(`Invalid repository name format: ${repository.full_name}`);
-        return false;
-      }
-      
-      // Fetch repository data from GitHub API
-      const repoData = await this.fetchRepositoryData(owner, repo);
+      logger.info(`Incrementing enrichment attempt for repository ${full_name} (ID: ${id}), attempt #${repository.enrichment_attempts + 1}`);
+    } catch (error) {
+      logger.error(`Error updating enrichment attempt counter for repository ${id}`, { error });
+      // Continue with enrichment even if counter update fails
+    }
+    
+    try {
+      // Get repository details from GitHub API
+      logger.info(`Fetching details for repository ${full_name} from GitHub API`);
+      const repoData = await this.githubClient.getRepository(full_name);
       
       if (!repoData) {
+        logger.warn(`Repository ${full_name} not found on GitHub`);
+        this.stats.notFound++;
+        
+        // Mark as enriched but with error status to prevent retries
+        await this.db.run(
+          `UPDATE repositories SET 
+           is_enriched = 1, 
+           updated_at = ? 
+           WHERE id = ?`,
+          [new Date().toISOString(), id]
+        );
+        
         return false;
       }
       
-      // Map GitHub API response to our database schema
-      const mappedData = this.mapRepositoryData(repoData, repository.id);
+      // Map the API response to our database schema
+      const repoToUpdate = this.mapRepositoryData(repoData, id);
       
-      // Update the repository in the database
-      await this.updateRepository(mappedData);
+      // Prepare fields for update query
+      const fields = Object.keys(repoToUpdate)
+        .filter(field => field !== 'id') // Exclude id from updates
+        .map(field => `${field} = ?`)
+        .join(', ');
       
-      logger.info(`Successfully enriched repository: ${repository.full_name}`);
+      // Prepare values for update query
+      const values = Object.keys(repoToUpdate)
+        .filter(field => field !== 'id')
+        .map(field => repoToUpdate[field]);
+      
+      // Add id for WHERE clause
+      values.push(id);
+      
+      // Update repository in database
+      await this.db.run(
+        `UPDATE repositories SET ${fields} WHERE id = ?`,
+        values
+      );
+      
+      logger.info(`Successfully enriched repository ${full_name}`);
       return true;
     } catch (error) {
       // Check if this is a rate limit error
-      if (error.message && error.message.includes('API rate limit exceeded')) {
-        // Extract rate limit reset time from error if available
-        const resetMatch = error.message.match(/Reset in ([0-9]+) seconds/);
-        if (resetMatch && resetMatch[1]) {
-          const resetSeconds = parseInt(resetMatch[1], 10);
-          const resetTime = new Date(Date.now() + resetSeconds * 1000);
-          
-          this.stats.rateLimited = true;
-          this.stats.rateLimitReset = resetTime.toISOString();
-          
-          logger.warn(`GitHub API rate limit exceeded. Will reset at ${resetTime.toISOString()}`);
-        } else {
-          // Default to waiting 60 minutes if we can't parse the reset time
-          const resetTime = new Date(Date.now() + 60 * 60 * 1000);
-          
-          this.stats.rateLimited = true;
-          this.stats.rateLimitReset = resetTime.toISOString();
-          
-          logger.warn(`GitHub API rate limit exceeded. Using default wait time of 60 minutes until ${resetTime.toISOString()}`);
-        }
-      }
+      const isRateLimitError = error.status === 403 && 
+        (error.message.includes('rate limit') || 
+         (error.response && error.response.headers && 
+          error.response.headers['x-ratelimit-remaining'] === '0'));
       
-      throw error;
-    }
-  }
-  
-  /**
-   * Fetch repository data from GitHub API
-   * @param {string} owner - Repository owner
-   * @param {string} repo - Repository name
-   * @returns {Promise<Object>} Repository data
-   * @private
-   */
-  async fetchRepositoryData(owner, repo) {
-    try {
-      logger.info(`Fetching data for repository: ${owner}/${repo}`);
-      
-      // Use GitHub client to fetch repository data
-      const repoData = await this.githubClient.getRepository(`${owner}/${repo}`);
-      
-      // Check for rate limit information in headers (if available)
-      if (repoData.headers) {
-        const remaining = parseInt(repoData.headers['x-ratelimit-remaining'], 10);
-        const resetTimestamp = parseInt(repoData.headers['x-ratelimit-reset'], 10);
+      if (isRateLimitError) {
+        logger.warn(`Rate limit hit when enriching repository ${full_name}`, { error });
+        this.stats.rateLimited = true;
         
-        if (!isNaN(remaining) && remaining < 10) {
-          // If we're getting close to rate limit, log a warning
-          const resetTime = new Date(resetTimestamp * 1000);
-          logger.warn(`GitHub API rate limit running low: ${remaining} requests remaining. Resets at ${resetTime.toISOString()}`);
+        // Get reset time from headers if available
+        const resetTime = error.response && error.response.headers && 
+          error.response.headers['x-ratelimit-reset'] ? 
+          parseInt(error.response.headers['x-ratelimit-reset']) : 
+          null;
+        
+        if (resetTime) {
+          this.stats.rateLimitReset = resetTime;
+          logger.info(`Rate limit will reset at ${new Date(resetTime * 1000).toISOString()}`);
+        }
+        
+        // Don't increment the attempt counter for rate limit errors
+        // Revert the attempt counter increment we did at the start
+        try {
+          await this.db.run(
+            'UPDATE repositories SET enrichment_attempts = enrichment_attempts - 1 WHERE id = ?',
+            [id]
+          );
+        } catch (counterError) {
+          logger.error(`Error reverting enrichment attempt counter for repository ${id}`, { counterError });
+          // Continue even if counter update fails
+        }
+        
+        return false;
+      }
+      
+      // For other errors, log and update stats
+      logger.error(`Error enriching repository ${full_name}`, { error });
+      
+      // If this was the 3rd attempt, mark as enriched to prevent further attempts
+      if (repository.enrichment_attempts >= 2) { // This is already the 3rd attempt (0-indexed)
+        logger.warn(`Maximum enrichment attempts reached for repository ${full_name}, marking as failed but enriched`);
+        
+        try {
+          await this.db.run(
+            `UPDATE repositories SET 
+             is_enriched = 1,
+             updated_at = ? 
+             WHERE id = ?`,
+            [new Date().toISOString(), id]
+          );
+        } catch (updateError) {
+          logger.error(`Error marking repository ${id} as enriched after max attempts`, { updateError });
         }
       }
       
-      return repoData;
-    } catch (error) {
-      // Check if repository wasn't found
-      if (error.message && error.message.includes('Not Found')) {
-        logger.warn(`Repository not found: ${owner}/${repo}`);
-        this.stats.notFound++;
-        return null;
-      }
-      
-      // Re-throw other errors
-      throw error;
+      return false;
     }
   }
   
@@ -380,6 +456,22 @@ export class RepositoryEnricher {
     } catch (error) {
       logger.error(`Error updating repository in database: ${repository.full_name}`, { error });
       throw error;
+    }
+  }
+  
+  /**
+   * Close the database connection
+   * @returns {Promise<void>}
+   */
+  async close() {
+    if (this.db) {
+      try {
+        logger.debug('Closing repository enricher database connection');
+        await this.db.close();
+        logger.debug('Repository enricher database connection closed successfully');
+      } catch (error) {
+        logger.error('Error closing repository enricher database connection', { error });
+      }
     }
   }
 } 

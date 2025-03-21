@@ -412,12 +412,27 @@ export class GitHubApiClient {
    */
   async getPullRequestFiles(owner, repo, pullNumber) {
     try {
-      logger.info(`Fetching files for pull request #${pullNumber}`);
+      // Validate inputs
+      if (!owner || typeof owner !== 'string') {
+        throw new Error(`Invalid owner parameter: ${owner}`);
+      }
+      
+      if (!repo || typeof repo !== 'string') {
+        throw new Error(`Invalid repo parameter: ${repo}`);
+      }
+      
+      // Ensure pullNumber is a number
+      const prNumber = parseInt(pullNumber, 10);
+      if (isNaN(prNumber) || prNumber <= 0) {
+        throw new Error(`Invalid pull request number: ${pullNumber}`);
+      }
+      
+      logger.info(`Fetching files for pull request #${prNumber} for ${owner}/${repo}`);
       
       const response = await this.octokit.pulls.listFiles({
         owner,
         repo,
-        pull_number: pullNumber,
+        pull_number: prNumber,
         per_page: 100
       });
       
@@ -426,7 +441,12 @@ export class GitHubApiClient {
         headers: response.headers
       };
     } catch (error) {
-      logger.error(`Failed to fetch files for PR #${pullNumber}`, { error });
+      logger.error(`Failed to fetch files for PR #${pullNumber} for ${owner}/${repo}`, {
+        error,
+        owner,
+        repo,
+        pullNumber
+      });
       throw new Error(`Failed to fetch pull request files: ${error.message}`);
     }
   }

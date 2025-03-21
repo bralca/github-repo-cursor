@@ -104,6 +104,51 @@ export class ContributorEnricher {
   }
   
   /**
+   * Enrich contributors (simplified method that processes a single batch)
+   * @returns {Promise<Object>} Enrichment statistics
+   */
+  async enrichContributors() {
+    logger.info('Starting contributor enrichment batch');
+    
+    // Reset stats for this batch
+    this.stats = {
+      processed: 0,
+      success: 0,
+      failed: 0,
+      notFound: 0,
+      rateLimited: false,
+      rateLimitReset: null
+    };
+    
+    try {
+      // Fetch a batch of unenriched contributors
+      const contributors = await this.getUnenrichedContributors(0);
+      
+      if (contributors.length === 0) {
+        logger.info('No unenriched contributors found');
+        return this.stats;
+      }
+      
+      logger.info(`Found ${contributors.length} unenriched contributors to process`);
+      
+      // Process the batch
+      await this.processBatch(contributors);
+      
+      logger.info('Contributor enrichment batch completed', { stats: this.stats });
+      return this.stats;
+    } catch (error) {
+      logger.error('Error in contributor enrichment batch', { error });
+      
+      // If this is not a rate limit error, increment the failed count
+      if (!this.stats.rateLimited) {
+        this.stats.failed += 1;
+      }
+      
+      return this.stats;
+    }
+  }
+  
+  /**
    * Get unenriched contributors from the database
    * @param {number} offset - Offset for pagination
    * @returns {Promise<Array>} Array of unenriched contributors
@@ -111,11 +156,12 @@ export class ContributorEnricher {
    */
   async getUnenrichedContributors(offset = 0) {
     try {
-      // Query for contributors with is_enriched = 0 that have a github_id
+      // Query for contributors with is_enriched = 0 and enrichment_attempts < 3
       const query = `
-        SELECT id, github_id, username, name 
+        SELECT id, github_id, username, enrichment_attempts
         FROM contributors 
-        WHERE is_enriched = 0 AND github_id IS NOT NULL
+        WHERE is_enriched = 0 AND enrichment_attempts < 3
+        ORDER BY enrichment_attempts ASC, github_id ASC
         LIMIT ? OFFSET ?
       `;
       
@@ -180,113 +226,175 @@ export class ContributorEnricher {
   }
   
   /**
-   * Enrich a single contributor
+   * Enrich a single contributor with additional data from GitHub API
    * @param {Object} contributor - Contributor to enrich
-   * @returns {Promise<boolean>} Success status
+   * @returns {Promise<boolean>} True if enrichment was successful
    * @private
    */
   async enrichContributor(contributor) {
-    try {
-      // We only use github_id for lookup to prevent issues with placeholder usernames
-      const githubId = contributor.github_id;
+    const { id, github_id, username } = contributor;
+    
+    if (!username) {
+      logger.warn(`Contributor ${id} has no username, cannot enrich`);
       
-      if (!githubId) {
-        logger.warn(`Missing github_id for contributor: ${contributor.id}. Username lookups are disabled.`);
-        
-        // Mark placeholder contributors as enriched but failed
-        await this.markContributorAsEnriched(contributor.id, {});
-        return false;
+      // Mark as enriched but with minimal data to prevent retries
+      try {
+        await this.db.run(
+          `UPDATE contributors SET 
+           is_enriched = 1, 
+           updated_at = ? 
+           WHERE id = ?`,
+          [new Date().toISOString(), id]
+        );
+      } catch (error) {
+        logger.error(`Error marking contributor ${id} as enriched due to missing username`, { error });
       }
       
-      // Fetch contributor data from GitHub API using github_id only
-      const userData = await this.fetchContributorData(null, githubId);
+      return false;
+    }
+    
+    // First, increment the attempt counter
+    try {
+      await this.db.run(
+        'UPDATE contributors SET enrichment_attempts = enrichment_attempts + 1 WHERE id = ?',
+        [id]
+      );
+      
+      logger.info(`Incrementing enrichment attempt for contributor ${username} (ID: ${id}), attempt #${contributor.enrichment_attempts + 1}`);
+    } catch (error) {
+      logger.error(`Error updating enrichment attempt counter for contributor ${id}`, { error });
+      // Continue with enrichment even if counter update fails
+    }
+    
+    try {
+      // Get contributor details from GitHub API
+      logger.info(`Fetching details for contributor ${username} from GitHub API`);
+      const userData = await this.githubClient.getUser(username);
       
       if (!userData) {
-        // Mark as enriched anyway to prevent repeated processing
-        await this.markContributorAsEnriched(contributor.id, {});
+        logger.warn(`Contributor ${username} not found on GitHub`);
+        this.stats.notFound++;
+        
+        // Mark as enriched but with error status to prevent retries
+        await this.db.run(
+          `UPDATE contributors SET 
+           is_enriched = 1, 
+           updated_at = ? 
+           WHERE id = ?`,
+          [new Date().toISOString(), id]
+        );
+        
         return false;
       }
       
-      // Map GitHub API response to our database schema
-      const mappedData = this.mapContributorData(userData, contributor.id);
+      // Get user's repositories to determine top languages
+      let languages = [];
+      try {
+        // Get top language data
+        languages = await this.fetchUserTopLanguages(username);
+        logger.info(`Fetched top languages for ${username}: ${languages.length} languages found`);
+      } catch (langError) {
+        logger.warn(`Could not fetch top languages for ${username}`, { error: langError });
+        // Continue without language data
+      }
       
-      // Update the contributor in the database
-      await this.updateContributor(mappedData);
+      // Get user's organizations
+      let organizations = [];
+      try {
+        organizations = await this.fetchUserOrganizations(username);
+        logger.info(`Fetched organizations for ${username}: ${organizations.length} organizations found`);
+      } catch (orgError) {
+        logger.warn(`Could not fetch organizations for ${username}`, { error: orgError });
+        // Continue without organization data
+      }
       
-      logger.info(`Successfully enriched contributor: ${contributor.username || contributor.id}`);
+      // Add languages and organizations to user data
+      userData.languages = languages;
+      userData.organizations = organizations;
+      
+      // Map the API response to our database schema
+      const contributorToUpdate = this.mapContributorData(userData, id);
+      
+      // Prepare fields for update query
+      const fields = Object.keys(contributorToUpdate)
+        .filter(field => field !== 'id') // Exclude id from updates
+        .map(field => `${field} = ?`)
+        .join(', ');
+      
+      // Prepare values for update query
+      const values = Object.keys(contributorToUpdate)
+        .filter(field => field !== 'id')
+        .map(field => contributorToUpdate[field]);
+      
+      // Add id for WHERE clause
+      values.push(id);
+      
+      // Update contributor in database
+      await this.db.run(
+        `UPDATE contributors SET ${fields} WHERE id = ?`,
+        values
+      );
+      
+      logger.info(`Successfully enriched contributor ${username}`);
       return true;
     } catch (error) {
       // Check if this is a rate limit error
-      if (error.message && error.message.includes('API rate limit exceeded')) {
-        // Extract rate limit reset time from error if available
-        const resetMatch = error.message.match(/Reset in ([0-9]+) seconds/);
-        if (resetMatch && resetMatch[1]) {
-          const resetSeconds = parseInt(resetMatch[1], 10);
-          const resetTime = new Date(Date.now() + resetSeconds * 1000);
-          
-          this.stats.rateLimited = true;
-          this.stats.rateLimitReset = resetTime.toISOString();
-          
-          logger.warn(`GitHub API rate limit exceeded. Will reset at ${resetTime.toISOString()}`);
-        } else {
-          // Default to waiting 60 minutes if we can't parse the reset time
-          const resetTime = new Date(Date.now() + 60 * 60 * 1000);
-          
-          this.stats.rateLimited = true;
-          this.stats.rateLimitReset = resetTime.toISOString();
-          
-          logger.warn(`GitHub API rate limit exceeded. Using default wait time of 60 minutes until ${resetTime.toISOString()}`);
+      const isRateLimitError = error.status === 403 && 
+        (error.message.includes('rate limit') || 
+         (error.response && error.response.headers && 
+          error.response.headers['x-ratelimit-remaining'] === '0'));
+      
+      if (isRateLimitError) {
+        logger.warn(`Rate limit hit when enriching contributor ${username}`, { error });
+        this.stats.rateLimited = true;
+        
+        // Get reset time from headers if available
+        const resetTime = error.response && error.response.headers && 
+          error.response.headers['x-ratelimit-reset'] ? 
+          parseInt(error.response.headers['x-ratelimit-reset']) : 
+          null;
+        
+        if (resetTime) {
+          this.stats.rateLimitReset = resetTime;
+          logger.info(`Rate limit will reset at ${new Date(resetTime * 1000).toISOString()}`);
+        }
+        
+        // Don't increment the attempt counter for rate limit errors
+        // Revert the attempt counter increment we did at the start
+        try {
+          await this.db.run(
+            'UPDATE contributors SET enrichment_attempts = enrichment_attempts - 1 WHERE id = ?',
+            [id]
+          );
+        } catch (counterError) {
+          logger.error(`Error reverting enrichment attempt counter for contributor ${id}`, { counterError });
+          // Continue even if counter update fails
+        }
+        
+        return false;
+      }
+      
+      // For other errors, log and update stats
+      logger.error(`Error enriching contributor ${username}`, { error });
+      
+      // If this was the 3rd attempt, mark as enriched to prevent further attempts
+      if (contributor.enrichment_attempts >= 2) { // This is already the 3rd attempt (0-indexed)
+        logger.warn(`Maximum enrichment attempts reached for contributor ${username}, marking as failed but enriched`);
+        
+        try {
+          await this.db.run(
+            `UPDATE contributors SET 
+             is_enriched = 1,
+             updated_at = ? 
+             WHERE id = ?`,
+            [new Date().toISOString(), id]
+          );
+        } catch (updateError) {
+          logger.error(`Error marking contributor ${id} as enriched after max attempts`, { updateError });
         }
       }
       
-      throw error;
-    }
-  }
-  
-  /**
-   * Fetch contributor data from GitHub API
-   * @param {string} username - Contributor username (ignored)
-   * @param {number} githubId - Contributor GitHub ID
-   * @returns {Promise<Object>} Contributor data
-   * @private
-   */
-  async fetchContributorData(username, githubId) {
-    try {
-      // ONLY use github_id for lookups, never username
-      if (githubId) {
-        logger.info(`Fetching data for contributor by ID: ${githubId}`);
-        
-        // Use GitHub client to fetch user data by ID
-        const userData = await this.githubClient.getUserById(githubId);
-        
-        // Check for rate limit information in headers (if available)
-        if (userData.headers) {
-          const remaining = parseInt(userData.headers['x-ratelimit-remaining'], 10);
-          const resetTimestamp = parseInt(userData.headers['x-ratelimit-reset'], 10);
-          
-          if (!isNaN(remaining) && remaining < 10) {
-            // If we're getting close to rate limit, log a warning
-            const resetTime = new Date(resetTimestamp * 1000);
-            logger.warn(`GitHub API rate limit running low: ${remaining} requests remaining. Resets at ${resetTime.toISOString()}`);
-          }
-        }
-        
-        return userData;
-      }
-      
-      // If we don't have a github_id, log a warning and return null
-      logger.warn('No GitHub ID provided for contributor lookup. Username lookups are disabled to prevent mistaken identity issues.');
-      return null;
-    } catch (error) {
-      // Check if user wasn't found
-      if (error.message && error.message.includes('Not Found')) {
-        logger.warn(`Contributor not found with ID: ${githubId}`);
-        this.stats.notFound++;
-        return null;
-      }
-      
-      // Re-throw other errors
-      throw error;
+      return false;
     }
   }
   
@@ -502,6 +610,22 @@ export class ContributorEnricher {
     } catch (error) {
       logger.error(`Error marking contributor ${contributorId} as enriched`, { error });
       throw error;
+    }
+  }
+  
+  /**
+   * Close the database connection
+   * @returns {Promise<void>}
+   */
+  async close() {
+    if (this.db) {
+      try {
+        logger.debug('Closing contributor enricher database connection');
+        await this.db.close();
+        logger.debug('Contributor enricher database connection closed successfully');
+      } catch (error) {
+        logger.error('Error closing contributor enricher database connection', { error });
+      }
     }
   }
 } 

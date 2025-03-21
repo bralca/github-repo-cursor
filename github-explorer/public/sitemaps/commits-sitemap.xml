@@ -184,6 +184,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/tensor-core-868275044/merge-requests/scheduler-fetchv2-argha-68/commits/argha-saha-argha-saha-58204592/makefile-03a7330c23fe125211c705ab1a4a4b0a6d3c298e</loc>
+          <lastmod>2025-03-21T23:03:16.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/research_webapp-923928640/merge-requests/merge-test-to-main-44/commits/david-vanderklay-davidvanderklay-142908365/specmailersproject_notification_mailer_specrb-03a9c109ec04346d76447d171fb8955b878bba3a</loc>
           <lastmod>2025-03-16T06:19:25.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -221,6 +228,13 @@
         <url>
           <loc>http://localhost:3000/gpt-researcher-674136802/merge-requests/pull-master-from-assafelovicmaster-197/commits/robin-anderson-rba100-5420519/gpt_researcherllm_providergenericbasepy-03edc8b78f755701d475b7dfd6a33d1d0b446e7c</loc>
           <lastmod>2025-03-16T18:03:40.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/home-ops-381819341/merge-requests/choredeps-update-ghcrioauricomkubectl132-docker-di-2836/commits/renovatebot-renovatebot-29139614/kubernetesappsdefaultcalibre-web-automatedschedule-03f8841d6ec1a195a3fe21d51dba5a9668686cb4</loc>
+          <lastmod>2025-03-20T12:14:12.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -527,6 +541,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/homebrew-cask-3623050/merge-requests/stratosharkdev-091218f266837031aa-206002/commits/brewtestbot-brewtestbot-1589480/caskssstratosharkdevrb-088e46dce3bf83e9dd61bfbc5d4044d104d7c331</loc>
+          <lastmod>2025-03-21T22:06:42.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/gh-reusable-749588966/merge-requests/update-readmes-to-reflect-current-state-of-actions-22/commits/mbround18-mbround18-12646562/readmemd-088f45996b1c425068a3db420e8ea97754c1e3d7</loc>
           <lastmod>2025-03-16T22:45:33.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -711,6 +732,13 @@
         <url>
           <loc>http://localhost:3000/fast-and-fractured-925662347/merge-requests/ai-implementation-can-movedashnormal-shoot-and-pus-24/commits/cortesjoan-cortesjoan-73123760/fast-and-fracturedassetsfastandfracturedimplementa-0b3488b5fd83714b1371c0e23539939a06ca24ac</loc>
           <lastmod>2025-03-18T11:58:49.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/velopackui-735146288/merge-requests/update-dependency-awssdks3-to-3741523-72/commits/renovatebot-renovatebot-29139614/srcvelopackuivelopackuicsproj-0b4f46d5a2e697cc6af13932802ea85b4edd7873</loc>
+          <lastmod>2025-03-21T22:08:22.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -1430,6 +1458,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/memgraph-297302063/merge-requests/sso-improvements-2799/commits/imilinovic-imilinovic-44698587/srcauthreference_modulesoidcpy-18ab97ec41265a3d0ec24e3d3480cc870afbff38</loc>
+          <lastmod>2025-03-17T21:21:55.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/owncloud-core-644364717/merge-requests/pull-master-from-owncloudmaster-262/commits/thomas-mller-deepdiver1975-1005065/changelog10151_2025-03-0341355-18af5f8b575e7876bbfa8ef0f8080349156f4caf</loc>
           <lastmod>2025-03-20T12:06:57.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -1724,6 +1759,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/tensor-core-868275044/merge-requests/scheduler-fetchv2-argha-68/commits/argha-saha-argha-saha-58204592/srcmodulesfetchsv-1cf8e142500241da81b52f18391fd26655ba92f3</loc>
+          <lastmod>2025-03-21T23:22:49.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/xray-client-node-923547363/merge-requests/add-server-endpoints-for-test-steps-70/commits/csvtuda-csvtuda-18561435/readmemd-1cfe552007ef0f81c313d2e271ab6f7508a21a8b</loc>
           <lastmod>2025-03-16T18:00:07.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -1731,7 +1773,7 @@
         </url>
       
         <url>
-          <loc>http://localhost:3000/netdata-614241155/merge-requests/pull-master-from-netdatamaster-620/commits/costa-tsaousis-ktsaou-2662304/srclibnetdataexitexit_initiatedh-1d14dc3e684d330523cbd77dd645f3c8b2070616</loc>
+          <loc>http://localhost:3000/netdata-614241155/merge-requests/pull-master-from-netdatamaster-620/commits/ktsaou-ktsaou-2662304/srclibnetdataexitexit_initiatedh-1d14dc3e684d330523cbd77dd645f3c8b2070616</loc>
           <lastmod>2025-03-16T20:38:13.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
@@ -1824,6 +1866,13 @@
         <url>
           <loc>http://localhost:3000/pandora-assets-469720839/merge-requests/add-suspension-ring-399/commits/shikifet-shikifet-192379106/srcassetsroom_devicessuspension_ringchest_line_cen-1e56d7e892884bc97c3a58ac6a0d7343080dd651</loc>
           <lastmod>2025-03-16T20:34:27.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/ansible-186076709/merge-requests/pull-devel-from-ansibledevel-3529/commits/anvit-pusalkar-anvitpusalkar-143819336/changelogsfragmentsset_ipv4_and_ipv6_simultaneousl-1e5aac7b4f4dd0cf89e03340540695063299c7f6</loc>
+          <lastmod>2025-03-21T20:19:58.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -2298,6 +2347,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/pylabrobot-524145041/merge-requests/fix-step_off_foil-and-pierce_foil-on-rotated-resou-446/commits/rickwierenga-rickwierenga-36956818/pylabrobotliquid_handlingbackendshamiltonstarpy-270effaed0e518f8127414bb2d453e63e42c6776</loc>
+          <lastmod>2025-03-21T23:11:29.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/concourse-helm3-resource-226407731/merge-requests/allow-iam-authentication-and-iam-role-131/commits/tang8330-tang8330-4412200/dockerfile-271d0571484610d03ae8e7a7a67f21b432965ab2</loc>
           <lastmod>2024-06-20T19:35:36.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -2648,6 +2704,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/python-cc1101-292333844/merge-requests/builddeps-dev-bump-pylint-from-334-to-336-216/commits/dependabotbot-dependabotbot-49699333/pipfilelock-2c9ab15ab349f2bdd073583503eceba560d68761</loc>
+          <lastmod>2025-03-21T10:07:38.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/jecta-app-931448713/merge-requests/defillama-integration-11/commits/emyr-emyrinj-86115037/aiintentsts-2cbb849a7562e340e52267e982b714205a089dbb</loc>
           <lastmod>2025-03-19T10:01:33.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -2720,6 +2783,13 @@
         <url>
           <loc>http://localhost:3000/concourse-helm3-resource-226407731/merge-requests/allow-iam-authentication-and-iam-role-131/commits/tang8330-tang8330-4412200/dockerfile-2dcdb6b0591cb235c2930bb433c45f32a2374914</loc>
           <lastmod>2025-03-09T16:59:04.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/azuresandbox-686038409/merge-requests/pull-main-from-azure-samplesmain-7/commits/roger-doherty-msft-doherty100-1952332/readmemd-2dead09e9aea5cae1c131456f80c09b0072c6940</loc>
+          <lastmod>2025-03-21T20:08:19.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -3012,6 +3082,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/monorepo-275403409/merge-requests/choredeps-update-dependency-aspect_rules_js-to-v23-8589/commits/zemnmez-renovate-bot-zemnmez-renovate-bot-120286932/modulebazel-33c863627c1d1af3f72cbc44def68e0e4c1b8152</loc>
+          <lastmod>2025-03-21T21:53:04.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/quiz-app-944070904/merge-requests/peer-pr-for-quiz-app-2/commits/aya-asylbek-aya-asylbek-191449931/readmemd-33ce1250ed93fbb78db4a8094690e6dbf873ee2a</loc>
           <lastmod>2025-03-13T02:11:12.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -3257,6 +3334,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/azuresandbox-686038409/merge-requests/pull-main-from-azure-samplesmain-7/commits/roger-doherty-msft-doherty100-1952332/readmemd-3801b58b6f4d5675ff61af66961733aa58ccfe0b</loc>
+          <lastmod>2025-03-21T20:06:07.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/angr-398341890/merge-requests/pull-master-from-angrmaster-200/commits/fish-ltfish-5071575/angranalysesflirt__init__py-3803e6db541f0dbbfeeb6d768c6f41da739d1004</loc>
           <lastmod>2025-03-15T00:03:37.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -3376,6 +3460,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/devopstest-952789019/merge-requests/adios-1/commits/cdoctu-cdoctu-179265062/adiospy-39cb0d242cdd7b58cecae0f59801e120fb8e374d</loc>
+          <lastmod>2025-03-21T23:17:16.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/appacademy-todo-server-662314483/merge-requests/revamp-to-use-prisma-1/commits/josephukwenya-josephukwenya-54073881/configdbjs-39cd0564bd17514dc0a4c54fb9658502ca222208</loc>
           <lastmod>2025-03-21T15:28:54.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -3467,7 +3558,7 @@
         </url>
       
         <url>
-          <loc>http://localhost:3000/netdata-614241155/merge-requests/pull-master-from-netdatamaster-620/commits/costa-tsaousis-ktsaou-2662304/cmakeliststxt-3bdaed8c2e4961694f2211251560caa5dad0894e</loc>
+          <loc>http://localhost:3000/netdata-614241155/merge-requests/pull-master-from-netdatamaster-620/commits/ktsaou-ktsaou-2662304/cmakeliststxt-3bdaed8c2e4961694f2211251560caa5dad0894e</loc>
           <lastmod>2025-03-16T22:22:19.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
@@ -3525,6 +3616,13 @@
         <url>
           <loc>http://localhost:3000/express-beans-625044359/merge-requests/releasev200-27/commits/spaghiajoeojo-spaghiajoeojo-6961524/readmemd-3c66280b14465035fb5b34407dd98f684d6d5cf2</loc>
           <lastmod>2025-03-13T19:12:39.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/terraform-modules-724690553/merge-requests/add-release-notes-for-v17140-463/commits/invalid-email-address-invalid-email-address-148100/changelogmd-3c9a7504eda1109c214112c743355fd9d41fd4e4</loc>
+          <lastmod>2025-03-21T22:13:11.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -3707,6 +3805,13 @@
         <url>
           <loc>http://localhost:3000/recordstats-265401752/merge-requests/downstreamupdates-1664/commits/brotherlogic-brotherlogic-5978/gomod-3f70369fc4846fceffa335b79c5018f53c32a0fb</loc>
           <lastmod>2025-03-21T15:29:21.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/terraform-modules-724690553/merge-requests/add-release-notes-for-v17140-463/commits/david-nguyen-deeno35-2043289/examplesalarmsmaintf-3ff00d12c2eb864375fdf9e8dd148db1c2af7fff</loc>
+          <lastmod>2025-03-21T22:13:12.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -4748,6 +4853,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/pylabrobot-524145041/merge-requests/fix-step_off_foil-and-pierce_foil-on-rotated-resou-446/commits/rickwierenga-rickwierenga-36956818/pylabrobotresourcesagenbioplatespy-502c0a46855ba00236865fb9c6b8c68723f485b7</loc>
+          <lastmod>2025-03-21T23:21:21.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/modos-api-731058860/merge-requests/featdeploy-setup-refget-service-121/commits/almutlue-almutlue-43293149/deployexampleenv-5049b4e82ff02bc49e07b1d0331243ccd1aaf413</loc>
           <lastmod>2025-03-17T09:47:58.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -5364,6 +5476,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/card-generator-952738962/merge-requests/tsk-6-notion-api-8/commits/mono2202-mono2202-69368659/srccard_generatorpy-5b2aeb026260fde1b797a3be43ed7a6aab51e0ab</loc>
+          <lastmod>2025-03-21T22:17:33.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/storybook-617344124/merge-requests/pull-next-from-storybookjsnext-190/commits/storybook-bot-storybook-bot-32066757/codeaddonsa11ypackagejson-5b4401b2e1293fed7e923b6f8b4a616049841c91</loc>
           <lastmod>2025-03-19T15:15:35.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -5840,6 +5959,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/book-club-fe-898120502/merge-requests/featprofile-8/commits/abdosamiir-abdosamiir-95492669/srcapppagesauthcomponentssigninformtsx-62dac7802966084c9b3b964ec330b85ec7519712</loc>
+          <lastmod>2025-03-21T22:11:16.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/extension-manager-445686840/merge-requests/build-specify-the-minimum-required-version-of-liba-796/commits/oscfdezdz-oscfdezdz-42654671/srcmesonbuild-6303954e21860bac408dd13874aafbbe94ec3949</loc>
           <lastmod>2025-03-20T15:33:03.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -6211,6 +6337,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/corsmirror-66795432/merge-requests/builddeps-dev-bump-eslint-from-9220-to-9230-306/commits/dependabotbot-dependabotbot-49699333/package-lockjson-6a7531afb2c88bfb15d9f3d5b91a8a6d1e3827d3</loc>
+          <lastmod>2025-03-21T22:12:43.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/recall-docker-compose-913730624/merge-requests/release-v015-34/commits/sam701-sam701-7078566/confignetwork-testnetenv-6a7ddb331ae4e9f18c9647a0d3ac1da5b437bb19</loc>
           <lastmod>2025-03-20T10:13:17.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -6304,6 +6437,13 @@
         <url>
           <loc>http://localhost:3000/mailly-be-937142708/merge-requests/project-schema-19/commits/luke0408-luke0408-98688494/docserdmd-6bd4ebd5b7a7a80e473480dbccea7f3cdf5a11fd</loc>
           <lastmod>2025-03-16T13:44:14.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/card-generator-952738962/merge-requests/tsk-6-notion-api-8/commits/mono2202-mono2202-69368659/outputbulbasaurpng-6bff4e0bd61f0fb5a504d6145861a5f90f3c9f74</loc>
+          <lastmod>2025-03-21T23:17:21.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -6458,6 +6598,13 @@
         <url>
           <loc>http://localhost:3000/openfga-501372599/merge-requests/choredeps-bump-the-dependencies-group-across-1-dir-2318/commits/dependabotbot-dependabotbot-49699333/githubworkflowsenforce-changelog-entryyaml-6e617b5d90dd31b7ec2a91b8dde4473761ac3764</loc>
           <lastmod>2025-03-17T22:21:16.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/tensor-core-868275044/merge-requests/scheduler-fetchv2-argha-68/commits/argha-saha-argha-saha-58204592/makefile-6e69795ad0cc204db68db41df9f148288a87c26c</loc>
+          <lastmod>2025-03-21T22:02:17.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -6750,6 +6897,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/tensor-core-868275044/merge-requests/scheduler-fetchv2-argha-68/commits/argha-saha-argha-saha-58204592/outtxt-74038c3c2bcfbebbd9f55e96b3ec2cb2353cfc9e</loc>
+          <lastmod>2025-03-21T23:22:25.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/adminer-59251126/merge-requests/update-adminer-plugin-for-adminer-505-namespace-co-56/commits/skerbis-skerbis-791247/libadminerphp-740fd2890edd806c735ee73024bcedc923e406b5</loc>
           <lastmod>2025-03-16T22:39:18.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -6766,6 +6920,13 @@
         <url>
           <loc>http://localhost:3000/nuclei-templates-598776000/merge-requests/pull-main-from-projectdiscoverymain-717/commits/dhiyaneshwaran-dhiyaneshgeek-24750220/httpexposuresfileslog4-propertiesyaml-7435c6223c2ed1cc4a6a52668d7c3b617e9b2a53</loc>
           <lastmod>2025-03-20T11:38:01.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/netdata-431343482/merge-requests/pull-master-from-netdatamaster-825/commits/ktsaou-ktsaou-2662304/cmakeliststxt-7439280f57ebee3d1a01dcbafe438c4661123a6e</loc>
+          <lastmod>2025-03-21T20:42:58.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -6815,6 +6976,13 @@
         <url>
           <loc>http://localhost:3000/cache-buildkite-plugin-921077773/merge-requests/update-cache-buildkite-plugin-1/commits/pol-paula-pzeballos-6607375/readmemd-74cc7b2873b70917ca3df44d56361636eae5f707</loc>
           <lastmod>2025-02-17T20:14:38.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/fotema-772058452/merge-requests/bump-tempfile-from-3171-to-3191-373/commits/dependabotbot-dependabotbot-49699333/cargolock-74ccfafe137913ffaf141e27b71f57d8d2496bcf</loc>
+          <lastmod>2025-03-20T02:50:44.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -6995,6 +7163,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/soennekerstripesuite-899777844/merge-requests/update-dependency-soennekerstripepaymentintents-to-914/commits/renovatebot-renovatebot-29139614/srcsoennekerstripesuitecsproj-7832274e1d8bc75aa3edce0ba1a02797699b0625</loc>
+          <lastmod>2025-03-21T22:12:32.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/ehcache-sample-100280838/merge-requests/bump-chqoslogbacklogback-classic-from-1517-to-1518-20/commits/dependabotbot-dependabotbot-49699333/pomxml-784ab876322e14d034660bf2479791909b297fcf</loc>
           <lastmod>2025-03-18T22:30:50.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -7004,6 +7179,13 @@
         <url>
           <loc>http://localhost:3000/meta-application-rdke-release-830488559/merge-requests/rdkvrefplt-5111-update-al-version-to-406-and-use-g-25/commits/arun-madhavan-013-arun-madhavan-013-54109113/conflayerconf-785c190735fefb483c6aafd216baeb6929643aba</loc>
           <lastmod>2025-03-20T01:57:35.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/memgraph-297302063/merge-requests/sso-improvements-2799/commits/imilinovic-imilinovic-44698587/srcauthreference_modulessamlpy-78f3db06b0355345e667952564f753cfa3e54600</loc>
+          <lastmod>2025-03-16T23:11:03.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -7443,6 +7625,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/cloud-radar-316465435/merge-requests/update-dependency-coverage-to-v771-449/commits/renovatebot-renovatebot-29139614/poetrylock-7e65a11cfb320cf1d36008f5756a0dea3b11bd26</loc>
+          <lastmod>2025-03-21T18:45:50.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/homebrew-core-920480429/merge-requests/pull-master-from-homebrewmaster-213/commits/michael-cho-cho-m-20700669/formulappercona-serverrb-7e6afb600b37bc18319558d3db420b4168f61edb</loc>
           <lastmod>2025-03-16T16:35:34.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -7877,6 +8066,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/deeplink-409454916/merge-requests/choredeps-update-dependency-eslint-to-v9230-2462/commits/renovatebot-renovatebot-29139614/packagejson-86484cd6b28131e1102fdc241e3039d6b9d3f270</loc>
+          <lastmod>2025-03-21T23:02:12.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/extras-744048447/merge-requests/pull-master-from-scoopinstallermaster-646/commits/github-actionsbot-github-actionsbot-41898282/buckettelevisionjson-8658deaf32ba984b5a4bc969eb69ff9bcc212d50</loc>
           <lastmod>2025-03-16T20:27:22.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -8082,6 +8278,13 @@
         <url>
           <loc>http://localhost:3000/spectest-700371024/merge-requests/builddeps-bump-golangorgxnet-from-0350-to-0360-293/commits/dependabotbot-dependabotbot-49699333/gomod-89a7a54f71a3e5422f3b962a9e9ef115251a21be</loc>
           <lastmod>2025-03-13T02:09:59.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/lithic-ruby-950938434/merge-requests/chore-disable-dangerous-rubocop-auto-correct-rule-14/commits/stainless-ci-bot-198519661/rubocopyml-89ad7e03c93dafe374daef268a6a3338f2d07ef1</loc>
+          <lastmod>2025-03-21T22:13:23.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -8787,6 +8990,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/assertj-8779606/merge-requests/choredeps-dev-bump-orgapachegroovygroovy-from-4025-3807/commits/dependabotbot-dependabotbot-49699333/assertj-testsassertj-integration-testsassertj-core-962e8bc124dd37e9807ab5f0de9233222ccaea4b</loc>
+          <lastmod>2025-03-21T21:16:36.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/stirling-pdf-772875848/merge-requests/pull-main-from-stirling-toolsmain-54/commits/ludy-ludy87-4592558/srcmainjavastirlingsoftwarespdfspdfapplicationjava-964f948c64e1d396e240b7aca59cf2366f10026c</loc>
           <lastmod>2025-03-20T07:53:29.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -9118,6 +9328,13 @@
         <url>
           <loc>http://localhost:3000/lyne-components-244370518/merge-requests/featsbb-sidebar-initial-implementation-3335/commits/jeripeiersbb-jeripeiersbb-29278232/srcelementssidebarsidebarsidebarscss-9b59ab72b25e44e28d196dff51b4edfb3bc5f446</loc>
           <lastmod>2025-03-04T13:42:50.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/yt-dlp-920621391/merge-requests/pull-master-from-yt-dlpmaster-36/commits/sepro-seprodev-4618135/testtest_jsinterppy-9b868518a15599f3d7ef5a1c730dda164c30da9b</loc>
+          <lastmod>2025-03-21T20:58:10.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -9802,6 +10019,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/ispitni-zadatak-muzej-446375556/merge-requests/bump-typesnode-from-221310-to-221311-748/commits/dependabotbot-dependabotbot-49699333/package-lockjson-a860735781d744ed89153f682f8d1c2de9c8c6e2</loc>
+          <lastmod>2025-03-21T23:34:28.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/javascript-950556777/merge-requests/spread-operator-with-arrays-objects-and-function-a-3/commits/sajadsoorni-sajadsoorni-76500396/destructuringarraysjs-a8608e0d045d61fd9ace62cb5bed31741836f52f</loc>
           <lastmod>2025-03-20T13:01:01.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -10299,6 +10523,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/memgraph-297302063/merge-requests/sso-improvements-2799/commits/imilinovic-imilinovic-44698587/srcauthreference_modulessamlpy-afc61f54e88f61be8314415f8e1a619a97b2b1b6</loc>
+          <lastmod>2025-03-18T08:14:32.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/lyne-components-244370518/merge-requests/featsbb-sidebar-initial-implementation-3335/commits/jeripeiersbb-jeripeiersbb-29278232/srcelementscorestylescorescss-afdabca792bf6024d612de9cdeba44dc3a802c23</loc>
           <lastmod>2025-02-04T16:46:35.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -10406,6 +10637,13 @@
         <url>
           <loc>http://localhost:3000/openfoodnetwork-6257856/merge-requests/fixes-some-rubocop-linting-offenses-part-iv-13209/commits/maikel-mkllnk-3524483/speccontrollersadminsubscription_line_items_contro-b15ffe7a4eb20ac3cce46aef1f66a1d9db24ed36</loc>
           <lastmod>2025-03-14T00:26:04.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/tensor-core-868275044/merge-requests/scheduler-fetchv2-argha-68/commits/argha-saha-argha-saha-58204592/srcmodulesfetchsv-b18d7e3ad62eb08fe6dadc54754be8e3f1254f68</loc>
+          <lastmod>2025-03-20T19:58:32.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -10740,6 +10978,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/netdata-431343482/merge-requests/pull-master-from-netdatamaster-825/commits/ktsaou-ktsaou-2662304/cmakeliststxt-b75958a4ab8c57d6ec4f8f996c578e384fc280d5</loc>
+          <lastmod>2025-03-21T17:44:17.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/cache-buildkite-plugin-921077773/merge-requests/update-cache-buildkite-plugin-1/commits/lswith-lswith-1018619/libcompressionbash-b75e817cafbdc7b55e7ba93beeb00e9da5e55e37</loc>
           <lastmod>2025-02-02T23:23:44.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -11062,6 +11307,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/card-generator-952738962/merge-requests/tsk-6-notion-api-8/commits/mono2202-mono2202-69368659/outputabrapng-bdac63e973b71f9d5ebf5172cc17fd896db924fc</loc>
+          <lastmod>2025-03-21T23:23:29.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/falco-actions-labs-950347135/merge-requests/test-falco-action-1/commits/edsoncelio-edsoncelio-5833278/githubworkflowsciyml-bdc7beaa58759ae8e6da88beb4aabf30604a07c6</loc>
           <lastmod>2025-03-19T18:24:18.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -11188,14 +11440,14 @@
         </url>
       
         <url>
-          <loc>http://localhost:3000/awesome-selfhosted-663714442/merge-requests/pull-master-from-awesome-selfhostedmaster-229/commits/invalid-email-address-invalid-email-address-148100/readmemd-bff129c37fbe845eba57a022cc98b46af6f95c22</loc>
+          <loc>http://localhost:3000/study_awesome_server_awesome-selfhosted-729768747/merge-requests/pull-master-from-awesome-selfhostedmaster-155/commits/invalid-email-address-invalid-email-address-148100/readmemd-bff129c37fbe845eba57a022cc98b46af6f95c22</loc>
           <lastmod>2025-03-18T20:31:33.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
       
         <url>
-          <loc>http://localhost:3000/study_awesome_server_awesome-selfhosted-729768747/merge-requests/pull-master-from-awesome-selfhostedmaster-155/commits/invalid-email-address-invalid-email-address-148100/readmemd-bff129c37fbe845eba57a022cc98b46af6f95c22</loc>
+          <loc>http://localhost:3000/awesome-selfhosted-663714442/merge-requests/pull-master-from-awesome-selfhostedmaster-229/commits/invalid-email-address-invalid-email-address-148100/readmemd-bff129c37fbe845eba57a022cc98b46af6f95c22</loc>
           <lastmod>2025-03-18T20:31:33.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
@@ -11510,6 +11762,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/imcpro-952777758/merge-requests/featuret-gf1-1/commits/takigovan-takigovan-122625608/chicken-c5aaa346082d8ebb11b527495c6cb0f9b9b16033</loc>
+          <lastmod>2025-03-21T22:02:20.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/to-learn-950259433/merge-requests/uploando-novos-documentos-1/commits/matheusfigueiredoo-matheusfigueiredoo-158324641/readmemd-c5e076c76e99dd7ccd7acf34a61751137c7a49d8</loc>
           <lastmod>2025-03-17T22:18:11.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -11589,6 +11848,13 @@
         <url>
           <loc>http://localhost:3000/storybook-617344124/merge-requests/pull-next-from-storybookjsnext-190/commits/simon-h-dummdidumm-5968653/coderendererssveltesrc__test__buttonv5svelte-c75c1aa9b6aaa16893d49f1a41aea12babe20dc0</loc>
           <lastmod>2025-03-18T22:33:30.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/imcpro-952777758/merge-requests/featuret-gf1-1/commits/takigovan-takigovan-122625608/chicken-c7b57a1abfb1bac241e7c492e144105cd2b40f6d</loc>
+          <lastmod>2025-03-21T22:11:28.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -12364,6 +12630,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/gqty-375822193/merge-requests/fixdeps-update-dependency-next-to-v1523-security-2190/commits/renovatebot-renovatebot-29139614/examplesgntpackagejson-d4c34d995e58837cf01440d740c314e9933bef68</loc>
+          <lastmod>2025-03-21T23:23:23.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/simple-kotlin-project-384119888/merge-requests/bump-kotlinversion-from-2110-to-2120-113/commits/dependabotbot-dependabotbot-49699333/pomxml-d4db4ba73f6b2e6f4a91d066bba7bf2cf5c250de</loc>
           <lastmod>2025-03-20T12:50:08.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -12812,6 +13085,13 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/memgraph-297302063/merge-requests/sso-improvements-2799/commits/imilinovic-imilinovic-44698587/libssetupsh-daf12061f859f235dbcf212a78e24f051c86ed82</loc>
+          <lastmod>2025-03-21T14:20:42.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/foundryvtt-shadowdark-479025946/merge-requests/new-crowdin-updates-1021/commits/muttley-muttley-853835/i18nkoyaml-dafc71c1624d8ab4683a94d904544f34fe32fb4e</loc>
           <lastmod>2025-03-16T22:51:59.000Z</lastmod>
           <changefreq>monthly</changefreq>
@@ -12835,6 +13115,13 @@
         <url>
           <loc>http://localhost:3000/fast-and-fractured-925662347/merge-requests/ai-implementation-can-movedashnormal-shoot-and-pus-24/commits/cortesjoan-cortesjoan-73123760/fast-and-fracturedassetsstatemachinedecisionsisinf-db4ba4ccb51504a47a3448003818c2442195b481</loc>
           <lastmod>2025-03-18T12:02:04.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/virtual-environments-517908857/merge-requests/pull-main-from-actionsmain-726/commits/github-actionsbot-github-actionsbot-41898282/imagesmacosmacos-14-arm64-readmemd-db5e0167f47feefd6c8e0ac4908d4110bd1a6c64</loc>
+          <lastmod>2025-03-21T18:18:40.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -12870,6 +13157,13 @@
         <url>
           <loc>http://localhost:3000/neurdb-749877188/merge-requests/merge-extensions-in-to-db_engine-36/commits/pre-commit-cibot-pre-commit-cibot-66853113/aienginereadmemd-dc2171858ba529678c65b32e5f6ab0899dc1f9b7</loc>
           <lastmod>2025-01-08T10:41:28.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/pylabrobot-524145041/merge-requests/fix-step_off_foil-and-pierce_foil-on-rotated-resou-446/commits/rickwierenga-rickwierenga-36956818/pylabrobotliquid_handlingbackendshamiltonstarpy-dc265fc4b8c624c3abab6c948022b4847871b72b</loc>
+          <lastmod>2025-03-21T23:13:17.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -13036,8 +13330,22 @@
         </url>
       
         <url>
+          <loc>http://localhost:3000/max485-raspberry-nodejs-937664686/merge-requests/replace-c-with-go-1/commits/btolarz-btolarz-57074/gitignore-de685c48a13096ddf5f82709b1b3dc11f147a49f</loc>
+          <lastmod>2025-03-21T23:19:23.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
           <loc>http://localhost:3000/xray-client-node-923547363/merge-requests/add-server-endpoints-for-test-steps-70/commits/csvtuda-csvtuda-18561435/readmemd-de7764ef6b44e8583de839ae5ba03429d5b1df33</loc>
           <lastmod>2025-03-16T21:03:38.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/netdata-431343482/merge-requests/pull-master-from-netdatamaster-825/commits/stelios-fragkakis-stelfrag-52996999/srcdatabaserrdhostc-de88c30dca8262dba4b32d7d8ddc8b203ca94b14</loc>
+          <lastmod>2025-03-21T18:39:58.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -13080,6 +13388,13 @@
         <url>
           <loc>http://localhost:3000/espresso-network-564322488/merge-requests/add-staking-cli-docker-image-2797/commits/sveitser-sveitser-1040871/datav99headerbin-df2f9196cef261cdded683244a8448109aa5d87a</loc>
           <lastmod>2025-03-20T08:56:02.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/card-generator-952738962/merge-requests/tsk-6-notion-api-8/commits/mono2202-mono2202-69368659/outputabrapng-df792dfa30510be4c7f80384e350ab6eb6a64007</loc>
+          <lastmod>2025-03-21T23:19:26.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -13652,14 +13967,14 @@
         </url>
       
         <url>
-          <loc>http://localhost:3000/awesome-selfhosted-663714442/merge-requests/pull-master-from-awesome-selfhostedmaster-229/commits/invalid-email-address-invalid-email-address-148100/readmemd-e9d931bbfcd8e381da93105a8263c57ad9dd0cc3</loc>
+          <loc>http://localhost:3000/study_awesome_server_awesome-selfhosted-729768747/merge-requests/pull-master-from-awesome-selfhostedmaster-155/commits/invalid-email-address-invalid-email-address-148100/readmemd-e9d931bbfcd8e381da93105a8263c57ad9dd0cc3</loc>
           <lastmod>2025-03-18T20:34:09.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
       
         <url>
-          <loc>http://localhost:3000/study_awesome_server_awesome-selfhosted-729768747/merge-requests/pull-master-from-awesome-selfhostedmaster-155/commits/invalid-email-address-invalid-email-address-148100/readmemd-e9d931bbfcd8e381da93105a8263c57ad9dd0cc3</loc>
+          <loc>http://localhost:3000/awesome-selfhosted-663714442/merge-requests/pull-master-from-awesome-selfhostedmaster-229/commits/invalid-email-address-invalid-email-address-148100/readmemd-e9d931bbfcd8e381da93105a8263c57ad9dd0cc3</loc>
           <lastmod>2025-03-18T20:34:09.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
@@ -13745,6 +14060,13 @@
         <url>
           <loc>http://localhost:3000/cinerental-921859190/merge-requests/merge-pull-request-29-from-develop-30/commits/newalexoa-newalexoa-109337222/backendschemasdocumentpy-eac3d3cde22551c92fd08e1fd410bb6e6869ffe5</loc>
           <lastmod>2025-03-16T22:30:33.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/book-club-fe-898120502/merge-requests/featprofile-8/commits/abdosamiir-abdosamiir-95492669/srcappconfigsroutesconfigtsx-eac45ab81d7028e3bd05fa9cd63fa9423c6a9e67</loc>
+          <lastmod>2025-03-21T21:13:41.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -14235,6 +14557,13 @@
         <url>
           <loc>http://localhost:3000/lyne-components-244370518/merge-requests/featsbb-sidebar-initial-implementation-3335/commits/jeripeiersbb-jeripeiersbb-29278232/srcelementssidebaricon-sidebaricon-sidebarstoriest-f4855fbc45d0bf6c94e6a2bf3c7a4a1508768831</loc>
           <lastmod>2025-03-06T07:18:16.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/virtual-environments-517908857/merge-requests/pull-main-from-actionsmain-726/commits/erik-bershel-erik-bershel-110455084/imagesmacosscriptsbuildinstall-common-utilssh-f494ea35381ab62061e6193b9efb1b940724991c</loc>
+          <lastmod>2025-03-21T18:11:29.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
@@ -14788,6 +15117,13 @@
         <url>
           <loc>http://localhost:3000/webkit-320636477/merge-requests/drop-a-signpost-for-programmatic-scrolls-42574/commits/smfr-smfr-20968/sourcewtfwtfsystemtracingh-ffe34721c4a1069b89aa079940285eb72d7a7087</loc>
           <lastmod>2025-03-18T23:01:29.000Z</lastmod>
+          <changefreq>monthly</changefreq>
+          <priority>0.6</priority>
+        </url>
+      
+        <url>
+          <loc>http://localhost:3000/netdata-431343482/merge-requests/pull-master-from-netdatamaster-825/commits/ralph-meijer-ralphm-116741/packaginginstallernetdata-updatersh-ffe6fe8d89fddab9bfead6149ad1e31f46d7a6a4</loc>
+          <lastmod>2025-03-21T20:31:16.000Z</lastmod>
           <changefreq>monthly</changefreq>
           <priority>0.6</priority>
         </url>
