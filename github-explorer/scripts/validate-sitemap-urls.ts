@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { DOMParser } from 'xmldom';
+import { DOMParser } from '@xmldom/xmldom';
 import fetch from 'node-fetch';
 import chalk from 'chalk';
 
