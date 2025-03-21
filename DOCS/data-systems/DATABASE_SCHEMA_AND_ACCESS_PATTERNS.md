@@ -253,6 +253,21 @@ Schema for storing the current status of each pipeline type:
 | `last_run` | TIMESTAMP | When the pipeline was last run |
 | `updated_at` | TIMESTAMP | When this record was last updated |
 
+### SEO Management Tables
+
+The following table manages sitemap generation for SEO purposes:
+
+#### `sitemap_metadata`
+
+Schema for tracking sitemap files and URL counts:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `entity_type` | TEXT | Primary key - Type of entity (repositories, contributors, etc.) |
+| `current_page` | INTEGER | Current sitemap page number for this entity type |
+| `url_count` | INTEGER | Number of URLs in the current sitemap page |
+| `last_updated` | TIMESTAMP | When this record was last updated |
+
 ## Common Access Patterns
 
 ### Pipeline Status and Control
@@ -291,6 +306,18 @@ Schema for storing the current status of each pipeline type:
    - Reads `commits` where `complexity_score IS NULL`
    - Generates scores with AI models
    - Updates records with complexity metrics
+
+### SEO Management
+
+1. **Sitemap Generation**
+   - Check `sitemap_metadata` to determine current page for each entity type
+   - Generate sitemap XML files with up to 49,000 URLs per file
+   - Update metadata when new pages are needed
+
+2. **Entity URL Updates**
+   - When new entities are added, update sitemap metadata
+   - Increment URL count for the appropriate entity type
+   - Create new sitemap pages when current page is full (>49,000 URLs)
 
 ## Connection Management
 

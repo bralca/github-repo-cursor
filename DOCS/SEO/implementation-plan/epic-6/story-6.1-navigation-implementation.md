@@ -57,20 +57,35 @@ REMEMBER:
 - Follow accessibility best practices for interactive elements
 - Keep changes focused on updating the link behavior without unnecessary changes"
 
-### Task 6.1.4: Sitemap Generation
+### Task 6.1.4: Sitemap Generation System
 
-**Prompt**: "Implement a sitemap generator in `github-explorer/app/sitemap.ts` that:
-1. Creates a Next.js compliant sitemap using the URL utilities
-2. Generates URLs for all main entity types - repositories, contributors, merge requests, and commits
-3. Sets appropriate change frequencies and priorities
-4. Updates automatically when new content is added
-5. Follows SEO best practices for sitemap structure
+**Prompt**: "Implement a comprehensive sitemap generation system in `github-explorer/app/sitemap/` that:
 
-This will improve search engine discovery of the application content using the new URL structure.
+1. Creates a sitemap index file that references entity-specific sitemaps:
+   - Implement `/app/sitemap/index.ts` to generate the sitemap index
+   - Create entity-specific sitemap generators for repositories, contributors, merge requests, and commits
+   - Follow Next.js conventions for dynamic sitemap generation
+
+2. Handles Google's 50K URL limit per sitemap:
+   - Implement a URL counter for each entity type
+   - Create pagination logic that generates new sitemap files when the 50K limit is reached (e.g., repositories-1.xml, repositories-2.xml)
+   - Track the current URL count in each sitemap file
+   - Always direct new URLs to the most recent non-full sitemap file
+
+3. Builds a database tracking system to manage sitemap files:
+   - Create a `sitemap_metadata` table to track each sitemap file and its URL count
+   - Update metadata when generating new sitemaps or adding URLs to existing ones
+   - Use this metadata to determine which sitemap should receive new URLs
+
+4. Creates a mechanism to update sitemaps when content changes:
+   - Hook into the data processing pipeline to update sitemaps when new content is added
+   - Implement a scheduled job to periodically refresh all sitemaps
+   - Ensure deleted entities are removed from sitemaps
 
 REMEMBER: 
-- Follow Next.js sitemap generation patterns
-- Use the URL utilities to create consistent URLs
-- Implement reasonable limits to avoid excessively large sitemaps
-- Reference `DOCS/SEO/URL_ARCHITECTURE.md` for URL patterns
-- Focus on creating a solution that works without overcomplication" 
+- Follow Next.js sitemap generation patterns with dynamic routes
+- Use the URL utilities to create consistent SEO-friendly URLs
+- Ensure the system scales to handle millions of entities
+- Implement a solution that minimizes database queries when generating sitemaps
+- Create a resilient system that can recover from errors during generation
+- Balance completeness with performance to avoid excessive server load" 
