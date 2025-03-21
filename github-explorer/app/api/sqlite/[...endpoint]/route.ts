@@ -32,11 +32,11 @@ async function isAuthenticated(request: NextRequest) {
  */
 export async function GET(
   request: NextRequest,
-  context: { params: { endpoint: string[] } }
+  context: { params: Promise<{ endpoint: string[] }> }
 ) {
   try {
-    // Extract endpoint from params - properly await params for Next.js 14
-    const params = await Promise.resolve(context.params);
+    // Extract endpoint from params - properly await params for Next.js 15
+    const params = await context.params;
     const endpointArray = params.endpoint;
     const endpoint = endpointArray[0];
     
@@ -80,11 +80,11 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  context: { params: { endpoint: string[] } }
+  context: { params: Promise<{ endpoint: string[] }> }
 ) {
   try {
-    // Extract endpoint from params - properly await params for Next.js 14
-    const params = await Promise.resolve(context.params);
+    // Extract endpoint from params - properly await params for Next.js 15
+    const params = await context.params;
     const endpointArray = params.endpoint;
     const endpoint = endpointArray[0];
     

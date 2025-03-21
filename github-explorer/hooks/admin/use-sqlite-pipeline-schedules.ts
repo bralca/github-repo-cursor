@@ -11,7 +11,8 @@ export function useSQLitePipelineSchedules(pipelineType?: string) {
     queryKey: ['sqlite-pipeline-schedules', pipelineType],
     queryFn: async () => {
       try {
-        return await sqliteClient.pipeline.getSchedules(pipelineType);
+        // Use getHistory since getSchedules is not available
+        return await sqliteClient.pipeline.getHistory(pipelineType);
       } catch (error: any) {
         console.error('Error fetching pipeline schedules:', error);
         throw new Error(error.message || 'Failed to fetch pipeline schedules');

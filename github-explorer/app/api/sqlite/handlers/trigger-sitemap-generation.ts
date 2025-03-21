@@ -83,7 +83,7 @@ function generateRepoUrl(name: string, githubId: number | string): string {
  */
 function generateContributorUrl(name: string, username: string, githubId: number | string): string {
   const namePart = name ? `${generateSlug(name)}-` : '';
-  return `/${namePart}${generateSlug(username)}-${githubId}`;
+  return `/contributors/${namePart}${generateSlug(username)}-${githubId}`;
 }
 
 /**

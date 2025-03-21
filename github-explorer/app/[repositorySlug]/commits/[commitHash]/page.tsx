@@ -4,16 +4,17 @@ import { parseRepositorySlug } from '@/lib/url-utils';
 
 // Define types for the page props
 interface CommitPageProps {
-  params: {
+  params: Promise<{
     repositorySlug: string;
     commitHash: string;
-  };
+  }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 // Define metadata generation function
 export async function generateMetadata({ params }: CommitPageProps): Promise<Metadata> {
   // Await params before using them to avoid NextJS errors
-  const resolvedParams = await Promise.resolve(params);
+  const resolvedParams = await params;
   
   // Extract the GitHub ID from the repository slug
   const repositorySlugInfo = parseRepositorySlug(resolvedParams.repositorySlug);
@@ -56,7 +57,7 @@ export async function generateMetadata({ params }: CommitPageProps): Promise<Met
  */
 export default async function CommitPage({ params }: CommitPageProps) {
   // Await params before using them to avoid NextJS errors
-  const resolvedParams = await Promise.resolve(params);
+  const resolvedParams = await params;
   
   // Extract the GitHub ID from the repository slug
   const repositorySlugInfo = parseRepositorySlug(resolvedParams.repositorySlug);

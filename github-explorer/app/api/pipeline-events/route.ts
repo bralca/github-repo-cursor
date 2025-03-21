@@ -1,30 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// Track all active SSE connections
-const CONNECTIONS = new Set<any>();
-
-// Clean up connections on exit
-if (process.env.NODE_ENV !== 'production') {
-  process.on('SIGTERM', () => {
-    CONNECTIONS.clear();
-  });
-}
-
-/**
- * Send data to all active SSE connections
- */
-export function broadcastEvent(event: any) {
-  CONNECTIONS.forEach((writer) => {
-    try {
-      if (writer && typeof writer.write === 'function') {
-        const encoder = new TextEncoder();
-        writer.write(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
-      }
-    } catch (err) {
-      console.error('Error broadcasting event to client:', err);
-    }
-  });
-}
+import { CONNECTIONS } from './connections';
 
 /**
  * Server-Sent Events (SSE) endpoint for real-time pipeline events

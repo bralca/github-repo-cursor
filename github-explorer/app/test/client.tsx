@@ -25,6 +25,10 @@ export function TestClient() {
     }
   )
 
+  // Use a type guard to make sure data is an array
+  const repositories = Array.isArray(data) ? data : [];
+  const hasRepositories = repositories.length > 0;
+
   return (
     <div>
       <div className="flex items-center gap-4 mb-4">
@@ -50,13 +54,13 @@ export function TestClient() {
             Try Again
           </Button>
         </div>
-      ) : !data?.length ? (
+      ) : !hasRepositories ? (
         <div className="p-4 bg-muted rounded-md">
           <p>No repositories found. Ensure your database has the repositories table with data.</p>
         </div>
       ) : (
         <div className="grid gap-4">
-          {data.map((repo: Repository) => (
+          {repositories.map((repo: Repository) => (
             <div key={repo.id} className="p-4 border rounded-md">
               <h3 className="font-medium">{repo.name}</h3>
               <p className="text-sm text-muted-foreground">{repo.description || 'No description'}</p>

@@ -22,7 +22,11 @@ const PIPELINE_TYPES = [
   { id: 'ai_analysis', name: 'AI Analysis' }
 ];
 
-export function CronJobManager() {
+interface CronJobManagerProps {
+  useSQLite: boolean;
+}
+
+export function CronJobManager({ useSQLite }: CronJobManagerProps) {
   const [activeTab, setActiveTab] = useState(PIPELINE_TYPES[0].id);
   const [cronExpression, setCronExpression] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);

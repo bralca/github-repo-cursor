@@ -6,9 +6,10 @@ import RepositoryContent from '../../components/repository/RepositoryContent';
 
 // Define types for the page props
 interface RepositoryPageProps {
-  params: {
+  params: Promise<{
     repositorySlug: string;
-  };
+  }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 // Define metadata generation function for SEO

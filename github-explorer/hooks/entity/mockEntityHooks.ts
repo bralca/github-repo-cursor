@@ -65,7 +65,7 @@ const MOCK_CONTRIBUTORS = {
 };
 
 // Mock merge request data
-const MOCK_MERGE_REQUESTS = {
+const MOCK_MERGE_REQUESTS: Record<string, Record<string, any>> = {
   'react-facebook-123456': {
     'add-new-feature-456789': {
       id: '456789',
@@ -97,7 +97,7 @@ const MOCK_MERGE_REQUESTS = {
 };
 
 // Mock commit data
-const MOCK_COMMITS = {
+const MOCK_COMMITS: Record<string, Record<string, any>> = {
   'react-facebook-123456': {
     'abc123def456': {
       sha: 'abc123def456',

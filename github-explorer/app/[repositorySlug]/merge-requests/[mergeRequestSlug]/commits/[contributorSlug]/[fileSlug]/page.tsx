@@ -26,12 +26,13 @@ import CommitContent from '@/components/commit/CommitContent';
 
 // Define types for the page props
 interface CommitPageProps {
-  params: {
+  params: Promise<{
     repositorySlug: string;
     mergeRequestSlug: string;
     contributorSlug: string;
     fileSlug: string;
-  };
+  }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 // Define metadata generation function

@@ -136,8 +136,11 @@ export function generateRepositorySlug(name: string, githubId: string): string {
 export function parseRepositorySlug(slug: string): { name: string, githubId: string } | null {
   if (!slug) return null;
   
-  const githubId = extractGithubId(slug);
-  if (!githubId) return null;
+  // Extract GitHub ID - match a numeric ID at the end of the slug
+  const match = slug.match(/-(\d+)$/);
+  if (!match) return null;
+  
+  const githubId = match[1];
   
   // Remove the ID part to get the name portion
   const name = slug.replace(new RegExp(`-${githubId}$`), '');

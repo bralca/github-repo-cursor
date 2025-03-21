@@ -161,18 +161,18 @@ export async function getTopContributors(page: number = 1, limit: number = 10): 
   return withDb(async (db) => {
     const offset = (page - 1) * limit;
     
-    const contributors = await db.all<Contributor>(
+    const contributors = await db.all(
       `SELECT * FROM contributors 
        WHERE username IS NOT NULL
        ORDER BY impact_score DESC, followers DESC
        LIMIT ? OFFSET ?`,
       [limit, offset]
-    );
+    ) as Contributor[];
     
     // Add slugs to each contributor
     return contributors.map((contributor) => ({
       ...contributor,
-      slug: generateContributorSlug(contributor.username || 'user', contributor.github_id.toString())
+      slug: generateContributorSlug(contributor.name || undefined, contributor.username || undefined, contributor.github_id.toString())
     }));
   });
 }
@@ -192,7 +192,7 @@ export async function getRepositoryContributors(
   limit: number = 10
 ): Promise<(ContributorWithCommitCount & { slug: string })[]> {
   return withDb(async (db) => {
-    const contributors = await db.all<ContributorWithCommitCount>(
+    const contributors = await db.all(
       `SELECT c.*, cr.commit_count
        FROM contributors c
        JOIN contributor_repository cr ON c.id = cr.contributor_id
@@ -201,38 +201,38 @@ export async function getRepositoryContributors(
        ORDER BY cr.commit_count DESC
        LIMIT ?`,
       [repositoryGithubId, limit]
-    );
+    ) as ContributorWithCommitCount[];
     
     // Add slugs to each contributor
     return contributors.map((contributor) => ({
       ...contributor,
-      slug: generateContributorSlug(contributor.username || 'user', contributor.github_id.toString())
+      slug: generateContributorSlug(contributor.name || undefined, contributor.username || undefined, contributor.github_id.toString())
     }));
   });
 }
 
 /**
- * Search contributors by username, name, or company
+ * Search contributors by name or username
  * @param query The search query
- * @param limit Maximum number of results
- * @returns Array of contributors matching the query
+ * @param limit Maximum number of contributors to return
+ * @returns Array of contributors with their slugs
  */
 export async function searchContributors(query: string, limit: number = 10): Promise<(Contributor & { slug: string })[]> {
   return withDb(async (db) => {
-    const searchPattern = `%${query}%`;
+    const queryParam = `%${query}%`;
     
-    const contributors = await db.all<Contributor>(
-      `SELECT * FROM contributors 
-       WHERE username LIKE ? OR name LIKE ? OR company LIKE ?
-       ORDER BY impact_score DESC, followers DESC
+    const contributors = await db.all(
+      `SELECT * FROM contributors
+       WHERE (username LIKE ? OR name LIKE ? OR company LIKE ?)
+       ORDER BY impact_score DESC
        LIMIT ?`,
-      [searchPattern, searchPattern, searchPattern, limit]
-    );
+      [queryParam, queryParam, queryParam, limit]
+    ) as Contributor[];
     
     // Add slugs to each contributor
     return contributors.map((contributor) => ({
       ...contributor,
-      slug: generateContributorSlug(contributor.username || 'user', contributor.github_id.toString())
+      slug: generateContributorSlug(contributor.name || undefined, contributor.username || undefined, contributor.github_id.toString())
     }));
   });
 }

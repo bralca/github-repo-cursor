@@ -63,7 +63,7 @@ export type PropertiesOfType<
  * Example: IdType<'repositories'> // number
  */
 export type IdType<T extends keyof Database['public']['Tables']> = 
-  Database['public']['Tables'][T]['Row']['id'];
+  Database['public']['Tables'][T]['Row'] extends { id: infer U } ? U : never;
 
 /**
  * Filter tables by a condition

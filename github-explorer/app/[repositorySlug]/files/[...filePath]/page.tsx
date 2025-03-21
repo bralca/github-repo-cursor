@@ -4,16 +4,17 @@ import { parseRepositorySlug } from '@/lib/url-utils';
 
 // Define types for the page props
 interface FilePageProps {
-  params: {
+  params: Promise<{
     repositorySlug: string;
     filePath: string[];
-  };
+  }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 // Define metadata generation function
 export async function generateMetadata({ params }: FilePageProps): Promise<Metadata> {
   // Await params before using them to avoid NextJS errors
-  const resolvedParams = await Promise.resolve(params);
+  const resolvedParams = await params;
   
   // Extract the GitHub ID from the repository slug
   const repositorySlugInfo = parseRepositorySlug(resolvedParams.repositorySlug);
@@ -57,7 +58,7 @@ export async function generateMetadata({ params }: FilePageProps): Promise<Metad
  */
 export default async function FilePage({ params }: FilePageProps) {
   // Await params before using them to avoid NextJS errors
-  const resolvedParams = await Promise.resolve(params);
+  const resolvedParams = await params;
   
   // Extract the GitHub ID from the repository slug
   const repositorySlugInfo = parseRepositorySlug(resolvedParams.repositorySlug);

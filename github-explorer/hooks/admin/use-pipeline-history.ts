@@ -8,7 +8,7 @@ import { useSupabaseQuery } from '@/hooks/supabase/use-supabase-query';
  */
 export function usePipelineHistory(pipelineType?: string, limit: number = 10) {
   const { data, isLoading, error, refetch } = useSupabaseQuery<any[]>(
-    ['pipeline-history', pipelineType || 'all', limit],
+    ['pipeline-history', pipelineType || 'all', limit.toString()],
     async () => {
       const url = pipelineType 
         ? `/api/pipeline-history?pipeline_type=${pipelineType}&limit=${limit}`

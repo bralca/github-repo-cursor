@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryKey, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
 import { supabase } from './client';
 import { toast } from 'sonner';
 
@@ -24,31 +24,17 @@ interface QueryOptions<T> {
 export function useSupabaseQuery<T>(
   queryKey: QueryKey,
   queryFn: QueryFn<T>,
-  options: QueryOptions<T> = {}
+  options?: Omit<UseQueryOptions<T, Error, T, QueryKey>, 'queryKey' | 'queryFn'>
 ) {
-  return useQuery({
+  // Create the query options
+  const queryOptions: UseQueryOptions<T, Error, T, QueryKey> = {
     queryKey,
     queryFn,
-    retry: options.retry ?? 1,
-    staleTime: options.staleTime,
-    gcTime: options.cacheTime,
-    enabled: options.enabled,
-    onSuccess: options.onSuccess,
-    onError: (error: Error) => {
-      console.error('Supabase query error:', error);
-      toast.error(`Error fetching data: ${error.message}`);
-      if (options.onError) {
-        options.onError(error);
-      }
-    },
-  });
-}
+    retry: 1,
+    ...options,
+  };
 
-interface MutationOptions<TData, TVariables> {
-  onSuccess?: (data: TData, variables: TVariables) => void;
-  onError?: (error: Error, variables: TVariables) => void;
-  onSettled?: (data: TData | undefined, error: Error | null, variables: TVariables) => void;
-  invalidateQueries?: QueryKey[];
+  return useQuery(queryOptions);
 }
 
 /**
@@ -60,36 +46,19 @@ interface MutationOptions<TData, TVariables> {
  */
 export function useSupabaseMutation<TData, TVariables = unknown>(
   mutationFn: (variables: TVariables) => Promise<TData>,
-  options: MutationOptions<TData, TVariables> = {}
+  options?: Omit<UseMutationOptions<TData, Error, TVariables>, 'mutationFn'>
 ) {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn,
-    onSuccess: (data, variables) => {
-      if (options.onSuccess) {
-        options.onSuccess(data, variables);
-      }
-      
-      // Invalidate affected queries
-      if (options.invalidateQueries?.length) {
-        options.invalidateQueries.forEach(queryKey => {
-          queryClient.invalidateQueries({ queryKey });
-        });
-      }
-    },
-    onError: (error: Error, variables) => {
+    ...options,
+    onError: (error, variables, context) => {
       console.error('Supabase mutation error:', error);
       toast.error(`Error updating data: ${error.message}`);
-      if (options.onError) {
-        options.onError(error, variables);
-      }
-    },
-    onSettled: (data, error, variables) => {
-      if (data && !error && options.onSettled) {
-        options.onSettled(data, null, variables as TVariables);
-      } else if (error && options.onSettled) {
-        options.onSettled(undefined, error as Error, variables as TVariables);
+      
+      if (options?.onError) {
+        options.onError(error, variables, context);
       }
     },
   });

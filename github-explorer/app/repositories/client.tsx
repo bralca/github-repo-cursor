@@ -17,13 +17,13 @@ export function RepositoriesClient({ initialRepositories }: RepositoriesClientPr
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   
-  const { data, isLoading, isFetching } = useRepositories({
+  const { data, isLoading, isFetching } = useRepositories(
     page,
-    search,
-    pageSize: 9,
-  })
+    9, // pageSize
+    { search: search.length > 0 ? search : null }
+  )
   
-  const repositories = data?.repositories || initialRepositories
+  const repositories = data?.data || initialRepositories
   const totalPages = data?.totalPages || 1
   
   const handlePreviousPage = () => {
@@ -113,9 +113,9 @@ function RepositoryCard({ repository }: { repository: Repository }) {
             <GitFork className="mr-1 h-4 w-4" />
             <span>{repository.forks.toLocaleString()}</span>
           </div>
-          {repository.primary_language && (
+          {repository.language && (
             <span className="px-2 py-1 bg-primary/10 rounded-md text-xs">
-              {repository.primary_language}
+              {repository.language}
             </span>
           )}
         </div>
@@ -123,8 +123,8 @@ function RepositoryCard({ repository }: { repository: Repository }) {
       <CardFooter className="text-xs text-muted-foreground">
         <div className="flex items-center">
           <Calendar className="mr-1 h-3 w-3" />
-          {repository.last_updated ? (
-            <span>Updated {formatDistanceToNow(new Date(repository.last_updated))} ago</span>
+          {repository.updated_at ? (
+            <span>Updated {formatDistanceToNow(new Date(repository.updated_at))} ago</span>
           ) : (
             <span>Recently updated</span>
           )}

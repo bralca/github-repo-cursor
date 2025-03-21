@@ -12,10 +12,11 @@ import MergeRequestContent from '@/components/merge-request/MergeRequestContent'
 
 // Define types for the page props
 interface MergeRequestPageProps {
-  params: {
+  params: Promise<{
     repositorySlug: string;
     mergeRequestSlug: string;
-  };
+  }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 // Define metadata generation function

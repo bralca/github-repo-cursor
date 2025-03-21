@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { broadcastEvent } from '../route';
+import { broadcastEvent } from '../utils';
 
 // Path to events directory - next to the database
 // We'll use the same approach as the server to find the database path

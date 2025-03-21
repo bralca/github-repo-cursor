@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -27,15 +27,24 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+// Component to safely use search params inside a suspense boundary
+function RedirectHandler({ onRedirectPath }: { onRedirectPath: (path: string) => void }) {
+  const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    const redirectTo = searchParams.get('redirectTo') || '/admin';
+    onRedirectPath(redirectTo);
+  }, [searchParams, onRedirectPath]);
+  
+  return null;
+}
+
 export function SignInForm() {
   const { signIn, authState, isAdmin } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const [redirectTo, setRedirectTo] = useState('/admin');
   const [isLoading, setIsLoading] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
-  
-  // Get the redirect URL from the query parameters
-  const redirectTo = searchParams.get('redirectTo') || '/admin';
   
   // Handle redirection after successful login
   useEffect(() => {
@@ -104,6 +113,10 @@ export function SignInForm() {
 
   return (
     <div className="w-full max-w-md space-y-6 rounded-lg border bg-card p-8 shadow-sm">
+      <Suspense fallback={null}>
+        <RedirectHandler onRedirectPath={setRedirectTo} />
+      </Suspense>
+      
       <div className="space-y-2 text-center">
         <h1 className="text-3xl font-bold">Admin Access</h1>
         <p className="text-muted-foreground">

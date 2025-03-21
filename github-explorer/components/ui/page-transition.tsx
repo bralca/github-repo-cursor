@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useEffect, useState, memo, useCallback } from 'react';
+import { useEffect, useState, memo, useCallback, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface PageTransitionProps {
@@ -10,6 +10,19 @@ interface PageTransitionProps {
   initial?: boolean;
   className?: string;
   onExitComplete?: () => void;
+}
+
+// Component that safely accesses search params
+function SearchParamsHandler({ onParamsChange }: { onParamsChange: (fullPath: string) => void }) {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  
+  useEffect(() => {
+    const fullPath = pathname + searchParams.toString();
+    onParamsChange(fullPath);
+  }, [pathname, searchParams, onParamsChange]);
+  
+  return null;
 }
 
 /**
@@ -23,28 +36,30 @@ export function PageTransition({
   onExitComplete,
 }: PageTransitionProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [key, setKey] = useState(pathname);
   
-  // Update the key when pathname or searchParams change
-  useEffect(() => {
-    const fullPath = pathname + searchParams.toString();
+  const handleParamsChange = useCallback((fullPath: string) => {
     setKey(fullPath);
-  }, [pathname, searchParams]);
+  }, []);
 
   return (
-    <AnimatePresence mode={mode} initial={initial} onExitComplete={onExitComplete}>
-      <motion.div
-        key={key}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className={className}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <>
+      <Suspense fallback={null}>
+        <SearchParamsHandler onParamsChange={handleParamsChange} />
+      </Suspense>
+      <AnimatePresence mode={mode} initial={initial} onExitComplete={onExitComplete}>
+        <motion.div
+          key={key}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className={className}
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
+    </>
   );
 }
 
