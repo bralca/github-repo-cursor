@@ -12,8 +12,11 @@ interface FilePageProps {
 
 // Define metadata generation function
 export async function generateMetadata({ params }: FilePageProps): Promise<Metadata> {
+  // Await params before using them to avoid NextJS errors
+  const resolvedParams = await Promise.resolve(params);
+  
   // Extract the GitHub ID from the repository slug
-  const repositorySlugInfo = parseRepositorySlug(params.repositorySlug);
+  const repositorySlugInfo = parseRepositorySlug(resolvedParams.repositorySlug);
   
   if (!repositorySlugInfo) {
     return {
@@ -23,10 +26,10 @@ export async function generateMetadata({ params }: FilePageProps): Promise<Metad
   }
   
   // Construct the file path from the array segments
-  const fullFilePath = params.filePath.join('/');
+  const fullFilePath = resolvedParams.filePath.join('/');
   
   // Extract file name from the path for the title
-  const fileName = params.filePath[params.filePath.length - 1] || '';
+  const fileName = resolvedParams.filePath[resolvedParams.filePath.length - 1] || '';
   
   // In a real implementation, we would fetch the repository and file data
   // For now, we'll return basic metadata based on the slug info
@@ -53,48 +56,51 @@ export async function generateMetadata({ params }: FilePageProps): Promise<Metad
  * This server component renders a file view with SEO metadata
  */
 export default async function FilePage({ params }: FilePageProps) {
+  // Await params before using them to avoid NextJS errors
+  const resolvedParams = await Promise.resolve(params);
+  
   // Extract the GitHub ID from the repository slug
-  const repositorySlugInfo = parseRepositorySlug(params.repositorySlug);
+  const repositorySlugInfo = parseRepositorySlug(resolvedParams.repositorySlug);
   
   if (!repositorySlugInfo) {
     notFound();
   }
   
   // Construct the file path from the array segments
-  const fullFilePath = params.filePath.join('/');
+  const fullFilePath = resolvedParams.filePath.join('/');
   
   // For now, we'll use the slug information to render a basic page
   const { name: repoName, githubId: repoGithubId } = repositorySlugInfo;
   
   // Extract file extension for syntax highlighting (in a real app)
-  const fileName = params.filePath[params.filePath.length - 1] || '';
+  const fileName = resolvedParams.filePath[resolvedParams.filePath.length - 1] || '';
   const fileExtension = fileName.split('.').pop() || '';
   
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <div className="flex items-center text-sm mb-4">
-          <a href={`/${params.repositorySlug}`} className="text-blue-600 hover:underline">
+          <a href={`/${resolvedParams.repositorySlug}`} className="text-blue-600 hover:underline">
             {repoName}
           </a>
           <span className="mx-2 text-gray-400">/</span>
           
           {/* Build breadcrumb navigation for nested paths */}
-          {params.filePath.map((segment, index) => {
+          {resolvedParams.filePath.map((segment, index) => {
             // Skip rendering the last segment as a link
-            if (index === params.filePath.length - 1) {
+            if (index === resolvedParams.filePath.length - 1) {
               return (
                 <span key={index} className="text-gray-600">{segment}</span>
               );
             }
             
             // Build the path up to this segment
-            const pathToSegment = params.filePath.slice(0, index + 1).join('/');
+            const pathToSegment = resolvedParams.filePath.slice(0, index + 1).join('/');
             
             return (
               <span key={index}>
                 <a 
-                  href={`/${params.repositorySlug}/files/${pathToSegment}`} 
+                  href={`/${resolvedParams.repositorySlug}/files/${pathToSegment}`} 
                   className="text-blue-600 hover:underline"
                 >
                   {segment}

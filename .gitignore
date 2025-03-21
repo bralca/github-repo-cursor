@@ -106,4 +106,10 @@ Thumbs.db
 *-shm
 
 # Supabase local development
-.supabase/ 
+.supabase/
+
+# Pipeline event files
+/events/
+events/
+/events/*.json
+events/*.json 

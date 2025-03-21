@@ -12,8 +12,11 @@ interface CommitPageProps {
 
 // Define metadata generation function
 export async function generateMetadata({ params }: CommitPageProps): Promise<Metadata> {
+  // Await params before using them to avoid NextJS errors
+  const resolvedParams = await Promise.resolve(params);
+  
   // Extract the GitHub ID from the repository slug
-  const repositorySlugInfo = parseRepositorySlug(params.repositorySlug);
+  const repositorySlugInfo = parseRepositorySlug(resolvedParams.repositorySlug);
   
   if (!repositorySlugInfo) {
     return {
@@ -23,9 +26,9 @@ export async function generateMetadata({ params }: CommitPageProps): Promise<Met
   }
   
   // Truncate the commit hash for display if it's very long
-  const displayCommitHash = params.commitHash.length > 10 
-    ? params.commitHash.substring(0, 7) 
-    : params.commitHash;
+  const displayCommitHash = resolvedParams.commitHash.length > 10 
+    ? resolvedParams.commitHash.substring(0, 7) 
+    : resolvedParams.commitHash;
   
   // In a real implementation, we would fetch the repository and commit data
   // For now, we'll return basic metadata based on the slug info
@@ -52,17 +55,20 @@ export async function generateMetadata({ params }: CommitPageProps): Promise<Met
  * This server component renders a commit view with SEO metadata
  */
 export default async function CommitPage({ params }: CommitPageProps) {
+  // Await params before using them to avoid NextJS errors
+  const resolvedParams = await Promise.resolve(params);
+  
   // Extract the GitHub ID from the repository slug
-  const repositorySlugInfo = parseRepositorySlug(params.repositorySlug);
+  const repositorySlugInfo = parseRepositorySlug(resolvedParams.repositorySlug);
   
   if (!repositorySlugInfo) {
     notFound();
   }
   
   // Truncate the commit hash for display if it's very long
-  const displayCommitHash = params.commitHash.length > 10 
-    ? params.commitHash.substring(0, 7) 
-    : params.commitHash;
+  const displayCommitHash = resolvedParams.commitHash.length > 10 
+    ? resolvedParams.commitHash.substring(0, 7) 
+    : resolvedParams.commitHash;
   
   // For now, we'll use the slug information to render a basic page
   const { name: repoName, githubId: repoGithubId } = repositorySlugInfo;
@@ -71,11 +77,11 @@ export default async function CommitPage({ params }: CommitPageProps) {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <div className="flex items-center text-sm mb-4">
-          <a href={`/${params.repositorySlug}`} className="text-blue-600 hover:underline">
+          <a href={`/${resolvedParams.repositorySlug}`} className="text-blue-600 hover:underline">
             {repoName}
           </a>
           <span className="mx-2 text-gray-400">/</span>
-          <a href={`/${params.repositorySlug}/commits`} className="text-blue-600 hover:underline">
+          <a href={`/${resolvedParams.repositorySlug}/commits`} className="text-blue-600 hover:underline">
             commits
           </a>
           <span className="mx-2 text-gray-400">/</span>
@@ -106,7 +112,7 @@ export default async function CommitPage({ params }: CommitPageProps) {
             <h3 className="text-lg font-medium mb-2">Details</h3>
             <div className="space-y-2">
               <p className="text-gray-600">Repository: <span className="font-medium">{repoName}</span></p>
-              <p className="text-gray-600">Full Hash: <span className="font-medium font-mono">{params.commitHash}</span></p>
+              <p className="text-gray-600">Full Hash: <span className="font-medium font-mono">{resolvedParams.commitHash}</span></p>
               <p className="text-gray-600">Parent Commit: <span className="font-medium font-mono">Unknown</span></p>
             </div>
           </div>

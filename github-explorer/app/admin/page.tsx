@@ -54,14 +54,6 @@ export default function AdminDashboardPage() {
           />
         </div>
         
-        {/* Add Sitemap Control Card */}
-        <div className="mt-4">
-          <h2 className="text-xl font-semibold mb-4">SEO Tools</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <SitemapControlCard />
-          </div>
-        </div>
-        
         <Tabs defaultValue="entity-stats" className="w-full">
           <TabsList className="w-full max-w-md grid grid-cols-3">
             <TabsTrigger value="entity-stats">Entity Stats</TabsTrigger>
@@ -81,6 +73,12 @@ export default function AdminDashboardPage() {
             <PipelineHistory useSQLite={useSQLite} />
           </TabsContent>
         </Tabs>
+        
+        {/* SEO Tools Section */}
+        <div className="mt-4">
+          <h2 className="text-xl font-semibold mb-4">SEO Tools</h2>
+          <SitemapControlCard />
+        </div>
       </div>
     </div>
   );

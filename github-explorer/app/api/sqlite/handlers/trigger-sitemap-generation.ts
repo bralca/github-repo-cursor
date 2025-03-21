@@ -107,11 +107,11 @@ function generateCommitUrl(
   contributorGithubId: number | string | undefined,
   filename: string | undefined,
   commitId: string
-): string {
-  // Fall back to simpler pattern if any components are missing
+): string | null {
+  // Skip if any required components are missing
   if (!mrTitle || !mrGithubId || !contributorUsername || !contributorGithubId || !filename) {
-    console.log(`SERVER-SIDE: Missing data for full commit URL pattern, using simplified pattern for commit ${commitId}`);
-    return `${generateRepoUrl(repoName, repoGithubId)}/commits/${commitId}`;
+    console.log(`SERVER-SIDE: Skipping commit ${commitId} due to missing data for full URL pattern`);
+    return null;
   }
   
   const repoUrl = generateRepoUrl(repoName, repoGithubId);
@@ -372,13 +372,11 @@ async function generateCommitsSitemap(): Promise<SitemapResult> {
     console.log(`SERVER-SIDE: The difference is because we store individual file changes as separate commit records, but in the sitemap we need only one URL per unique commit SHA per repository`);
     
     const baseUrl = getBaseUrl();
+    let skippedCount = 0;
     
-    const urls = result.map((commit: CommitRecord) => {
-      const lastmod = commit.committed_at ? new Date(commit.committed_at).toISOString() : new Date().toISOString();
-      const repoName = commit.repository_name || commit.full_name.split('/').pop() || '';
-      
+    const urlEntries = result.map((commit: CommitRecord) => {
       const commitPath = generateCommitUrl(
-        repoName, 
+        commit.repository_name || commit.full_name.split('/').pop() || '',
         commit.repository_github_id,
         commit.merge_request_title,
         commit.merge_request_github_id,
@@ -389,6 +387,14 @@ async function generateCommitsSitemap(): Promise<SitemapResult> {
         commit.github_id
       );
       
+      // Skip this commit if URL generation returned null
+      if (commitPath === null) {
+        skippedCount++;
+        return null;
+      }
+      
+      const lastmod = commit.committed_at ? new Date(commit.committed_at).toISOString() : new Date().toISOString();
+      
       return `
         <url>
           <loc>${baseUrl}${commitPath}</loc>
@@ -397,11 +403,14 @@ async function generateCommitsSitemap(): Promise<SitemapResult> {
           <priority>0.6</priority>
         </url>
       `;
-    }).join("");
+    }).filter(Boolean).join("");  // Filter out null entries
+    
+    const includedCommits = uniqueCommits - skippedCount;
+    console.log(`SERVER-SIDE: Included ${includedCommits} commits in sitemap, skipped ${skippedCount} commits with incomplete data`);
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
       <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-        ${urls}
+        ${urlEntries}
       </urlset>`;
 
     await fs.writeFile(path.join(process.cwd(), 'public', 'sitemaps', 'commits-sitemap.xml'), xml);
@@ -409,10 +418,10 @@ async function generateCommitsSitemap(): Promise<SitemapResult> {
     return {
       filename: "commits-sitemap.xml",
       entity_type: "commits",
-      url_count: uniqueCommits,
+      url_count: includedCommits,
       additional_info: {
         total_commit_records: totalCommits,
-        explanation: "Grouped by unique commit SHA per repository"
+        explanation: "Only includes commits with complete data for URL generation. Grouped by unique commit SHA per repository."
       }
     };
   } catch (error) {

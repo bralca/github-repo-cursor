@@ -85,14 +85,26 @@ export function useSitemapGeneration() {
   // Check if sitemap exists
   const sitemapExists = status?.sitemapExists || false;
   
+  // Extract lastUpdated for the component
+  const lastUpdated = formattedLastUpdated;
+
+  // Add refreshStatus as an alias for fetchStatus for better semantics
+  const refreshStatus = fetchStatus;
+  
+  // Convert error to isError boolean
+  const isError = error !== null;
+  
   return {
     status,
     isLoading,
     isGenerating,
     error,
+    isError,
     fetchStatus,
+    refreshStatus,
     generateSitemap,
     formattedLastUpdated,
+    lastUpdated,
     sitemapExists
   };
 } 

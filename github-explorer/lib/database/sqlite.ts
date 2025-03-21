@@ -11,7 +11,7 @@ import { Database } from '@/types/database';
  * @param body Optional request body
  * @returns The response from the API
  */
-async function fetchFromSQLiteApi<T>(
+export async function fetchFromSQLiteApi<T>(
   endpoint: string, 
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
   params?: Record<string, string>,
