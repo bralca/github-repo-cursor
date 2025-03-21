@@ -22,6 +22,7 @@ import { generateCommitMetadata } from '@/lib/metadata-utils';
 import Link from 'next/link';
 import Image from 'next/image';
 import { format, formatDistanceToNow } from 'date-fns';
+import CommitContent from '@/components/commit/CommitContent';
 
 // Define types for the page props
 interface CommitPageProps {
@@ -178,132 +179,50 @@ export default async function CommitPage({ params }: CommitPageProps) {
     // We don't have status in the commit data, so use a default
     const statusInfo = getStatusInfo('modified');
     
+    // Prepare initial data for the client component
+    const initialData = {
+      commit: {
+        id: commit.id,
+        github_id: commit.github_id,
+        sha: commit.sha,
+        message: commit.message,
+        committed_at: commit.committed_at,
+        additions: commit.additions,
+        deletions: commit.deletions,
+        changed_files: commit.changed_files || 1,
+        complexity_score: commit.complexity_score
+      },
+      repository: {
+        id: repository.id,
+        github_id: repository.github_id.toString(),
+        name: repository.name,
+        full_name: repository.full_name || repository.name
+      },
+      contributor: {
+        id: contributor.id,
+        github_id: contributor.github_id.toString(),
+        name: contributor.name || undefined,
+        username: contributor.username || undefined,
+        avatar: contributor.avatar || undefined
+      },
+      mergeRequest: {
+        id: mergeRequest.id,
+        github_id: mergeRequest.github_id.toString(),
+        title: mergeRequest.title
+      },
+      filename: fileSlugInfo.filename
+    };
+    
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <div className="mb-2">
-            <Link href={`/${paramsObj.repositorySlug}`} className="text-blue-600 hover:underline">
-              {repository.name}
-            </Link>
-            <span className="mx-2 text-gray-400">/</span>
-            <Link href={`/${paramsObj.repositorySlug}/merge-requests`} className="text-blue-600 hover:underline">
-              merge requests
-            </Link>
-            <span className="mx-2 text-gray-400">/</span>
-            <Link href={`/${paramsObj.repositorySlug}/merge-requests/${paramsObj.mergeRequestSlug}`} className="text-blue-600 hover:underline">
-              #{mergeRequest.github_id}
-            </Link>
-            <span className="mx-2 text-gray-400">/</span>
-            <Link href={`/${paramsObj.repositorySlug}/merge-requests/${paramsObj.mergeRequestSlug}/commits`} className="text-blue-600 hover:underline">
-              commits
-            </Link>
-            <span className="mx-2 text-gray-400">/</span>
-            <span className="text-gray-600">{commit.sha.substring(0, 7)}</span>
-          </div>
-          
-          <h1 className="text-3xl font-bold mb-4">{commit.message}</h1>
-          
-          <div className="flex items-center mb-6">
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusInfo.bgColor} ${statusInfo.textColor} mr-2`}>
-              <span className={`w-2 h-2 ${statusInfo.dotColor} rounded-full mr-1`}></span>
-              {statusInfo.text}
-            </span>
-            
-            <span className="text-gray-600 text-sm">
-              Committed {formatDate(commit.committed_at)} by{' '}
-              <Link 
-                href={`/contributors/${paramsObj.contributorSlug}`} 
-                className="font-medium hover:underline"
-              >
-                {contributor.name || contributor.username || `User #${contributor.github_id}`}
-              </Link>
-            </span>
-          </div>
-          
-          <div className="bg-gray-100 p-4 rounded-lg mb-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                {contributor.avatar && (
-                  <Image 
-                    src={contributor.avatar} 
-                    alt={contributor.username || 'Contributor avatar'} 
-                    width={40} 
-                    height={40} 
-                    className="rounded-full"
-                  />
-                )}
-              </div>
-              <div className="ml-4">
-                <h2 className="text-lg font-medium">
-                  {fileSlugInfo.filename}
-                </h2>
-                <div className="text-sm text-gray-600">
-                  <span className="text-green-600 mr-2">+{commit.additions || 0}</span>
-                  <span className="text-red-600">-{commit.deletions || 0}</span>
-                  <span className="mx-2 text-gray-400">•</span>
-                  <span>{format(new Date(commit.committed_at), 'MMM d, yyyy')}</span>
-                  <span className="mx-2 text-gray-400">•</span>
-                  <span className="font-mono">{commit.sha.substring(0, 7)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Placeholder for client component */}
-        <div className="bg-white shadow rounded-lg overflow-hidden p-6">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-4">Commit Details</h2>
-            <p className="text-gray-600 mb-4">
-              This commit was made to the file <code className="bg-gray-100 px-2 py-1 rounded">{fileSlugInfo.filename}</code> 
-              by {contributor.name || contributor.username} in merge request "{mergeRequest.title}".
-            </p>
-            
-            <div className="bg-gray-50 p-4 rounded-md mb-4">
-              <h3 className="font-medium mb-2">Commit Message</h3>
-              <p className="whitespace-pre-line">{commit.message}</p>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gray-50 p-4 rounded-md">
-                <h3 className="font-medium mb-2">Repository</h3>
-                <Link href={`/${paramsObj.repositorySlug}`} className="text-indigo-600 hover:text-indigo-800">
-                  {repository.name}
-                </Link>
-              </div>
-              
-              <div className="bg-gray-50 p-4 rounded-md">
-                <h3 className="font-medium mb-2">Merge Request</h3>
-                <Link href={`/${paramsObj.repositorySlug}/merge-requests/${paramsObj.mergeRequestSlug}`} className="text-indigo-600 hover:text-indigo-800">
-                  {mergeRequest.title}
-                </Link>
-              </div>
-              
-              <div className="bg-gray-50 p-4 rounded-md">
-                <h3 className="font-medium mb-2">SHA</h3>
-                <p className="font-mono text-sm">{commit.sha}</p>
-              </div>
-              
-              <div className="bg-gray-50 p-4 rounded-md">
-                <h3 className="font-medium mb-2">Changes</h3>
-                <p>
-                  <span className="text-green-600 mr-2">+{commit.additions || 0} additions</span>
-                  <span className="text-red-600">-{commit.deletions || 0} deletions</span>
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-4">File Changes</h2>
-            <div className="bg-gray-50 p-4 rounded-md">
-              <p className="text-gray-500 italic">
-                Detailed file changes will be available in the client component implementation.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <main>
+        <CommitContent 
+          initialData={initialData}
+          repositorySlug={paramsObj.repositorySlug}
+          mergeRequestSlug={paramsObj.mergeRequestSlug}
+          contributorSlug={paramsObj.contributorSlug}
+          fileSlug={paramsObj.fileSlug}
+        />
+      </main>
     );
   } catch (error) {
     console.error('Commit Page - Error rendering:', error);
