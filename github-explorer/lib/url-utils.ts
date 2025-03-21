@@ -79,8 +79,8 @@ export function toSlug(input: string): string {
 export function extractGithubId(slug: string): string | null {
   if (!slug) return null;
   
-  // Look for a numeric ID at the end of the slug
-  const match = slug.match(/-(\d+)$/);
+  // Look for a numeric ID or hexadecimal SHA hash at the end of the slug
+  const match = slug.match(/-([0-9a-f]+)$/);
   return match ? match[1] : null;
 }
 

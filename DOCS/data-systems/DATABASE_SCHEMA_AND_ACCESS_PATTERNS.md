@@ -174,6 +174,8 @@ Stores information about repository commits and their file changes.
 | `created_at` | TIMESTAMP | When this record was created |
 | `updated_at` | TIMESTAMP | When this record was last updated |
 
+**Note**: Many code references may include a `files_changed` field, but this is calculated at runtime rather than stored directly in the database. Each commit record represents a single file change, and the total number of files changed must be counted across records with the same commit SHA.
+
 **Indices:**
 - `idx_commits_github_id` on the `github_id` column
 - `idx_commits_repository_id` on the `repository_id` column

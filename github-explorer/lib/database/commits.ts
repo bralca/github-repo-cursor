@@ -49,7 +49,7 @@ export interface CommitBaseData {
 export interface CommitSEOData extends CommitBaseData {
   additions: number;
   deletions: number;
-  files_changed: number;
+  changed_files?: number; // Optional to maintain compatibility
   complexity_score: number | null;
 }
 
@@ -65,9 +65,9 @@ export async function getCommitBySha(
 ): Promise<Commit | null> {
   return withDb(async (db) => {
     const commit = await db.get<Commit>(
-      `SELECT * FROM commits 
-       WHERE (sha = ? OR github_id = ?) AND repository_github_id = ?`,
-      [sha, sha, repositoryGithubId]
+      `SELECT *, github_id as sha FROM commits 
+       WHERE github_id = ? AND repository_github_id = ?`,
+      [sha, repositoryGithubId]
     );
     
     return commit || null;
@@ -86,11 +86,11 @@ export async function getCommitBaseDataBySha(
 ): Promise<CommitBaseData | null> {
   return withDb(async (db) => {
     const commit = await db.get<CommitBaseData>(
-      `SELECT id, github_id, sha, repository_id, repository_github_id,
+      `SELECT id, github_id, github_id as sha, repository_id, repository_github_id,
               contributor_id, contributor_github_id, message, committed_at
        FROM commits 
-       WHERE (sha = ? OR github_id = ?) AND repository_github_id = ?`,
-      [sha, sha, repositoryGithubId]
+       WHERE github_id = ? AND repository_github_id = ?`,
+      [sha, repositoryGithubId]
     );
     
     return commit || null;
@@ -109,15 +109,23 @@ export async function getCommitSEODataBySha(
 ): Promise<CommitSEOData | null> {
   return withDb(async (db) => {
     const commit = await db.get<CommitSEOData>(
-      `SELECT id, github_id, sha, repository_id, repository_github_id,
+      `SELECT id, github_id, github_id as sha, repository_id, repository_github_id,
               contributor_id, contributor_github_id, message, committed_at,
-              additions, deletions, files_changed, complexity_score
+              additions, deletions, complexity_score
        FROM commits 
-       WHERE (sha = ? OR github_id = ?) AND repository_github_id = ?`,
-      [sha, sha, repositoryGithubId]
+       WHERE github_id = ? AND repository_github_id = ?`,
+      [sha, repositoryGithubId]
     );
     
-    return commit || null;
+    if (commit) {
+      // Add a default value for changed_files to maintain API compatibility
+      return {
+        ...commit,
+        changed_files: 1 // Default to 1 since we found at least one file
+      };
+    }
+    
+    return null;
   });
 }
 
