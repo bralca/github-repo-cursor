@@ -19,6 +19,7 @@ The classification system uses the following metrics from the `contributor_ranki
 - `code_efficiency_score`: Measures the efficiency of code changes
 - `commit_impact_score`: Measures the significance of committed changes
 - `repo_influence_score`: Measures influence across repositories
+- `repo_popularity_score`: Measures contributions to popular repositories (based on stars/forks)
 - `followers_score`: Measures community following and recognition
 - `profile_completeness_score`: Measures profile information completeness
 - `followers_count`: Raw count of GitHub followers
@@ -100,6 +101,23 @@ Additional metrics may be derived during the classification process.
     - *Signature Strengths*: Contributions to diverse technological domains
     - *Common Traits*: Significant contributions to repositories with different primary languages
 
+### Repository Popularity Archetypes
+
+14. **Major Project Contributor**
+    - *Description*: Regularly contributes to highly popular, widely-used repositories
+    - *Signature Strengths*: Very high repository popularity score
+    - *Common Traits*: Contributions to repositories with 1000+ stars
+
+15. **Trending Project Developer**
+    - *Description*: Focuses on active, rapidly growing repositories
+    - *Signature Strengths*: High repository popularity with recent growth rate
+    - *Common Traits*: Contributions to repositories with high star growth
+
+16. **Open Source Celebrity**
+    - *Description*: Works on the most recognized and starred projects in the ecosystem
+    - *Signature Strengths*: Exceptional repository popularity combined with strong personal following
+    - *Common Traits*: Contributions to top-tier projects (10,000+ stars) and strong personal brand
+
 ## Calculation Methodology
 
 ### General Approach
@@ -163,6 +181,18 @@ Additional metrics may be derived during the classification process.
     - Primary check: Contributions to repositories with 3+ different primary languages
     - Secondary check: Significant contributions in each language (> 1,000 lines)
 
+14. **Major Project Contributor**
+    - Primary check: repo_popularity_score > 85th percentile
+    - Secondary check: At least one repository contributed to has 1000+ stars
+
+15. **Trending Project Developer**
+    - Primary check: repo_popularity_score > 75th percentile AND recent contributions to high-growth repos
+    - Secondary check: Contributed to at least 2 repositories with 25%+ star growth in last 6 months
+
+16. **Open Source Celebrity**
+    - Primary check: repo_popularity_score > 90th percentile AND followers_score > 80th percentile
+    - Secondary check: Contributed to at least one repository with 10,000+ stars
+
 ### Default Classification
 
 If a developer doesn't match any of the above criteria, they are classified as:
@@ -185,6 +215,7 @@ WITH percentiles AS (
     PERCENT_RANK() OVER(ORDER BY code_efficiency_score) AS code_efficiency_percentile,
     PERCENT_RANK() OVER(ORDER BY commit_impact_score) AS commit_impact_percentile,
     PERCENT_RANK() OVER(ORDER BY repo_influence_score) AS repo_influence_percentile,
+    PERCENT_RANK() OVER(ORDER BY repo_popularity_score) AS repo_popularity_percentile,
     PERCENT_RANK() OVER(ORDER BY followers_score) AS followers_percentile,
     PERCENT_RANK() OVER(ORDER BY profile_completeness_score) AS profile_completeness_percentile,
     raw_lines_added,
@@ -247,6 +278,19 @@ classified AS (
       THEN 'Impact Multiplier'
       
       -- Additional archetypes would be added here
+      
+      -- Additional repository popularity archetypes
+      WHEN repo_popularity_percentile > 0.85 
+           AND EXISTS (SELECT 1 FROM contributor_repository cr 
+                       JOIN repositories r ON cr.repository_id = r.id
+                       WHERE cr.contributor_id = p.contributor_id AND r.stars >= 1000)
+      THEN 'Major Project Contributor'
+
+      WHEN repo_popularity_percentile > 0.9 AND followers_percentile > 0.8
+           AND EXISTS (SELECT 1 FROM contributor_repository cr 
+                       JOIN repositories r ON cr.repository_id = r.id
+                       WHERE cr.contributor_id = p.contributor_id AND r.stars >= 10000)
+      THEN 'Open Source Celebrity'
       
       -- Default classification
       ELSE 'Active Contributor'
@@ -342,3 +386,108 @@ The archetype system should be evaluated regularly:
 2. Project-specific archetypes that consider domain expertise
 3. Machine learning approach to discover natural clusters in the data
 4. Team composition analysis based on archetype diversity 
+
+## File-Based Metrics and Archetypes
+
+The classification system can be enhanced with detailed file operation analysis to provide more nuanced developer categorization. This section outlines additional metrics and archetypes based on file-level contribution patterns.
+
+### Additional File-Based Metrics
+
+1. **File Operation Distribution**
+   - *Description*: Breakdown of operations by file status (added, modified, deleted)
+   - *Calculation*: Count of files by operation type per contributor
+   - *SQL Implementation*:
+     ```sql
+     SELECT
+       contributor_id,
+       COUNT(CASE WHEN status = 'added' THEN 1 END) AS files_added,
+       COUNT(CASE WHEN status = 'modified' THEN 1 END) AS files_modified,
+       COUNT(CASE WHEN status = 'deleted' THEN 1 END) AS files_deleted,
+       COUNT(*) AS total_file_operations
+     FROM commits
+     GROUP BY contributor_id
+     ```
+
+2. **Files per Commit Ratio**
+   - *Description*: Average number of files changed in each commit
+   - *Calculation*: Mean of file count per unique commit SHA
+   - *SQL Implementation*:
+     ```sql
+     WITH commit_files AS (
+       SELECT 
+         contributor_id,
+         github_id,
+         COUNT(*) AS file_count
+       FROM commits
+       GROUP BY contributor_id, github_id
+     )
+     SELECT
+       contributor_id,
+       AVG(file_count) AS avg_files_per_commit,
+       MAX(file_count) AS max_files_per_commit
+     FROM commit_files
+     GROUP BY contributor_id
+     ```
+
+3. **File Type Diversity**
+   - *Description*: Variety of file types/extensions worked with
+   - *Calculation*: Count of distinct file extensions and distribution
+   - *SQL Implementation*:
+     ```sql
+     SELECT
+       contributor_id,
+       COUNT(DISTINCT SUBSTR(filename, INSTR(filename, '.', -1) + 1)) AS distinct_extensions,
+       GROUP_CONCAT(DISTINCT SUBSTR(filename, INSTR(filename, '.', -1) + 1)) AS extension_list
+     FROM commits
+     WHERE INSTR(filename, '.') > 0
+     GROUP BY contributor_id
+     ```
+
+### Additional File-Based Archetypes
+
+1. **Codebase Renovator**
+   - *Description*: Specializes in updating and refactoring existing files across the codebase
+   - *Signature Strengths*: High ratio of modified files to added/deleted files
+   - *Common Traits*: Focus on improving existing code rather than adding new functionality
+   - *Primary Check*: (files_modified > (files_added + files_deleted) * 2) AND (avg_files_per_commit BETWEEN 3 AND 7)
+   - *Secondary Check*: files_modified > 100
+
+2. **Solution Architect**
+   - *Description*: Creates comprehensive solutions touching multiple files in coordinated changes
+   - *Signature Strengths*: High files-per-commit ratio with balanced operation types
+   - *Common Traits*: Implements features that require changes across the codebase
+   - *Primary Check*: avg_files_per_commit > 8 AND raw_commits_count > 15
+   - *Secondary Check*: files_added > total_file_operations * 0.25
+
+3. **File Structure Specialist**
+   - *Description*: Expert at organizing and restructuring codebases
+   - *Signature Strengths*: High ratio of added + deleted operations (file moves appear as add+delete)
+   - *Common Traits*: Frequently relocates code and reorganizes project structure
+   - *Primary Check*: (files_added + files_deleted) > files_modified * 1.5
+   - *Secondary Check*: files_added > 50 AND files_deleted > 50
+
+4. **Full-Stack Integrator**
+   - *Description*: Works across diverse file types, connecting different layers of the application
+   - *Signature Strengths*: High diversity in file extensions touched
+   - *Common Traits*: Comfortable working with multiple technologies and application layers
+   - *Primary Check*: distinct_extensions > 5
+   - *Secondary Check*: No single extension represents more than 40% of contributions
+
+5. **Surgical Committer**
+   - *Description*: Makes precise, targeted changes to single files
+   - *Signature Strengths*: Low files-per-commit ratio combined with high commit count
+   - *Common Traits*: Focused problem-solving approach with minimal side effects
+   - *Primary Check*: avg_files_per_commit < 2 AND raw_commits_count > 50
+   - *Secondary Check*: commit_impact_score > 60th percentile
+
+### Implementation Considerations
+
+To incorporate these file-based metrics and archetypes:
+
+1. Add the necessary columns to the `contributor_rankings` table
+2. Update the ranking calculation queries to include file-based metrics
+3. Expand the archetype classification logic to include these new categories
+4. Create appropriate visual indicators for the new archetypes
+5. Consider appropriate percentile thresholds based on project norms
+
+## Future Enhancements 

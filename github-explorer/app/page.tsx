@@ -9,28 +9,33 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
-import { TableHead } from '@/components/ui/table';
+import { TableHead, TableCell } from '@/components/ui/table';
+import { generateContributorSlug } from '@/lib/url-utils';
 
 // Interfaces for type safety
 interface ContributorRanking {
-  rank_position: number;
+  id: string;
   contributor_id: string;
+  contributor_github_id: string;
+  rank_position: number;
+  username: string;
+  name?: string;
+  avatar?: string;
   total_score: number;
   code_volume_score: number;
   code_efficiency_score: number;
   commit_impact_score: number;
+  collaboration_score: number;
+  repo_popularity_score: number;
   repo_influence_score: number;
   followers_score: number;
   profile_completeness_score: number;
   followers_count: number;
+  repositories_contributed: number;
+  raw_commits_count: number;
   raw_lines_added: number;
   raw_lines_removed: number;
-  raw_commits_count: number;
-  repositories_contributed: number;
   calculation_timestamp: string;
-  username?: string;
-  name?: string;
-  avatar?: string;
   location?: string;
   twitter_username?: string;
   top_languages?: string; // JSON string of top languages
@@ -134,40 +139,55 @@ function MetricsVisualization({
   codeVolume, 
   codeEfficiency, 
   commitImpact, 
-  repoInfluence 
+  repoInfluence,
+  collaboration,
+  repoPopularity
 }: { 
-  codeVolume: number, 
-  codeEfficiency: number, 
-  commitImpact: number, 
-  repoInfluence: number 
+  codeVolume?: number;
+  codeEfficiency?: number; 
+  commitImpact?: number;
+  repoInfluence?: number;
+  collaboration?: number;
+  repoPopularity?: number;
 }) {
-  // Define colors for different metrics
-  const metricColors = {
+  // Define colors for each metric
+  const colors = {
     codeVolume: 'bg-blue-500',
-    codeEfficiency: 'bg-green-500', 
-    commitImpact: 'bg-purple-500',
-    repoInfluence: 'bg-amber-500'
+    codeEfficiency: 'bg-purple-500',
+    commitImpact: 'bg-green-500',
+    collaboration: 'bg-pink-500',
+    repoPopularity: 'bg-yellow-500',
+    repoInfluence: 'bg-orange-500'
   };
-  
-  // Normalize scores for visualization (cap at 100)
-  const normalizeScore = (score: number) => Math.min(Math.max(score, 0), 100);
-  
+
+  // Function to normalize score (cap at 100)
+  const normalizeScore = (score?: number) => Math.min(score || 0, 100);
+
+  // Create array of metrics
   const metrics = [
-    { key: 'codeVolume', name: 'Vol', value: normalizeScore(codeVolume), color: metricColors.codeVolume },
-    { key: 'commitImpact', name: 'Imp', value: normalizeScore(commitImpact), color: metricColors.commitImpact },
-    { key: 'codeEfficiency', name: 'Eff', value: normalizeScore(codeEfficiency), color: metricColors.codeEfficiency },
-    { key: 'repoInfluence', name: 'Rep', value: normalizeScore(repoInfluence), color: metricColors.repoInfluence }
+    { key: 'codeVolume', name: 'Volume', value: normalizeScore(codeVolume), color: colors.codeVolume, tooltip: 'Amount of code contributed' },
+    { key: 'codeEfficiency', name: 'Efficiency', value: normalizeScore(codeEfficiency), color: colors.codeEfficiency, tooltip: 'How efficiently code moves from commit to final PR' },
+    { key: 'commitImpact', name: 'Impact', value: normalizeScore(commitImpact), color: colors.commitImpact, tooltip: 'Frequency and impact of commits' },
+    { key: 'collaboration', name: 'Team', value: normalizeScore(collaboration), color: colors.collaboration, tooltip: 'How often they work with other developers' },
+    { key: 'repoPopularity', name: 'Popularity', value: normalizeScore(repoPopularity), color: colors.repoPopularity, tooltip: 'Contributes to popular repositories (stars/forks)' },
+    { key: 'repoInfluence', name: 'Influence', value: normalizeScore(repoInfluence), color: colors.repoInfluence, tooltip: 'Influence across different repositories' },
   ];
-  
+
   return (
-    <div className="flex items-end h-12 gap-1">
+    <div className="flex items-end h-10 space-x-1">
       {metrics.map((metric) => (
-        <div key={metric.key} className="flex flex-col items-center">
+        <div key={metric.key} className="flex flex-col items-center group relative">
           <div 
-            className={`w-4 ${metric.color} rounded-t`} 
-            style={{ height: `${metric.value / 100 * 32}px` }}
-          ></div>
-          <span className="text-xs text-muted-foreground mt-1">{metric.name}</span>
+            className={`${metric.color} rounded-t w-4`} 
+            style={{ height: `${metric.value * 0.35}px` }} 
+          />
+          <span className="text-xs text-gray-500 mt-1">{metric.name}</span>
+          
+          {/* Tooltip */}
+          <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 w-36">
+            <p>{metric.tooltip}</p>
+            <p>Score: {metric.value.toFixed(0)}</p>
+          </div>
         </div>
       ))}
     </div>
@@ -516,14 +536,22 @@ export default function HomePage() {
                             {/* Developer */}
                             <td className="px-4 py-3">
                               <div className="flex items-center">
-                                <div className="relative h-10 w-10 rounded-full overflow-hidden bg-gray-100 mr-3">
+                                <Link 
+                                  href={`/contributors/${generateContributorSlug(dev.name, dev.username, dev.contributor_github_id)}`}
+                                  className="relative h-10 w-10 rounded-full overflow-hidden bg-gray-100 mr-3"
+                                >
                                   <AvatarImage 
                                     src={dev.avatar} 
                                     alt={dev.name || dev.username || 'Developer'} 
                                   />
-                                </div>
+                                </Link>
                                 <div>
-                                  <div className="font-medium">{dev.name || 'Unknown'}</div>
+                                  <Link 
+                                    href={`/contributors/${generateContributorSlug(dev.name, dev.username, dev.contributor_github_id)}`} 
+                                    className="font-medium hover:underline hover:text-primary transition-colors"
+                                  >
+                                    {dev.name || 'Unknown'}
+                                  </Link>
                                   <div className="text-xs text-muted-foreground">@{dev.username || 'unknown'}</div>
                                 </div>
                               </div>
@@ -531,17 +559,27 @@ export default function HomePage() {
                             
                             {/* Score */}
                             <td className="px-4 py-3 text-center">
-                              <div className="text-xl font-bold">{dev.total_score.toFixed(1)}</div>
+                              <div className="flex items-center gap-2 justify-end">
+                                {dev.total_score && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-lg font-semibold">{Math.round(dev.total_score)}</span>
+                                  </div>
+                                )}
+                              </div>
                             </td>
                             
                             {/* Metrics Visualization */}
                             <td className="px-4 py-3">
-                              <MetricsVisualization 
-                                codeVolume={dev.code_volume_score} 
-                                codeEfficiency={dev.code_efficiency_score}
-                                commitImpact={dev.commit_impact_score}
-                                repoInfluence={dev.repo_influence_score}
-                              />
+                              <div>
+                                <MetricsVisualization 
+                                  codeVolume={dev.code_volume_score} 
+                                  codeEfficiency={dev.code_efficiency_score}
+                                  commitImpact={dev.commit_impact_score}
+                                  repoInfluence={dev.repo_influence_score}
+                                  collaboration={dev.collaboration_score}
+                                  repoPopularity={dev.repo_popularity_score}
+                                />
+                              </div>
                             </td>
                             
                             {/* Profile Badges (Location & Languages) */}
@@ -575,87 +613,88 @@ export default function HomePage() {
                           {isExpanded && (
                             <tr className="bg-muted/20 border-b">
                               <td colSpan={7} className="px-6 py-4">
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                  {/* Detailed Metrics */}
-                                  <div className="space-y-2">
-                                    <h4 className="text-sm font-semibold">Metrics Breakdown</h4>
-                                    <div className="grid grid-cols-2 gap-2 text-sm">
-                                      <div>Code Volume:</div>
-                                      <div className="text-right font-medium">{dev.code_volume_score.toFixed(1)}</div>
-                                      <div>Code Efficiency:</div>
-                                      <div className="text-right font-medium">{dev.code_efficiency_score.toFixed(1)}</div>
-                                      <div>Commit Impact:</div>
-                                      <div className="text-right font-medium">{dev.commit_impact_score.toFixed(1)}</div>
-                                      <div>Repo Influence:</div>
-                                      <div className="text-right font-medium">{dev.repo_influence_score.toFixed(1)}</div>
-                                      <div>Profile Score:</div>
-                                      <div className="text-right font-medium">{dev.profile_completeness_score.toFixed(1)}</div>
-                                    </div>
+                                <div className="space-y-4">
+                                  {/* Metrics Table */}
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full border-collapse">
+                                      <thead>
+                                        <tr className="border-b">
+                                          <th className="py-2 px-4 text-left font-medium text-sm">Metric</th>
+                                          <th className="py-2 px-4 text-left font-medium text-sm">Definition</th>
+                                          <th className="py-2 px-4 text-center font-medium text-sm">Weight</th>
+                                          <th className="py-2 px-4 text-center font-medium text-sm">Value</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        <tr className="border-b">
+                                          <td className="py-2 px-4 text-sm font-medium">Code Volume</td>
+                                          <td className="py-2 px-4 text-sm">Total amount of code contributed</td>
+                                          <td className="py-2 px-4 text-center text-sm">10%</td>
+                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.code_volume_score ?? 0).toFixed(1)}</td>
+                                        </tr>
+                                        <tr className="border-b">
+                                          <td className="py-2 px-4 text-sm font-medium">Code Efficiency</td>
+                                          <td className="py-2 px-4 text-sm">How efficiently code moves from commit to final PR</td>
+                                          <td className="py-2 px-4 text-center text-sm">15%</td>
+                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.code_efficiency_score ?? 0).toFixed(1)}</td>
+                                        </tr>
+                                        <tr className="border-b">
+                                          <td className="py-2 px-4 text-sm font-medium">Commit Impact</td>
+                                          <td className="py-2 px-4 text-sm">Frequency and impact of commits</td>
+                                          <td className="py-2 px-4 text-center text-sm">10%</td>
+                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.commit_impact_score ?? 0).toFixed(1)}</td>
+                                        </tr>
+                                        <tr className="border-b">
+                                          <td className="py-2 px-4 text-sm font-medium">Team Collaboration</td>
+                                          <td className="py-2 px-4 text-sm">How often they work with other developers</td>
+                                          <td className="py-2 px-4 text-center text-sm">20%</td>
+                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.collaboration_score ?? 0).toFixed(1)}</td>
+                                        </tr>
+                                        <tr className="border-b">
+                                          <td className="py-2 px-4 text-sm font-medium">Repository Popularity</td>
+                                          <td className="py-2 px-4 text-sm">Contributes to popular repositories (stars/forks)</td>
+                                          <td className="py-2 px-4 text-center text-sm">20%</td>
+                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.repo_popularity_score ?? 0).toFixed(1)}</td>
+                                        </tr>
+                                        <tr className="border-b">
+                                          <td className="py-2 px-4 text-sm font-medium">Repository Influence</td>
+                                          <td className="py-2 px-4 text-sm">Influence across different repositories</td>
+                                          <td className="py-2 px-4 text-center text-sm">10%</td>
+                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.repo_influence_score ?? 0).toFixed(1)}</td>
+                                        </tr>
+                                        <tr className="border-b">
+                                          <td className="py-2 px-4 text-sm font-medium">Followers</td>
+                                          <td className="py-2 px-4 text-sm">Social influence based on follower count</td>
+                                          <td className="py-2 px-4 text-center text-sm">5%</td>
+                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.followers_score ?? 0).toFixed(1)}</td>
+                                        </tr>
+                                        <tr className="border-b">
+                                          <td className="py-2 px-4 text-sm font-medium">Profile Completeness</td>
+                                          <td className="py-2 px-4 text-sm">How complete the developer's profile is</td>
+                                          <td className="py-2 px-4 text-center text-sm">10%</td>
+                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.profile_completeness_score ?? 0).toFixed(1)}</td>
+                                        </tr>
+                                        <tr className="font-medium bg-muted/30">
+                                          <td className="py-2 px-4 text-sm">Total Score</td>
+                                          <td className="py-2 px-4 text-sm">Combined weighted score</td>
+                                          <td className="py-2 px-4 text-center text-sm">100%</td>
+                                          <td className="py-2 px-4 text-center text-sm">{(dev.total_score ?? 0).toFixed(1)}</td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
                                   </div>
                                   
-                                  {/* Code Stats */}
-                                  <div className="space-y-2">
-                                    <h4 className="text-sm font-semibold">Code Stats</h4>
-                                    <div className="grid grid-cols-2 gap-2 text-sm">
-                                      <div>Lines Added:</div>
-                                      <div className="text-right font-medium">{dev.raw_lines_added.toLocaleString()}</div>
-                                      <div>Lines Removed:</div>
-                                      <div className="text-right font-medium">{dev.raw_lines_removed.toLocaleString()}</div>
-                                      <div>Total Commits:</div>
-                                      <div className="text-right font-medium">{dev.raw_commits_count.toLocaleString()}</div>
-                                      <div>Total LOC:</div>
-                                      <div className="text-right font-medium">{(dev.raw_lines_added + dev.raw_lines_removed).toLocaleString()}</div>
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Repository Info */}
-                                  <div className="space-y-2">
-                                    <h4 className="text-sm font-semibold">Repository Contributions</h4>
-                                    <div className="text-sm">
-                                      <p>Contributing to {dev.repositories_contributed} repositories</p>
-                                      
-                                      {/* This would ideally show actual repositories */}
-                                      <div className="mt-2 flex flex-wrap gap-1">
-                                        {[1, 2, 3].map((i) => (
-                                          <span key={i} className="text-xs px-2 py-0.5 rounded bg-gray-100">
-                                            repo-{i}
-                                          </span>
-                                        ))}
-                                        {dev.repositories_contributed > 3 && (
-                                          <span className="text-xs px-2 py-0.5 rounded bg-gray-100">
-                                            +{dev.repositories_contributed - 3} more
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Social & Links */}
-                                  <div className="space-y-2">
-                                    <h4 className="text-sm font-semibold">Social & Links</h4>
-                                    <div className="text-sm space-y-2">
-                                      {dev.twitter_username && (
-                                        <div className="flex items-center">
-                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
-                                          </svg>
-                                          <a href={`https://twitter.com/${dev.twitter_username}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                                            @{dev.twitter_username}
-                                          </a>
-                                        </div>
-                                      )}
-                                      
-                                      {dev.username && (
-                                        <div className="flex items-center">
-                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                                          </svg>
-                                          <a href={`https://github.com/${dev.username}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                                            {dev.username}
-                                          </a>
-                                        </div>
-                                      )}
-                                    </div>
+                                  {/* View Full Profile Button */}
+                                  <div className="flex justify-end">
+                                    <Link
+                                      href={`/contributors/${generateContributorSlug(dev.name, dev.username, dev.contributor_github_id)}`}
+                                      className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+                                    >
+                                      <span>View Full Profile</span>
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                      </svg>
+                                    </Link>
                                   </div>
                                 </div>
                               </td>

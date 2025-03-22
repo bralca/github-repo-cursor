@@ -53,11 +53,12 @@ async function calculateRankings() {
     await withDb(async (db) => {
       // Create a temporary table to store our calculation results
       await db.run(`
+        -- Code Architect
         CREATE TEMPORARY TABLE temp_rankings AS
         WITH commit_metrics AS (
           SELECT 
             c.contributor_id,
-            COUNT(DISTINCT c.id) AS commit_count,
+            COUNT(DISTINCT c.github_id) AS commit_count,
             SUM(c.additions) AS lines_added,
             SUM(c.deletions) AS lines_removed,
             SUM(c.additions + c.deletions) AS total_lines
@@ -105,6 +106,72 @@ async function calculateRankings() {
             MAX(repos_contributed) AS max_repos
           FROM contributor_metrics
         ),
+        -- Calculate code efficiency score from PR vs commits
+        code_efficiency AS (
+          SELECT
+            c.contributor_id,
+            c.pull_request_id,
+            SUM(c.additions + c.deletions) AS total_commit_changes,
+            mr.additions + mr.deletions AS total_pr_changes
+          FROM commits c
+          JOIN merge_requests mr ON c.pull_request_id = mr.id
+          WHERE c.pull_request_id IS NOT NULL
+          GROUP BY c.contributor_id, c.pull_request_id
+        ),
+        code_efficiency_final AS (
+          SELECT
+            contributor_id,
+            AVG(
+              CASE 
+                WHEN total_commit_changes = 0 THEN 0
+                ELSE 
+                  1 - ABS(
+                    (total_pr_changes - total_commit_changes) / 
+                    NULLIF(total_commit_changes, 0)
+                  )
+              END
+            ) * 100 AS efficiency_score
+          FROM code_efficiency
+          GROUP BY contributor_id
+        ),
+        -- Calculate collaboration score - rewards developers who work on PRs with multiple contributors
+        collaboration_metrics AS (
+          SELECT 
+            c.contributor_id,
+            AVG(contributor_counts.contributor_count) AS avg_collaborators_per_pr,
+            MAX(contributor_counts.contributor_count) AS max_collaborators_on_pr
+          FROM commits c
+          JOIN (
+            SELECT 
+              pull_request_id, 
+              COUNT(DISTINCT contributor_id) AS contributor_count
+            FROM commits
+            WHERE pull_request_id IS NOT NULL
+            GROUP BY pull_request_id
+          ) contributor_counts ON c.pull_request_id = contributor_counts.pull_request_id
+          WHERE c.pull_request_id IS NOT NULL
+          GROUP BY c.contributor_id
+        ),
+        -- Calculate repository popularity score based on stars and forks
+        repo_popularity AS (
+          SELECT
+            cr.contributor_id,
+            -- Calculate weighted popularity of repositories contributor works on
+            SUM(
+              -- Stars count 70%, forks count 30%
+              (COALESCE(r.stars, 0) * 0.7) + (COALESCE(r.forks, 0) * 0.3)
+            ) AS total_popularity,
+            -- Calculate average popularity per repo
+            AVG(
+              (COALESCE(r.stars, 0) * 0.7) + (COALESCE(r.forks, 0) * 0.3)
+            ) AS avg_popularity,
+            -- Count how many popular repos (1000+ stars) contributor works on
+            SUM(CASE WHEN r.stars >= 1000 THEN 1 ELSE 0 END) AS popular_repos_count,
+            COUNT(r.id) AS total_repos
+          FROM contributor_repository cr
+          JOIN repositories r ON cr.repository_id = r.id
+          GROUP BY cr.contributor_id
+        ),
         normalized_metrics AS (
           SELECT
             cm.*,
@@ -112,8 +179,35 @@ async function calculateRankings() {
             (cm.total_lines * 100.0 / NULLIF(mm.max_lines, 1)) AS code_volume_score,
             (cm.commit_count * 100.0 / NULLIF(mm.max_commits, 1)) AS commit_impact_score,
             (cm.followers * 100.0 / NULLIF(mm.max_followers, 1)) AS followers_score,
-            (cm.repos_contributed * 100.0 / NULLIF(mm.max_repos, 1)) AS repo_influence_score
+            (cm.repos_contributed * 100.0 / NULLIF(mm.max_repos, 1)) AS repo_influence_score,
+            -- Include code efficiency score or default to 50 if no data
+            COALESCE(ce.efficiency_score, 50) AS code_efficiency_score,
+            -- Calculate collaboration score (0-100)
+            -- Formula: base 30 points + up to 70 points based on average team size
+            -- This heavily rewards working in teams vs solo
+            CASE
+              WHEN collab.avg_collaborators_per_pr IS NULL THEN 30 -- Default for no data
+              ELSE MIN(
+                100, -- Cap at 100
+                30 + (70 * (COALESCE(collab.avg_collaborators_per_pr, 1) - 1) / 3) -- Scale up to 4 collaborators
+              )
+            END AS collaboration_score,
+            -- Calculate repository popularity score (0-100)
+            -- This considers both total popularity and number of popular repos
+            CASE
+              WHEN rp.total_popularity IS NULL THEN 0 -- No repos
+              ELSE MIN(
+                100, -- Cap at 100
+                -- 60% based on total popularity (log scale to handle extreme values)
+                (LN(COALESCE(rp.total_popularity, 1) + 1) / LN(25000) * 60) +
+                -- 40% based on number of popular repos (capped at 5)
+                (MIN(COALESCE(rp.popular_repos_count, 0), 5) * 8)
+              )
+            END AS repo_popularity_score
           FROM contributor_metrics cm, max_metrics mm
+          LEFT JOIN code_efficiency_final ce ON cm.contributor_id = ce.contributor_id
+          LEFT JOIN collaboration_metrics collab ON cm.contributor_id = collab.contributor_id
+          LEFT JOIN repo_popularity rp ON cm.contributor_id = rp.contributor_id
         ),
         final_scores AS (
           SELECT
@@ -121,16 +215,22 @@ async function calculateRankings() {
             nm.github_id AS contributor_github_id,
             nm.username,
             nm.name,
-            -- Calculate total score using weighted average
+            -- Calculate total score using weighted average (now including repo popularity)
             (
-              nm.code_volume_score * 0.25 + 
-              nm.commit_impact_score * 0.25 + 
-              COALESCE(nm.repo_influence_score, 0) * 0.15 + 
-              COALESCE(nm.followers_score, 0) * 0.15 + 
-              nm.profile_completeness * 0.2
+              nm.code_volume_score * 0.10 + 
+              nm.commit_impact_score * 0.10 + 
+              nm.code_efficiency_score * 0.15 +
+              nm.collaboration_score * 0.20 +
+              nm.repo_popularity_score * 0.20 +
+              COALESCE(nm.repo_influence_score, 0) * 0.10 + 
+              COALESCE(nm.followers_score, 0) * 0.05 + 
+              nm.profile_completeness * 0.10
             ) AS total_score,
             nm.code_volume_score,
+            nm.code_efficiency_score,
             nm.commit_impact_score,
+            nm.collaboration_score,
+            nm.repo_popularity_score,
             nm.followers_score,
             nm.repo_influence_score,
             nm.profile_completeness,
@@ -141,11 +241,14 @@ async function calculateRankings() {
             nm.repos_contributed,
             RANK() OVER (ORDER BY 
               (
-                nm.code_volume_score * 0.25 + 
-                nm.commit_impact_score * 0.25 + 
-                COALESCE(nm.repo_influence_score, 0) * 0.15 + 
-                COALESCE(nm.followers_score, 0) * 0.15 + 
-                nm.profile_completeness * 0.2
+                nm.code_volume_score * 0.10 + 
+                nm.commit_impact_score * 0.10 + 
+                nm.code_efficiency_score * 0.15 +
+                nm.collaboration_score * 0.20 +
+                nm.repo_popularity_score * 0.20 +
+                COALESCE(nm.repo_influence_score, 0) * 0.10 + 
+                COALESCE(nm.followers_score, 0) * 0.05 + 
+                nm.profile_completeness * 0.10
               ) DESC
             ) AS rank_position
           FROM normalized_metrics nm
@@ -158,9 +261,9 @@ async function calculateRankings() {
       await db.run(`
         INSERT INTO contributor_rankings
         (id, contributor_id, contributor_github_id, rank_position, total_score, 
-         code_volume_score, code_efficiency_score, commit_impact_score, repo_influence_score,
-         followers_score, profile_completeness_score, followers_count,
-         raw_lines_added, raw_lines_removed, raw_commits_count, repositories_contributed, 
+         code_volume_score, code_efficiency_score, commit_impact_score, collaboration_score, 
+         repo_popularity_score, repo_influence_score, followers_score, profile_completeness_score, 
+         followers_count, raw_lines_added, raw_lines_removed, raw_commits_count, repositories_contributed, 
          calculation_timestamp)
         SELECT 
           hex(randomblob(16)), -- Generate a random UUID for each row
@@ -169,8 +272,10 @@ async function calculateRankings() {
           rank_position,
           total_score,
           code_volume_score,
-          0 AS code_efficiency_score, -- We're not calculating this in the simplified query
+          code_efficiency_score,
           commit_impact_score,
+          collaboration_score,
+          repo_popularity_score,
           repo_influence_score,
           followers_score,
           profile_completeness,
@@ -249,6 +354,7 @@ async function getLatestRankings() {
         SELECT 
           cr.rank_position,
           cr.contributor_id,
+          cr.contributor_github_id,
           cr.total_score,
           cr.code_volume_score,
           cr.code_efficiency_score,
@@ -297,77 +403,63 @@ async function getLatestRankings() {
  */
 async function ensureRankingsTableExists() {
   await withDb(async (db) => {
-    // Check if table exists
-    const tableCheck = await db.get(`
+    // Check if the table already exists
+    const tableExists = await db.get(`
       SELECT name FROM sqlite_master 
       WHERE type='table' AND name='contributor_rankings'
     `);
     
-    if (!tableCheck) {
-      // Create table if it doesn't exist
+    // If the table doesn't exist, create it
+    if (!tableExists) {
       await db.run(`
         CREATE TABLE contributor_rankings (
           id TEXT PRIMARY KEY,
           contributor_id TEXT NOT NULL,
-          contributor_github_id BIGINT NOT NULL,
+          contributor_github_id INTEGER NOT NULL,
           rank_position INTEGER NOT NULL,
           total_score REAL NOT NULL,
           code_volume_score REAL NOT NULL,
           code_efficiency_score REAL NOT NULL,
           commit_impact_score REAL NOT NULL,
+          collaboration_score REAL NOT NULL,
+          repo_popularity_score REAL NOT NULL,
           repo_influence_score REAL NOT NULL,
           followers_score REAL NOT NULL,
           profile_completeness_score REAL NOT NULL,
-          followers_count INTEGER NOT NULL,
-          raw_lines_added INTEGER NOT NULL,
-          raw_lines_removed INTEGER NOT NULL,
-          raw_commits_count INTEGER NOT NULL,
-          repositories_contributed INTEGER NOT NULL,
-          calculation_timestamp TIMESTAMP NOT NULL,
-          FOREIGN KEY (contributor_id) REFERENCES contributors(id)
+          followers_count INTEGER,
+          raw_lines_added INTEGER,
+          raw_lines_removed INTEGER,
+          raw_commits_count INTEGER,
+          repositories_contributed INTEGER,
+          calculation_timestamp TIMESTAMP NOT NULL
         )
       `);
       
-      // Create indices
-      await db.run(`
-        CREATE INDEX idx_contributor_rankings_contributor_id 
-        ON contributor_rankings(contributor_id)
-      `);
-      
-      await db.run(`
-        CREATE INDEX idx_contributor_rankings_timestamp 
-        ON contributor_rankings(calculation_timestamp)
-      `);
-      
-      await db.run(`
-        CREATE INDEX idx_contributor_rankings_rank 
-        ON contributor_rankings(rank_position)
-      `);
+      // Create indices for efficient querying
+      await db.run(`CREATE INDEX idx_contributor_rankings_contributor_id ON contributor_rankings(contributor_id)`);
+      await db.run(`CREATE INDEX idx_contributor_rankings_timestamp ON contributor_rankings(calculation_timestamp)`);
+      await db.run(`CREATE INDEX idx_contributor_rankings_rank ON contributor_rankings(rank_position)`);
     } else {
-      // Check if we need to add the new columns
-      const columnCheck = await db.all(`
-        PRAGMA table_info(contributor_rankings)
-      `);
+      // Check for missing columns and add them if needed
       
-      // Check if followers_score column exists
-      const hasFollowersScore = columnCheck.some((col: any) => col.name === 'followers_score');
+      // Check if the collaboration_score column exists
+      try {
+        await db.get(`SELECT collaboration_score FROM contributor_rankings LIMIT 1`);
+      } catch (e: any) {
+        // If the column doesn't exist, add it
+        if (e.message.includes('no such column')) {
+          await db.run(`ALTER TABLE contributor_rankings ADD COLUMN collaboration_score REAL DEFAULT 30`);
+        }
+      }
       
-      if (!hasFollowersScore) {
-        // Add new columns
-        await db.run(`
-          ALTER TABLE contributor_rankings 
-          ADD COLUMN followers_score REAL NOT NULL DEFAULT 0
-        `);
-        
-        await db.run(`
-          ALTER TABLE contributor_rankings 
-          ADD COLUMN profile_completeness_score REAL NOT NULL DEFAULT 0
-        `);
-        
-        await db.run(`
-          ALTER TABLE contributor_rankings 
-          ADD COLUMN followers_count INTEGER NOT NULL DEFAULT 0
-        `);
+      // Check if the repo_popularity_score column exists
+      try {
+        await db.get(`SELECT repo_popularity_score FROM contributor_rankings LIMIT 1`);
+      } catch (e: any) {
+        // If the column doesn't exist, add it
+        if (e.message.includes('no such column')) {
+          await db.run(`ALTER TABLE contributor_rankings ADD COLUMN repo_popularity_score REAL DEFAULT 0`);
+        }
       }
     }
   });
