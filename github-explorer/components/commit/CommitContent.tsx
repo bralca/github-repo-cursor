@@ -468,7 +468,7 @@ export default function CommitContent(props: CommitContentProps | CommitContentP
                   </div>
                   <div>
                     <Link
-                      href={`/${repositorySlug}/merge-requests/${mergeRequestSlug}/commits/${commit.sha}/author/${commit.author_slug || contributorSlug}`}
+                      href={`/${repositorySlug}/merge-requests/${mergeRequestSlug}/authors/${commit.author_slug || contributorSlug}/commits/${commit.sha}`}
                       className="ml-4 inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                       View

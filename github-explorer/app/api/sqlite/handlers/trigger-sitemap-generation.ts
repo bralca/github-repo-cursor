@@ -95,7 +95,7 @@ function generateMergeRequestUrl(repoName: string, repoGithubId: number | string
 
 /**
  * Generate commit URL according to pattern: 
- * /repository-name-githubID/merge-requests/merge_request-title-githubid/commits/commit-gihubId/author/name-username-githubID
+ * /repository-name-githubID/merge-requests/merge_request-title-githubid/authors/name-username-githubID/commits/commit-gihubId
  */
 function generateCommitUrl(
   repoName: string, 
@@ -128,8 +128,8 @@ function generateCommitUrl(
   const contributorNamePart = contributorName ? `${generateSlug(contributorName)}-` : '';
   const contributorSegment = `${contributorNamePart}${generateSlug(contributorUsername)}-${contributorGithubId}`;
   
-  // New URL structure: /[repoSlug]/merge-requests/[mrSlug]/commits/[commitId]/author/[contributorSlug]
-  return `${repoUrl}/${mrSegment}/commits/${commitId}/author/${contributorSegment}`;
+  // New URL structure: /[repoSlug]/merge-requests/[mrSlug]/authors/[contributorSlug]/commits/[commitId]
+  return `${repoUrl}/${mrSegment}/authors/${contributorSegment}/commits/${commitId}`;
 }
 
 /**

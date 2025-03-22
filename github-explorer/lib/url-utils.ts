@@ -364,6 +364,6 @@ export function buildCommitUrl(
   const mrSlug = generateMergeRequestSlug(mergeRequest.title, mergeRequest.github_id);
   const contributorSlug = generateContributorSlug(contributor.name, contributor.username, contributor.github_id);
   
-  // New URL structure: /repository-name-githubID/merge-requests/merge_request-title-githubid/commits/commit-gihubId/author/name-username-githubID
-  return `/${repoSlug}/merge-requests/${mrSlug}/commits/${file.github_id}/author/${contributorSlug}`;
+  // New URL structure: /repository-name-githubID/merge-requests/merge_request-title-githubid/authors/name-username-githubID/commits/commit-gihubId
+  return `/${repoSlug}/merge-requests/${mrSlug}/authors/${contributorSlug}/commits/${file.github_id}`;
 } 
