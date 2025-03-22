@@ -3,12 +3,10 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowUp, ArrowDown, TrendingUp, BarChart3, Zap, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { ArrowUp, ArrowDown, TrendingUp, BarChart3, Zap } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
 import { TableHead, TableCell } from '@/components/ui/table';
 import { generateContributorSlug } from '@/lib/url-utils';
 
@@ -39,6 +37,12 @@ interface ContributorRanking {
   location?: string;
   twitter_username?: string;
   top_languages?: string; // JSON string of top languages
+  most_popular_repository?: {
+    name: string;
+    full_name: string;
+    url: string;
+    stars: number;
+  }
 }
 
 type Timeframe = '24h' | '7d' | '30d' | 'all';
@@ -236,6 +240,19 @@ function useContributorRankings() {
     fetchRankings();
   }, []);
   
+  // Find spotlight developers
+  const getPopularitySpotlight = () => {
+    if (!rankings || rankings.length === 0) return null;
+    return rankings.reduce((champion, dev) => 
+      (dev.repo_popularity_score > (champion?.repo_popularity_score || 0)) ? dev : champion, null as ContributorRanking | null);
+  };
+  
+  const getCollaborationSpotlight = () => {
+    if (!rankings || rankings.length === 0) return null;
+    return rankings.reduce((champion, dev) => 
+      (dev.collaboration_score > (champion?.collaboration_score || 0)) ? dev : champion, null as ContributorRanking | null);
+  };
+  
   const setTimeframe = (timeframe: Timeframe) => {
     // In a real implementation, we would refetch the data for the selected timeframe
     setSelectedTimeframe(timeframe);
@@ -248,12 +265,14 @@ function useContributorRankings() {
     timeframes,
     selectedTimeframe,
     setTimeframe,
+    getPopularitySpotlight,
+    getCollaborationSpotlight
   };
 }
 
 export default function HomePage() {
   const [showHighlights, setShowHighlights] = useState(true);
-  const { rankings, isLoading, timeframes, selectedTimeframe, setTimeframe } = useContributorRankings();
+  const { rankings, isLoading, timeframes, selectedTimeframe, setTimeframe, getPopularitySpotlight, getCollaborationSpotlight } = useContributorRankings();
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
   
   const toggleExpandedRow = (id: string) => {
@@ -289,441 +308,585 @@ export default function HomePage() {
       </header>
       
       {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {/* Developer Dominance Card */}
-        <Card className="p-4 overflow-hidden">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center">
-                <TrendingUp className="h-5 w-5 mr-2 text-blue-500" />
-                <h3 className="font-semibold">Developer Dominance</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {/* Star Magnet Card */}
+        <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow transition-shadow">
+          <div className="p-4">
+            <div className="flex items-center mb-3">
+              <div className="p-1.5 bg-yellow-50 rounded-full border border-yellow-100">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279-7.416-3.967-7.417 3.967 1.481-8.279-6.064-5.828 8.332-1.151z"/>
+                </svg>
               </div>
-              <div className="mt-2 flex items-baseline">
-                <span className="text-3xl font-bold">64.8%</span>
-                <span className="ml-2 text-sm text-red-500 flex items-center">
-                  <ArrowDown className="h-3 w-3 mr-1" /> 0.23%
-                </span>
-              </div>
+              <h3 className="ml-2 font-bold text-base text-gray-900">Star Magnet</h3>
             </div>
             
-            <div className="h-16 w-24 bg-gradient-to-r from-blue-50 to-blue-100 rounded flex items-end">
-              {/* Simple chart visualization */}
-              <div className="w-4 h-10 bg-blue-400 rounded-t mx-[2px]"></div>
-              <div className="w-4 h-12 bg-blue-500 rounded-t mx-[2px]"></div>
-              <div className="w-4 h-8 bg-blue-300 rounded-t mx-[2px]"></div>
-              <div className="w-4 h-14 bg-blue-600 rounded-t mx-[2px]"></div>
-              <div className="w-4 h-11 bg-blue-400 rounded-t mx-[2px]"></div>
-            </div>
-          </div>
-          
-          <div className="mt-4 flex justify-between text-sm text-muted-foreground">
-            <span>7D</span>
+            {isLoading ? (
+              <div className="flex items-center justify-center h-16">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+              </div>
+            ) : (
+              <>
+                {getPopularitySpotlight() ? (
+                  <>
+                    <div className="flex items-center mb-3">
+                      <Link 
+                        href={`/contributors/${generateContributorSlug(
+                          getPopularitySpotlight()?.name || '', 
+                          getPopularitySpotlight()?.username || '', 
+                          getPopularitySpotlight()?.contributor_github_id || ''
+                        )}`}
+                        className="relative h-10 w-10 rounded-full overflow-hidden bg-gray-100 border border-gray-200"
+                      >
+                        <AvatarImage 
+                          src={getPopularitySpotlight()?.avatar} 
+                          alt={getPopularitySpotlight()?.name || 'Developer'} 
+                        />
+                      </Link>
+                      <div className="ml-3">
+                        <Link 
+                          href={`/contributors/${generateContributorSlug(
+                            getPopularitySpotlight()?.name || '', 
+                            getPopularitySpotlight()?.username || '', 
+                            getPopularitySpotlight()?.contributor_github_id || ''
+                          )}`}
+                          className="font-bold text-sm text-gray-900 hover:underline"
+                        >
+                          {getPopularitySpotlight()?.name || getPopularitySpotlight()?.username}
+                        </Link>
+                        <div className="flex items-center">
+                          <span className="text-lg font-bold text-yellow-600">{getPopularitySpotlight()?.repo_popularity_score?.toFixed(1) || '0'}</span>
+                          <span className="text-xs ml-1 text-gray-500">Popularity Score</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {getPopularitySpotlight()?.most_popular_repository && (
+                      <div className="bg-gray-50 rounded-md p-3 border border-gray-100">
+                        <div className="text-xs font-medium text-gray-500 mb-1">Top Repository</div>
+                        
+                        <a 
+                          href={getPopularitySpotlight()?.most_popular_repository?.url || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-bold text-gray-900 hover:underline block"
+                        >
+                          {getPopularitySpotlight()?.most_popular_repository?.name || 'Repository'}
+                        </a>
+                        
+                        <div className="flex items-center mt-1">
+                          <div className="flex items-center text-xs font-medium">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279-7.416-3.967-7.417 3.967 1.481-8.279-6.064-5.828 8.332-1.151z"/>
+                            </svg>
+                            <span className="text-yellow-600">
+                              {getPopularitySpotlight()?.most_popular_repository?.stars?.toLocaleString() || '0'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="mt-2 text-xs text-gray-500 italic">
+                      Creates work that people love to use and share
+                    </div>
+                  </>
+                ) : (
+                  <div className="p-3 text-center text-gray-500 text-sm">
+                    No developer data available
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </Card>
         
-        {/* Community Sentiment Index */}
-        <Card className="p-4 overflow-hidden">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center">
-                <BarChart3 className="h-5 w-5 mr-2 text-yellow-500" />
-                <h3 className="font-semibold">Community Sentiment Index</h3>
+        {/* Team Catalyst Card */}
+        <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow transition-shadow">
+          <div className="p-4">
+            <div className="flex items-center mb-3">
+              <div className="p-1.5 bg-purple-50 rounded-full border border-purple-100">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
               </div>
-              <div className="mt-2">
-                <span className="text-3xl font-bold">42</span>
-              </div>
-              <div className="mt-1 text-sm text-muted-foreground">
-                Contributor happiness is moderately positive
-              </div>
+              <h3 className="ml-2 font-bold text-base text-gray-900">Team Catalyst</h3>
             </div>
             
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center text-xs">
-                <span className="w-16">Yesterday</span>
-                <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-700">
-                  31
-                </div>
-                <span className="ml-2 text-yellow-700">Fear</span>
+            {isLoading ? (
+              <div className="flex items-center justify-center h-16">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
               </div>
-              
-              <div className="flex items-center text-xs">
-                <span className="w-16">7d ago</span>
-                <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-700">
-                  25
-                </div>
-                <span className="ml-2 text-red-700">Anxiety</span>
-              </div>
-              
-              <div className="flex items-center text-xs">
-                <span className="w-16">1m ago</span>
-                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700">
-                  58
-                </div>
-                <span className="ml-2 text-green-700">Optimism</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-4 w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
-            <div className="flex">
-              <div className="bg-red-500 h-full" style={{ width: '25%' }}></div>
-              <div className="bg-orange-500 h-full" style={{ width: '15%' }}></div>
-              <div className="bg-yellow-500 h-full" style={{ width: '20%' }}></div>
-              <div className="bg-green-400 h-full" style={{ width: '20%' }}></div>
-              <div className="bg-green-500 h-full" style={{ width: '20%' }}></div>
-            </div>
+            ) : (
+              <>
+                {getCollaborationSpotlight() ? (
+                  <>
+                    <div className="flex items-center mb-3">
+                      <Link 
+                        href={`/contributors/${generateContributorSlug(
+                          getCollaborationSpotlight()?.name || '', 
+                          getCollaborationSpotlight()?.username || '', 
+                          getCollaborationSpotlight()?.contributor_github_id || ''
+                        )}`}
+                        className="relative h-10 w-10 rounded-full overflow-hidden bg-gray-100 border border-gray-200"
+                      >
+                        <AvatarImage 
+                          src={getCollaborationSpotlight()?.avatar} 
+                          alt={getCollaborationSpotlight()?.name || 'Developer'} 
+                        />
+                      </Link>
+                      <div className="ml-3">
+                        <Link 
+                          href={`/contributors/${generateContributorSlug(
+                            getCollaborationSpotlight()?.name || '', 
+                            getCollaborationSpotlight()?.username || '', 
+                            getCollaborationSpotlight()?.contributor_github_id || ''
+                          )}`}
+                          className="font-bold text-sm text-gray-900 hover:underline"
+                        >
+                          {getCollaborationSpotlight()?.name || getCollaborationSpotlight()?.username}
+                        </Link>
+                        <div className="flex items-center">
+                          <span className="text-lg font-bold text-purple-600">{getCollaborationSpotlight()?.collaboration_score?.toFixed(1) || '0'}</span>
+                          <span className="text-xs ml-1 text-gray-500">Collaboration Score</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gray-50 rounded-md p-3 border border-gray-100">
+                      <div className="text-xs font-medium text-gray-500 mb-1">Most Collaborative Merge Request</div>
+                      
+                      {/* Note: This is a placeholder assuming we'd have this data in the real implementation */}
+                      <a 
+                        href="#"
+                        className="text-sm font-bold text-gray-900 hover:underline block"
+                      >
+                        Feature: Add User Authentication
+                      </a>
+                      
+                      <div className="mt-2">
+                        <div className="text-xs text-gray-500 mb-1">Collaborators (8)</div>
+                        <div className="flex -space-x-2 overflow-hidden">
+                          {/* Lead developer */}
+                          <Link 
+                            href={`/contributors/${generateContributorSlug(
+                              getCollaborationSpotlight()?.name || '', 
+                              getCollaborationSpotlight()?.username || '', 
+                              getCollaborationSpotlight()?.contributor_github_id || ''
+                            )}`}
+                            className="relative z-30 inline-block h-7 w-7 rounded-full ring-2 ring-white overflow-hidden bg-gray-100"
+                          >
+                            <AvatarImage 
+                              src={getCollaborationSpotlight()?.avatar} 
+                              alt={getCollaborationSpotlight()?.name || 'Developer'} 
+                            />
+                          </Link>
+                          
+                          {/* Placeholder team member avatars */}
+                          {Array.from({length: Math.min(Math.round(Math.pow(100 / (100 - Math.min(getCollaborationSpotlight()?.collaboration_score || 0, 99)), 1 / 0.8)) - 1, 6)}).map((_, i) => (
+                            <Link href="#" key={i} className="relative inline-block h-7 w-7 rounded-full ring-2 ring-white overflow-hidden" style={{zIndex: 25-i}}>
+                              <div className="h-full w-full flex items-center justify-center text-xs font-medium" style={{backgroundColor: ['#EFF6FF', '#F0FDF4', '#FFFBEB', '#FDF2F8', '#EEF2FF', '#F5F3FF'][i % 6]}}>
+                                {String.fromCharCode(65 + i)}
+                              </div>
+                            </Link>
+                          ))}
+                          
+                          {/* Additional team members indicator */}
+                          {Math.round(Math.pow(100 / (100 - Math.min(getCollaborationSpotlight()?.collaboration_score || 0, 99)), 1 / 0.8)) > 7 && (
+                            <div className="relative z-10 inline-flex h-7 w-7 items-center justify-center rounded-full ring-2 ring-white bg-gray-50 text-xs font-medium">
+                              +{Math.round(Math.pow(100 / (100 - Math.min(getCollaborationSpotlight()?.collaboration_score || 0, 99)), 1 / 0.8)) - 7}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-2 text-xs text-gray-500 italic">
+                      Thrives in collaborative environments with many contributors
+                    </div>
+                  </>
+                ) : (
+                  <div className="p-3 text-center text-gray-500 text-sm">
+                    No developer data available
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </Card>
         
-        {/* Hot Events Card */}
-        <Card className="p-4 overflow-hidden">
-          <div className="flex items-center mb-4">
-            <Zap className="h-5 w-5 mr-2 text-orange-500" />
-            <h3 className="font-semibold">Hot Contributions</h3>
-          </div>
-          
-          <div className="space-y-3">
-            <div className="flex items-center">
-              <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100 mr-3">
-                <AvatarImage alt="React Developer" />
+        {/* Code Titan Card */}
+        <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow transition-shadow">
+          <div className="p-4">
+            <div className="flex items-center mb-3">
+              <div className="p-1.5 bg-blue-50 rounded-full border border-blue-100">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
               </div>
-              <div>
-                <div className="font-medium flex items-center">
-                  React Component Library
-                  <div className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">
-                    Fill
-                  </div>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Top quality work
-                </div>
-              </div>
-              <div className="ml-auto flex flex-col items-end">
-                <span className="text-green-600 flex items-center text-sm">
-                  <ArrowUp className="h-3 w-3 mr-1" />
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  $ 7.75M
-                </span>
-              </div>
+              <h3 className="ml-2 font-bold text-base text-gray-900">Code Titan</h3>
             </div>
             
-            <div className="flex items-center">
-              <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100 mr-3">
-                <AvatarImage alt="Performance Engineer" />
+            {isLoading ? (
+              <div className="flex items-center justify-center h-16">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
               </div>
-              <div>
-                <div className="font-medium flex items-center">
-                  Performance Optimization
-                  <div className="ml-2 bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded">
-                    Fix
+            ) : (
+              <>
+                {rankings && rankings.length > 0 ? (
+                  <>
+                    {(() => {
+                      const volumeLeader = rankings.reduce((champion, dev) => 
+                        (dev.code_volume_score > (champion?.code_volume_score || 0)) ? dev : champion, 
+                        null as ContributorRanking | null);
+                        
+                      return volumeLeader ? (
+                        <>
+                          <div className="flex items-center mb-3">
+                            <Link 
+                              href={`/contributors/${generateContributorSlug(
+                                volumeLeader.name || '', 
+                                volumeLeader.username || '', 
+                                volumeLeader.contributor_github_id || ''
+                              )}`}
+                              className="relative h-10 w-10 rounded-full overflow-hidden bg-gray-100 border border-gray-200"
+                            >
+                              <AvatarImage 
+                                src={volumeLeader.avatar} 
+                                alt={volumeLeader.name || 'Developer'} 
+                              />
+                            </Link>
+                            <div className="ml-3">
+                              <Link 
+                                href={`/contributors/${generateContributorSlug(
+                                  volumeLeader.name || '', 
+                                  volumeLeader.username || '', 
+                                  volumeLeader.contributor_github_id || ''
+                                )}`}
+                                className="font-bold text-sm text-gray-900 hover:underline"
+                              >
+                                {volumeLeader.name || volumeLeader.username}
+                              </Link>
+                              <div className="flex items-center">
+                                <span className="text-lg font-bold text-blue-600">{volumeLeader.code_volume_score?.toFixed(1) || '0'}</span>
+                                <span className="text-xs ml-1 text-gray-500">Volume Score</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-gray-50 rounded-md p-3 border border-gray-100">
+                            <div className="text-xs font-medium text-gray-500 mb-1">Code Contribution</div>
+                            
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <div className="text-xs text-gray-500">Lines Added</div>
+                                <div className="font-bold text-sm text-gray-900">{volumeLeader.raw_lines_added?.toLocaleString() || '0'}</div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-gray-500">Lines Removed</div>
+                                <div className="font-bold text-sm text-gray-900">{volumeLeader.raw_lines_removed?.toLocaleString() || '0'}</div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-gray-500">Commits</div>
+                                <div className="font-bold text-sm text-gray-900">{volumeLeader.raw_commits_count?.toLocaleString() || '0'}</div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-gray-500">Repositories</div>
+                                <div className="font-bold text-sm text-gray-900">{volumeLeader.repositories_contributed?.toLocaleString() || '0'}</div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-2 text-xs text-gray-500 italic">
+                            Delivers extraordinary output and impact across projects
+                          </div>
+                        </>
+                      ) : (
+                        <div className="p-3 text-center text-gray-500 text-sm">
+                          No developer data available
+                        </div>
+                      );
+                    })()}
+                  </>
+                ) : (
+                  <div className="p-3 text-center text-gray-500 text-sm">
+                    No rankings available
                   </div>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Critical improvements
-                </div>
-              </div>
-              <div className="ml-auto flex flex-col items-end">
-                <span className="text-green-600 flex items-center text-sm">
-                  <ArrowUp className="h-3 w-3 mr-1" />
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  $ 5.23M
-                </span>
-              </div>
-            </div>
+                )}
+              </>
+            )}
           </div>
         </Card>
       </div>
       
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="overview" className="w-full mb-6">
-        <TabsList className="mb-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="all-devs">All Developers</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="gainers">Gainers</TabsTrigger>
-          <TabsTrigger value="losers">Losers</TabsTrigger>
-          <TabsTrigger value="ido">New Contributors</TabsTrigger>
-          <TabsTrigger value="all-categories">All Categories</TabsTrigger>
-          <TabsTrigger value="ecosystems">Ecosystems</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="overview" className="space-y-4">
-          {/* Filter bar */}
-          <div className="flex justify-between items-center">
-            <div className="flex space-x-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  type="text" 
-                  placeholder="Filter developers..." 
-                  className="pl-9 w-[250px]" 
-                />
-              </div>
-              
-              <Button variant="outline" size="sm">
-                Layout
-              </Button>
-              
-              <Button variant="outline" size="sm">
-                Filters
-              </Button>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-muted-foreground">USD</span>
-              <Button variant="outline" size="icon" className="h-8 w-8">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-          
-          {/* Developers Table */}
-          <div className="bg-card rounded-md border">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Rank</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Developer</th>
-                    <th className="px-4 py-3 text-center text-sm font-medium text-muted-foreground">Score</th>
-                    <th className="px-4 py-3 text-center text-sm font-medium text-muted-foreground">Metrics</th>
-                    <th className="px-4 py-3 text-center text-sm font-medium text-muted-foreground">Profile</th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Followers</th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Repos</th>
+      {/* Developer Table Section */}
+      <div className="w-full mb-6 space-y-4">
+        {/* Developers Table */}
+        <div className="bg-card rounded-md border">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Rank</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Developer</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-muted-foreground">Score</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Location</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">GitHub</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Popular Repo</th>
+                  <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Followers</th>
+                  <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Repos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-8 text-center">
+                      <div className="flex items-center justify-center">
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                        <span className="ml-2">Loading rankings...</span>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {isLoading ? (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center">
-                        <div className="flex items-center justify-center">
-                          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-                          <span className="ml-2">Loading rankings...</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : rankings && rankings.length > 0 ? (
-                    rankings.map((dev: ContributorRanking, index: number) => {
-                      // Try to parse top languages
-                      let languages: string[] = [];
-                      try {
-                        if (dev.top_languages) {
-                          languages = JSON.parse(dev.top_languages);
-                        }
-                      } catch (e) {
-                        console.error('Failed to parse languages:', e);
+                ) : rankings && rankings.length > 0 ? (
+                  rankings.map((dev: ContributorRanking, index: number) => {
+                    // Try to parse top languages
+                    let languages: string[] = [];
+                    try {
+                      if (dev.top_languages) {
+                        languages = JSON.parse(dev.top_languages);
                       }
-                      
-                      const isExpanded = expandedRows.includes(dev.contributor_id);
-                      
-                      return (
-                        <React.Fragment key={dev.contributor_id}>
-                          <tr 
-                            className={`border-b hover:bg-muted/50 ${isExpanded ? 'bg-muted/30' : ''}`}
-                            onClick={() => toggleExpandedRow(dev.contributor_id)}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            {/* Rank */}
-                            <td className="px-4 py-3 text-center font-medium">
-                              {dev.rank_position}
-                            </td>
-                            
-                            {/* Developer */}
-                            <td className="px-4 py-3">
-                              <div className="flex items-center">
+                    } catch (e) {
+                      console.error('Failed to parse languages:', e);
+                    }
+                    
+                    const isExpanded = expandedRows.includes(dev.contributor_id);
+                    
+                    return (
+                      <React.Fragment key={dev.contributor_id}>
+                        <tr 
+                          className={`border-b hover:bg-muted/50 ${isExpanded ? 'bg-muted/30' : ''}`}
+                          onClick={() => toggleExpandedRow(dev.contributor_id)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {/* Rank */}
+                          <td className="px-4 py-3 text-center font-medium">
+                            {dev.rank_position}
+                          </td>
+                          
+                          {/* Developer */}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center">
+                              <Link 
+                                href={`/contributors/${generateContributorSlug(dev.name, dev.username, dev.contributor_github_id)}`}
+                                className="relative h-10 w-10 rounded-full overflow-hidden bg-gray-100 mr-3"
+                              >
+                                <AvatarImage 
+                                  src={dev.avatar} 
+                                  alt={dev.name || dev.username || 'Developer'} 
+                                />
+                              </Link>
+                              <div>
                                 <Link 
-                                  href={`/contributors/${generateContributorSlug(dev.name, dev.username, dev.contributor_github_id)}`}
-                                  className="relative h-10 w-10 rounded-full overflow-hidden bg-gray-100 mr-3"
+                                  href={`/contributors/${generateContributorSlug(dev.name, dev.username, dev.contributor_github_id)}`} 
+                                  className="font-medium hover:underline hover:text-primary transition-colors"
                                 >
-                                  <AvatarImage 
-                                    src={dev.avatar} 
-                                    alt={dev.name || dev.username || 'Developer'} 
-                                  />
+                                  {dev.name || 'Unknown'}
                                 </Link>
-                                <div>
-                                  <Link 
-                                    href={`/contributors/${generateContributorSlug(dev.name, dev.username, dev.contributor_github_id)}`} 
-                                    className="font-medium hover:underline hover:text-primary transition-colors"
+                                <div className="text-xs text-muted-foreground">@{dev.username || 'unknown'}</div>
+                              </div>
+                            </div>
+                          </td>
+                          
+                          {/* Score */}
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex items-center gap-2 justify-end">
+                              {dev.total_score && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg font-semibold">{Math.round(dev.total_score)}</span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          
+                          {/* Location */}
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col gap-1">
+                              {dev.location && (
+                                <div className="text-xs text-muted-foreground flex items-center">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  </svg>
+                                  {dev.location}
+                                </div>
+                              )}
+                              <LanguageBadges languages={dev.top_languages} />
+                            </div>
+                          </td>
+                          
+                          {/* GitHub URL */}
+                          <td className="px-4 py-3">
+                            {dev.username && (
+                              <a 
+                                href={`https://github.com/${dev.username}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-primary hover:underline flex items-center"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                                </svg>
+                                {dev.username}
+                              </a>
+                            )}
+                          </td>
+                          
+                          {/* Popular Repository */}
+                          <td className="px-4 py-3">
+                            {dev.most_popular_repository ? (
+                              <a 
+                                href={dev.most_popular_repository.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm hover:underline hover:text-primary transition-colors flex items-center"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />
+                                </svg>
+                                {dev.most_popular_repository.name}
+                                {dev.most_popular_repository.stars > 0 && (
+                                  <span className="ml-1 text-xs bg-yellow-100 text-yellow-700 px-1 rounded flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279-7.416-3.967-7.417 3.967 1.481-8.279-6.064-5.828 8.332-1.151z"/>
+                                    </svg>
+                                    {dev.most_popular_repository.stars > 1000 
+                                      ? `${(dev.most_popular_repository.stars / 1000).toFixed(1)}k` 
+                                      : dev.most_popular_repository.stars}
+                                  </span>
+                                )}
+                              </a>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">No repositories</span>
+                            )}
+                          </td>
+                          
+                          {/* Followers */}
+                          <td className="px-4 py-3 text-right">
+                            <div className="font-medium">{dev.followers_count.toLocaleString()}</div>
+                          </td>
+                          
+                          {/* Repos Contributed */}
+                          <td className="px-4 py-3 text-right">
+                            <div className="font-medium">{dev.repositories_contributed}</div>
+                          </td>
+                        </tr>
+                        
+                        {/* Expanded Row Content */}
+                        {isExpanded && (
+                          <tr className="bg-muted/20 border-b">
+                            <td colSpan={8} className="px-6 py-4">
+                              <div className="space-y-4">
+                                {/* Metrics Table */}
+                                <div className="overflow-x-auto">
+                                  <table className="w-full border-collapse">
+                                    <thead>
+                                      <tr className="border-b">
+                                        <th className="py-2 px-4 text-left font-medium text-sm">Metric</th>
+                                        <th className="py-2 px-4 text-left font-medium text-sm">Definition</th>
+                                        <th className="py-2 px-4 text-center font-medium text-sm">Weight</th>
+                                        <th className="py-2 px-4 text-center font-medium text-sm">Value</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      <tr className="border-b">
+                                        <td className="py-2 px-4 text-sm font-medium">Code Volume</td>
+                                        <td className="py-2 px-4 text-sm">Normalized score (0-100) based on total lines of code added and removed. Calculated as: (developer's total lines / highest total lines) × 100. Higher values indicate more code contributions relative to other developers.</td>
+                                        <td className="py-2 px-4 text-center text-sm">10%</td>
+                                        <td className="py-2 px-4 text-center font-medium text-sm">{(dev.code_volume_score ?? 0).toFixed(1)}</td>
+                                      </tr>
+                                      <tr className="border-b">
+                                        <td className="py-2 px-4 text-sm font-medium">Code Efficiency</td>
+                                        <td className="py-2 px-4 text-sm">Measures how closely final PR changes match commit changes. Calculated as: AVG(1 - |PR changes - commit changes| / commit changes) × 100. Perfect 100 means efficient coding with minimal wasted effort between commits and final PR.</td>
+                                        <td className="py-2 px-4 text-center text-sm">10%</td>
+                                        <td className="py-2 px-4 text-center font-medium text-sm">{(dev.code_efficiency_score ?? 0).toFixed(1)}</td>
+                                      </tr>
+                                      <tr className="border-b">
+                                        <td className="py-2 px-4 text-sm font-medium">Commit Impact</td>
+                                        <td className="py-2 px-4 text-sm">Normalized score (0-100) based on commit frequency. Calculated as: (developer's commit count / highest commit count) × 100. Higher scores indicate a developer who commits code more frequently than others.</td>
+                                        <td className="py-2 px-4 text-center text-sm">5%</td>
+                                        <td className="py-2 px-4 text-center font-medium text-sm">{(dev.commit_impact_score ?? 0).toFixed(1)}</td>
+                                      </tr>
+                                      <tr className="border-b">
+                                        <td className="py-2 px-4 text-sm font-medium">Team Collaboration</td>
+                                        <td className="py-2 px-4 text-sm">Measures work with multiple contributors on PRs. Uses an asymptotic formula: 100 * (1 - 1/(collaborators^0.8)). Solo developers (1 collaborator) score 0, with 2 collaborators scoring 43, 3 collaborators scoring 65, and 10+ collaborators approaching but never exceeding 100. Rewards larger team sizes while maintaining the 0-100 scale.</td>
+                                        <td className="py-2 px-4 text-center text-sm">25%</td>
+                                        <td className="py-2 px-4 text-center font-medium text-sm">{(dev.collaboration_score ?? 0).toFixed(1)}</td>
+                                      </tr>
+                                      <tr className="border-b">
+                                        <td className="py-2 px-4 text-sm font-medium">Repository Popularity</td>
+                                        <td className="py-2 px-4 text-sm">Based on stars/forks of contributed repos: 60% from total popularity (log scale) + 40% from # of popular repos (1000+ stars). Formula: (ln(total_popularity+1)/ln(25000)×60) + (min(popular_repos_count,5)×8). Rewards contributing to widely-used projects.</td>
+                                        <td className="py-2 px-4 text-center text-sm">25%</td>
+                                        <td className="py-2 px-4 text-center font-medium text-sm">{(dev.repo_popularity_score ?? 0).toFixed(1)}</td>
+                                      </tr>
+                                      <tr className="border-b">
+                                        <td className="py-2 px-4 text-sm font-medium">Repository Influence</td>
+                                        <td className="py-2 px-4 text-sm">Normalized score (0-100) based on number of repositories contributed to. Calculated as: (developer's repos count / highest repos count) × 100. Higher scores indicate contribution across many different repositories.</td>
+                                        <td className="py-2 px-4 text-center text-sm">10%</td>
+                                        <td className="py-2 px-4 text-center font-medium text-sm">{(dev.repo_influence_score ?? 0).toFixed(1)}</td>
+                                      </tr>
+                                      <tr className="border-b">
+                                        <td className="py-2 px-4 text-sm font-medium">Followers</td>
+                                        <td className="py-2 px-4 text-sm">Normalized score (0-100) based on GitHub follower count. Calculated as: (developer's followers / highest follower count) × 100. Measures the developer's social influence in the GitHub community.</td>
+                                        <td className="py-2 px-4 text-center text-sm">10%</td>
+                                        <td className="py-2 px-4 text-center font-medium text-sm">{(dev.followers_score ?? 0).toFixed(1)}</td>
+                                      </tr>
+                                      <tr className="border-b">
+                                        <td className="py-2 px-4 text-sm font-medium">Profile Completeness</td>
+                                        <td className="py-2 px-4 text-sm">Points-based score (0-100) for GitHub profile completion: username (10), name (10), avatar (10), bio (15), company (10), location (10), blog (10), Twitter (10), languages (15). Complete profiles receive full points in each category.</td>
+                                        <td className="py-2 px-4 text-center text-sm">5%</td>
+                                        <td className="py-2 px-4 text-center font-medium text-sm">{(dev.profile_completeness_score ?? 0).toFixed(1)}</td>
+                                      </tr>
+                                      <tr className="font-medium bg-muted/30">
+                                        <td className="py-2 px-4 text-sm">Total Score</td>
+                                        <td className="py-2 px-4 text-sm">Weighted average of: Code Volume (10%), Code Efficiency (10%), Commit Impact (5%), Team Collaboration (25%), Repo Popularity (25%), Repo Influence (10%), Followers (10%), Profile (5%). Maximum 100 points possible.</td>
+                                        <td className="py-2 px-4 text-center text-sm">100%</td>
+                                        <td className="py-2 px-4 text-center text-sm">{(dev.total_score ?? 0).toFixed(1)}</td>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                </div>
+                                
+                                {/* View Full Profile Button */}
+                                <div className="flex justify-end">
+                                  <Link
+                                    href={`/contributors/${generateContributorSlug(dev.name, dev.username, dev.contributor_github_id)}`}
+                                    className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
                                   >
-                                    {dev.name || 'Unknown'}
+                                    <span>View Full Profile</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                    </svg>
                                   </Link>
-                                  <div className="text-xs text-muted-foreground">@{dev.username || 'unknown'}</div>
                                 </div>
                               </div>
-                            </td>
-                            
-                            {/* Score */}
-                            <td className="px-4 py-3 text-center">
-                              <div className="flex items-center gap-2 justify-end">
-                                {dev.total_score && (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-lg font-semibold">{Math.round(dev.total_score)}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-                            
-                            {/* Metrics Visualization */}
-                            <td className="px-4 py-3">
-                              <div>
-                                <MetricsVisualization 
-                                  codeVolume={dev.code_volume_score} 
-                                  codeEfficiency={dev.code_efficiency_score}
-                                  commitImpact={dev.commit_impact_score}
-                                  repoInfluence={dev.repo_influence_score}
-                                  collaboration={dev.collaboration_score}
-                                  repoPopularity={dev.repo_popularity_score}
-                                />
-                              </div>
-                            </td>
-                            
-                            {/* Profile Badges (Location & Languages) */}
-                            <td className="px-4 py-3">
-                              <div className="flex flex-col gap-1">
-                                {dev.location && (
-                                  <div className="text-xs text-muted-foreground flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                    {dev.location}
-                                  </div>
-                                )}
-                                <LanguageBadges languages={dev.top_languages} />
-                              </div>
-                            </td>
-                            
-                            {/* Followers */}
-                            <td className="px-4 py-3 text-right">
-                              <div className="font-medium">{dev.followers_count.toLocaleString()}</div>
-                            </td>
-                            
-                            {/* Repos Contributed */}
-                            <td className="px-4 py-3 text-right">
-                              <div className="font-medium">{dev.repositories_contributed}</div>
                             </td>
                           </tr>
-                          
-                          {/* Expanded Row Content */}
-                          {isExpanded && (
-                            <tr className="bg-muted/20 border-b">
-                              <td colSpan={7} className="px-6 py-4">
-                                <div className="space-y-4">
-                                  {/* Metrics Table */}
-                                  <div className="overflow-x-auto">
-                                    <table className="w-full border-collapse">
-                                      <thead>
-                                        <tr className="border-b">
-                                          <th className="py-2 px-4 text-left font-medium text-sm">Metric</th>
-                                          <th className="py-2 px-4 text-left font-medium text-sm">Definition</th>
-                                          <th className="py-2 px-4 text-center font-medium text-sm">Weight</th>
-                                          <th className="py-2 px-4 text-center font-medium text-sm">Value</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        <tr className="border-b">
-                                          <td className="py-2 px-4 text-sm font-medium">Code Volume</td>
-                                          <td className="py-2 px-4 text-sm">Total amount of code contributed</td>
-                                          <td className="py-2 px-4 text-center text-sm">10%</td>
-                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.code_volume_score ?? 0).toFixed(1)}</td>
-                                        </tr>
-                                        <tr className="border-b">
-                                          <td className="py-2 px-4 text-sm font-medium">Code Efficiency</td>
-                                          <td className="py-2 px-4 text-sm">How efficiently code moves from commit to final PR</td>
-                                          <td className="py-2 px-4 text-center text-sm">15%</td>
-                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.code_efficiency_score ?? 0).toFixed(1)}</td>
-                                        </tr>
-                                        <tr className="border-b">
-                                          <td className="py-2 px-4 text-sm font-medium">Commit Impact</td>
-                                          <td className="py-2 px-4 text-sm">Frequency and impact of commits</td>
-                                          <td className="py-2 px-4 text-center text-sm">10%</td>
-                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.commit_impact_score ?? 0).toFixed(1)}</td>
-                                        </tr>
-                                        <tr className="border-b">
-                                          <td className="py-2 px-4 text-sm font-medium">Team Collaboration</td>
-                                          <td className="py-2 px-4 text-sm">How often they work with other developers</td>
-                                          <td className="py-2 px-4 text-center text-sm">20%</td>
-                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.collaboration_score ?? 0).toFixed(1)}</td>
-                                        </tr>
-                                        <tr className="border-b">
-                                          <td className="py-2 px-4 text-sm font-medium">Repository Popularity</td>
-                                          <td className="py-2 px-4 text-sm">Contributes to popular repositories (stars/forks)</td>
-                                          <td className="py-2 px-4 text-center text-sm">20%</td>
-                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.repo_popularity_score ?? 0).toFixed(1)}</td>
-                                        </tr>
-                                        <tr className="border-b">
-                                          <td className="py-2 px-4 text-sm font-medium">Repository Influence</td>
-                                          <td className="py-2 px-4 text-sm">Influence across different repositories</td>
-                                          <td className="py-2 px-4 text-center text-sm">10%</td>
-                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.repo_influence_score ?? 0).toFixed(1)}</td>
-                                        </tr>
-                                        <tr className="border-b">
-                                          <td className="py-2 px-4 text-sm font-medium">Followers</td>
-                                          <td className="py-2 px-4 text-sm">Social influence based on follower count</td>
-                                          <td className="py-2 px-4 text-center text-sm">5%</td>
-                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.followers_score ?? 0).toFixed(1)}</td>
-                                        </tr>
-                                        <tr className="border-b">
-                                          <td className="py-2 px-4 text-sm font-medium">Profile Completeness</td>
-                                          <td className="py-2 px-4 text-sm">How complete the developer's profile is</td>
-                                          <td className="py-2 px-4 text-center text-sm">10%</td>
-                                          <td className="py-2 px-4 text-center font-medium text-sm">{(dev.profile_completeness_score ?? 0).toFixed(1)}</td>
-                                        </tr>
-                                        <tr className="font-medium bg-muted/30">
-                                          <td className="py-2 px-4 text-sm">Total Score</td>
-                                          <td className="py-2 px-4 text-sm">Combined weighted score</td>
-                                          <td className="py-2 px-4 text-center text-sm">100%</td>
-                                          <td className="py-2 px-4 text-center text-sm">{(dev.total_score ?? 0).toFixed(1)}</td>
-                                        </tr>
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                  
-                                  {/* View Full Profile Button */}
-                                  <div className="flex justify-end">
-                                    <Link
-                                      href={`/contributors/${generateContributorSlug(dev.name, dev.username, dev.contributor_github_id)}`}
-                                      className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
-                                    >
-                                      <span>View Full Profile</span>
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                      </svg>
-                                    </Link>
-                                  </div>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center">
-                        No rankings available. Run the ranking calculation in the admin panel first.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center">
+                      No rankings available. Run the ranking calculation in the admin panel first.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        </TabsContent>
-        
-        <TabsContent value="all-devs">
-          <div className="p-4 text-center">
-            Full developer listing with detailed metrics will be available here
-          </div>
-        </TabsContent>
-        
-        {/* Other tab contents would go here */}
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 }

@@ -182,15 +182,21 @@ async function calculateRankings() {
             (cm.repos_contributed * 100.0 / NULLIF(mm.max_repos, 1)) AS repo_influence_score,
             -- Include code efficiency score or default to 50 if no data
             COALESCE(ce.efficiency_score, 50) AS code_efficiency_score,
-            -- Calculate collaboration score (0-100)
-            -- Formula: base 30 points + up to 70 points based on average team size
-            -- This heavily rewards working in teams vs solo
+            -- Calculate collaboration score based on average team size
+            -- Using asymptotic formula that approaches 100 for large teams
             CASE
-              WHEN collab.avg_collaborators_per_pr IS NULL THEN 30 -- Default for no data
-              ELSE MIN(
-                100, -- Cap at 100
-                30 + (70 * (COALESCE(collab.avg_collaborators_per_pr, 1) - 1) / 3) -- Scale up to 4 collaborators
-              )
+              WHEN collab.avg_collaborators_per_pr IS NULL THEN 0 -- Default for no data is 0
+              WHEN collab.avg_collaborators_per_pr <= 1 THEN 0 -- Solo work gets 0
+              ELSE 
+                -- Formula: 100 * (1 - 1/(x^0.8)) where x is avg collaborators
+                -- This gives a curve that grows quickly at first then slows down
+                -- 1 collaborator = 0 points
+                -- 2 collaborators = 43 points
+                -- 3 collaborators = 65 points
+                -- 4 collaborators = 76 points
+                -- 5 collaborators = 83 points
+                -- 10 collaborators = 95 points
+                100 * (1 - 1/POWER(COALESCE(collab.avg_collaborators_per_pr, 1), 0.8))
             END AS collaboration_score,
             -- Calculate repository popularity score (0-100)
             -- This considers both total popularity and number of popular repos
@@ -218,13 +224,13 @@ async function calculateRankings() {
             -- Calculate total score using weighted average (now including repo popularity)
             (
               nm.code_volume_score * 0.10 + 
-              nm.commit_impact_score * 0.10 + 
-              nm.code_efficiency_score * 0.15 +
-              nm.collaboration_score * 0.20 +
-              nm.repo_popularity_score * 0.20 +
+              nm.commit_impact_score * 0.05 + 
+              nm.code_efficiency_score * 0.10 +
+              nm.collaboration_score * 0.25 +
+              nm.repo_popularity_score * 0.25 +
               COALESCE(nm.repo_influence_score, 0) * 0.10 + 
-              COALESCE(nm.followers_score, 0) * 0.05 + 
-              nm.profile_completeness * 0.10
+              COALESCE(nm.followers_score, 0) * 0.10 + 
+              nm.profile_completeness * 0.05
             ) AS total_score,
             nm.code_volume_score,
             nm.code_efficiency_score,
@@ -242,13 +248,13 @@ async function calculateRankings() {
             RANK() OVER (ORDER BY 
               (
                 nm.code_volume_score * 0.10 + 
-                nm.commit_impact_score * 0.10 + 
-                nm.code_efficiency_score * 0.15 +
-                nm.collaboration_score * 0.20 +
-                nm.repo_popularity_score * 0.20 +
+                nm.commit_impact_score * 0.05 + 
+                nm.code_efficiency_score * 0.10 +
+                nm.collaboration_score * 0.25 +
+                nm.repo_popularity_score * 0.25 +
                 COALESCE(nm.repo_influence_score, 0) * 0.10 + 
-                COALESCE(nm.followers_score, 0) * 0.05 + 
-                nm.profile_completeness * 0.10
+                COALESCE(nm.followers_score, 0) * 0.10 + 
+                nm.profile_completeness * 0.05
               ) DESC
             ) AS rank_position
           FROM normalized_metrics nm
@@ -350,24 +356,19 @@ async function calculateRankings() {
 async function getLatestRankings() {
   try {
     const rankings = await withDb(async (db) => {
+      // Step 1: Get the most recent timestamp
+      const latestTimestamp = await db.get(
+        `SELECT MAX(calculation_timestamp) as latest_timestamp FROM contributor_rankings`
+      );
+      
+      if (!latestTimestamp.latest_timestamp) {
+        return [];
+      }
+      
+      // Step 2: Get rankings with contributor details
       const rankings = await db.all(`
         SELECT 
-          cr.rank_position,
-          cr.contributor_id,
-          cr.contributor_github_id,
-          cr.total_score,
-          cr.code_volume_score,
-          cr.code_efficiency_score,
-          cr.commit_impact_score,
-          cr.repo_influence_score,
-          cr.followers_score,
-          cr.profile_completeness_score,
-          cr.followers_count,
-          cr.raw_lines_added,
-          cr.raw_lines_removed,
-          cr.raw_commits_count,
-          cr.repositories_contributed,
-          cr.calculation_timestamp,
+          cr.*,
           c.username,
           c.name,
           c.avatar,
@@ -376,23 +377,42 @@ async function getLatestRankings() {
           c.top_languages
         FROM contributor_rankings cr
         JOIN contributors c ON cr.contributor_id = c.id
-        WHERE cr.calculation_timestamp = (
-          SELECT MAX(calculation_timestamp) FROM contributor_rankings
-        )
+        WHERE cr.calculation_timestamp = ?
         ORDER BY cr.rank_position ASC
         LIMIT 100
-      `);
+      `, [latestTimestamp.latest_timestamp]);
+      
+      // Step 3: Get the most popular repository for each contributor
+      for (const ranking of rankings) {
+        const popularRepo = await db.get(`
+          SELECT 
+            r.name, 
+            r.full_name, 
+            r.url, 
+            r.stars
+          FROM repositories r
+          JOIN contributor_repository cr ON r.id = cr.repository_id
+          WHERE cr.contributor_id = ?
+          ORDER BY r.stars DESC
+          LIMIT 1
+        `, [ranking.contributor_id]);
+        
+        if (popularRepo) {
+          ranking.most_popular_repository = popularRepo;
+        }
+      }
       
       return rankings;
     });
     
-    return NextResponse.json({
-      rankings
-    });
-  } catch (error: any) {
-    console.error('Error getting latest contributor rankings:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to get rankings' },
+      { rankings },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error('Error fetching latest rankings:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to fetch latest rankings' },
       { status: 500 }
     );
   }
