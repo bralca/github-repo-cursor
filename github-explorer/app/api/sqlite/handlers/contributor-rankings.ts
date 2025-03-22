@@ -63,7 +63,9 @@ async function calculateRankings() {
             SUM(c.deletions) AS lines_removed,
             SUM(c.additions + c.deletions) AS total_lines
           FROM commits c
+          JOIN repositories r ON c.repository_id = r.id
           WHERE c.contributor_id IS NOT NULL
+          AND r.is_fork = 0 -- Exclude forked repositories
           GROUP BY c.contributor_id
         ),
         contributor_metrics AS (
@@ -97,6 +99,14 @@ async function calculateRankings() {
             ) AS repos_contributed
           FROM commit_metrics cm
           JOIN contributors c ON cm.contributor_id = c.id
+          -- Exclude bots from contributor metrics
+          WHERE COALESCE(c.is_bot, 0) = 0
+          -- Only include contributors who have at least one contribution to a non-forked repository
+          AND EXISTS (
+            SELECT 1 FROM commits com 
+            JOIN repositories rep ON com.repository_id = rep.id 
+            WHERE com.contributor_id = cm.contributor_id AND rep.is_fork = 0
+          )
         ),
         max_metrics AS (
           SELECT
@@ -115,7 +125,9 @@ async function calculateRankings() {
             mr.additions + mr.deletions AS total_pr_changes
           FROM commits c
           JOIN merge_requests mr ON c.pull_request_id = mr.id
+          JOIN repositories r ON mr.repository_id = r.id
           WHERE c.pull_request_id IS NOT NULL
+          AND r.is_fork = 0 -- Exclude forked repositories
           GROUP BY c.contributor_id, c.pull_request_id
         ),
         code_efficiency_final AS (
@@ -144,12 +156,19 @@ async function calculateRankings() {
           JOIN (
             SELECT 
               pull_request_id, 
-              COUNT(DISTINCT contributor_id) AS contributor_count
-            FROM commits
-            WHERE pull_request_id IS NOT NULL
+              COUNT(DISTINCT CASE WHEN COALESCE(cont.is_bot, 0) = 0 THEN c.contributor_id END) AS contributor_count
+            FROM commits c
+            JOIN contributors cont ON c.contributor_id = cont.id
+            JOIN merge_requests mr ON c.pull_request_id = mr.id
+            JOIN repositories r ON mr.repository_id = r.id
+            WHERE c.pull_request_id IS NOT NULL
+            AND r.is_fork = 0 -- Exclude forked repositories
             GROUP BY pull_request_id
           ) contributor_counts ON c.pull_request_id = contributor_counts.pull_request_id
+          JOIN merge_requests mr ON c.pull_request_id = mr.id
+          JOIN repositories r ON mr.repository_id = r.id
           WHERE c.pull_request_id IS NOT NULL
+          AND r.is_fork = 0 -- Exclude forked repositories
           GROUP BY c.contributor_id
         ),
         -- Calculate repository popularity score based on stars and forks
@@ -170,6 +189,7 @@ async function calculateRankings() {
             COUNT(r.id) AS total_repos
           FROM contributor_repository cr
           JOIN repositories r ON cr.repository_id = r.id
+          WHERE r.is_fork = 0 -- Exclude forked repositories
           GROUP BY cr.contributor_id
         ),
         normalized_metrics AS (
@@ -378,6 +398,7 @@ async function getLatestRankings() {
         FROM contributor_rankings cr
         JOIN contributors c ON cr.contributor_id = c.id
         WHERE cr.calculation_timestamp = ?
+        AND COALESCE(c.is_bot, 0) = 0
         ORDER BY cr.rank_position ASC
         LIMIT 100
       `, [latestTimestamp.latest_timestamp]);
@@ -389,7 +410,8 @@ async function getLatestRankings() {
             r.name, 
             r.full_name, 
             r.url, 
-            r.stars
+            r.stars,
+            r.github_id
           FROM repositories r
           JOIN contributor_repository cr ON r.id = cr.repository_id
           WHERE cr.contributor_id = ?
@@ -399,6 +421,12 @@ async function getLatestRankings() {
         
         if (popularRepo) {
           ranking.most_popular_repository = popularRepo;
+        }
+        
+        // Step 4: Get the most collaborative merge request for each contributor
+        const mostCollaborativeMR = await getMostCollaborativeMergeRequest(db, ranking.contributor_id);
+        if (mostCollaborativeMR) {
+          ranking.most_collaborative_merge_request = mostCollaborativeMR;
         }
       }
       
@@ -415,6 +443,91 @@ async function getLatestRankings() {
       { error: error.message || 'Failed to fetch latest rankings' },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Get the most collaborative merge request for a contributor
+ */
+async function getMostCollaborativeMergeRequest(db: any, contributorId: string) {
+  try {
+    // Find merge requests where this contributor participated
+    const mergeRequests = await db.all(`
+      SELECT DISTINCT 
+        c.pull_request_id
+      FROM commits c
+      JOIN merge_requests mr ON c.pull_request_id = mr.id
+      JOIN repositories r ON mr.repository_id = r.id
+      WHERE c.contributor_id = ?
+      AND r.is_fork = 0
+    `, [contributorId]);
+    
+    if (!mergeRequests || mergeRequests.length === 0) {
+      return null;
+    }
+    
+    // For each merge request, count distinct contributors and get details
+    let mostCollaborative = null;
+    let maxCollaborators = 0;
+    
+    for (const mr of mergeRequests) {
+      const collaboratorInfo = await db.get(`
+        SELECT 
+          mr.id,
+          mr.github_id as merge_request_github_id,
+          mr.title,
+          mr.state,
+          r.name as repository_name,
+          r.url as repository_url,
+          r.github_id as repository_github_id,
+          COUNT(DISTINCT CASE WHEN COALESCE(cont.is_bot, 0) = 0 THEN c.contributor_id END) as collaborator_count
+        FROM merge_requests mr
+        JOIN commits c ON c.pull_request_id = mr.id
+        JOIN contributors cont ON c.contributor_id = cont.id
+        JOIN repositories r ON mr.repository_id = r.id
+        WHERE mr.id = ?
+        GROUP BY mr.id
+      `, [mr.pull_request_id]);
+      
+      if (collaboratorInfo && collaboratorInfo.collaborator_count > maxCollaborators) {
+        maxCollaborators = collaboratorInfo.collaborator_count;
+        mostCollaborative = collaboratorInfo;
+      }
+    }
+    
+    if (!mostCollaborative) {
+      return null;
+    }
+    
+    // Get collaborator details for the most collaborative merge request
+    const collaborators = await db.all(`
+      SELECT DISTINCT
+        cont.id,
+        cont.github_id,
+        cont.username,
+        cont.name,
+        cont.avatar
+      FROM commits c
+      JOIN contributors cont ON c.contributor_id = cont.id
+      WHERE c.pull_request_id = ?
+      AND COALESCE(cont.is_bot, 0) = 0
+      LIMIT 8
+    `, [mostCollaborative.id]);
+    
+    return {
+      id: mostCollaborative.id,
+      github_id: mostCollaborative.merge_request_github_id,
+      title: mostCollaborative.title,
+      repository_name: mostCollaborative.repository_name,
+      repository_url: mostCollaborative.repository_url,
+      repository_github_id: mostCollaborative.repository_github_id,
+      state: mostCollaborative.state,
+      collaborator_count: maxCollaborators,
+      collaborators: collaborators
+    };
+  } catch (error) {
+    console.error('Error fetching most collaborative merge request:', error);
+    return null;
   }
 }
 

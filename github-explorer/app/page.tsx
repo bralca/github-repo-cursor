@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { TableHead, TableCell } from '@/components/ui/table';
-import { generateContributorSlug } from '@/lib/url-utils';
+import { generateContributorSlug, generateRepositorySlug, generateMergeRequestSlug } from '@/lib/url-utils';
 
 // Interfaces for type safety
 interface ContributorRanking {
@@ -42,6 +42,23 @@ interface ContributorRanking {
     full_name: string;
     url: string;
     stars: number;
+    github_id?: string;
+  }
+  most_collaborative_merge_request?: {
+    id?: string;
+    github_id?: string;
+    title: string;
+    repository_url: string;
+    repository_name?: string;
+    repository_github_id?: string;
+    collaborators: {
+      id: string;
+      github_id: string;
+      name: string;
+      username: string;
+      avatar: string;
+    }[];
+    collaborator_count: number;
   }
 }
 
@@ -243,12 +260,14 @@ function useContributorRankings() {
   // Find spotlight developers
   const getPopularitySpotlight = () => {
     if (!rankings || rankings.length === 0) return null;
+    // We don't need to filter for is_bot here as the API already filters them out
     return rankings.reduce((champion, dev) => 
       (dev.repo_popularity_score > (champion?.repo_popularity_score || 0)) ? dev : champion, null as ContributorRanking | null);
   };
   
   const getCollaborationSpotlight = () => {
     if (!rankings || rankings.length === 0) return null;
+    // We don't need to filter for is_bot here as the API already filters them out
     return rankings.reduce((champion, dev) => 
       (dev.collaboration_score > (champion?.collaboration_score || 0)) ? dev : champion, null as ContributorRanking | null);
   };
@@ -293,7 +312,7 @@ export default function HomePage() {
               TOP Contributors ranked by development impact score
               <Link href="/about" className="text-primary ml-2 underline">
                 Read more
-              </Link>
+          </Link>
             </p>
           </div>
           
@@ -365,14 +384,15 @@ export default function HomePage() {
                       <div className="bg-gray-50 rounded-md p-3 border border-gray-100">
                         <div className="text-xs font-medium text-gray-500 mb-1">Top Repository</div>
                         
-                        <a 
-                          href={getPopularitySpotlight()?.most_popular_repository?.url || '#'}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <Link 
+                          href={`/${generateRepositorySlug(
+                            getPopularitySpotlight()?.most_popular_repository?.name || 'repository',
+                            getPopularitySpotlight()?.most_popular_repository?.github_id || '0'
+                          )}`}
                           className="text-sm font-bold text-gray-900 hover:underline block"
                         >
                           {getPopularitySpotlight()?.most_popular_repository?.name || 'Repository'}
-                        </a>
+              </Link>
                         
                         <div className="flex items-center mt-1">
                           <div className="flex items-center text-xs font-medium">
@@ -399,8 +419,8 @@ export default function HomePage() {
               </>
             )}
           </div>
-        </Card>
-        
+          </Card>
+
         {/* Team Catalyst Card */}
         <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow transition-shadow">
           <div className="p-4">
@@ -456,49 +476,75 @@ export default function HomePage() {
                     <div className="bg-gray-50 rounded-md p-3 border border-gray-100">
                       <div className="text-xs font-medium text-gray-500 mb-1">Most Collaborative Merge Request</div>
                       
-                      {/* Note: This is a placeholder assuming we'd have this data in the real implementation */}
-                      <a 
-                        href="#"
-                        className="text-sm font-bold text-gray-900 hover:underline block"
-                      >
-                        Feature: Add User Authentication
-                      </a>
-                      
-                      <div className="mt-2">
-                        <div className="text-xs text-gray-500 mb-1">Collaborators (8)</div>
-                        <div className="flex -space-x-2 overflow-hidden">
-                          {/* Lead developer */}
+                      {getCollaborationSpotlight()?.most_collaborative_merge_request ? (
+                        <>
                           <Link 
-                            href={`/contributors/${generateContributorSlug(
-                              getCollaborationSpotlight()?.name || '', 
-                              getCollaborationSpotlight()?.username || '', 
-                              getCollaborationSpotlight()?.contributor_github_id || ''
+                            href={`/${generateRepositorySlug(
+                              getCollaborationSpotlight()?.most_collaborative_merge_request?.repository_name || 'repository', 
+                              getCollaborationSpotlight()?.most_collaborative_merge_request?.repository_github_id || '0'
+                            )}/merge-requests/${generateMergeRequestSlug(
+                              getCollaborationSpotlight()?.most_collaborative_merge_request?.title || 'merge-request',
+                              getCollaborationSpotlight()?.most_collaborative_merge_request?.github_id || '0'
                             )}`}
-                            className="relative z-30 inline-block h-7 w-7 rounded-full ring-2 ring-white overflow-hidden bg-gray-100"
+                            className="text-sm font-bold text-gray-900 hover:underline block"
                           >
-                            <AvatarImage 
-                              src={getCollaborationSpotlight()?.avatar} 
-                              alt={getCollaborationSpotlight()?.name || 'Developer'} 
-                            />
+                            {getCollaborationSpotlight()?.most_collaborative_merge_request?.title || 'Merge Request'}
                           </Link>
                           
-                          {/* Placeholder team member avatars */}
-                          {Array.from({length: Math.min(Math.round(Math.pow(100 / (100 - Math.min(getCollaborationSpotlight()?.collaboration_score || 0, 99)), 1 / 0.8)) - 1, 6)}).map((_, i) => (
-                            <Link href="#" key={i} className="relative inline-block h-7 w-7 rounded-full ring-2 ring-white overflow-hidden" style={{zIndex: 25-i}}>
-                              <div className="h-full w-full flex items-center justify-center text-xs font-medium" style={{backgroundColor: ['#EFF6FF', '#F0FDF4', '#FFFBEB', '#FDF2F8', '#EEF2FF', '#F5F3FF'][i % 6]}}>
-                                {String.fromCharCode(65 + i)}
-                              </div>
-                            </Link>
-                          ))}
-                          
-                          {/* Additional team members indicator */}
-                          {Math.round(Math.pow(100 / (100 - Math.min(getCollaborationSpotlight()?.collaboration_score || 0, 99)), 1 / 0.8)) > 7 && (
-                            <div className="relative z-10 inline-flex h-7 w-7 items-center justify-center rounded-full ring-2 ring-white bg-gray-50 text-xs font-medium">
-                              +{Math.round(Math.pow(100 / (100 - Math.min(getCollaborationSpotlight()?.collaboration_score || 0, 99)), 1 / 0.8)) - 7}
+                          <div className="mt-2">
+                            <div className="text-xs text-gray-500 mb-1">
+                              Collaborators ({getCollaborationSpotlight()?.most_collaborative_merge_request?.collaborator_count || 0})
                             </div>
-                          )}
-                        </div>
-                      </div>
+                            <div className="flex -space-x-2 overflow-hidden">
+                              {/* Lead developer */}
+                              <Link 
+                                href={`/contributors/${generateContributorSlug(
+                                  getCollaborationSpotlight()?.name || '', 
+                                  getCollaborationSpotlight()?.username || '', 
+                                  getCollaborationSpotlight()?.contributor_github_id || ''
+                                )}`}
+                                className="relative z-30 inline-block h-7 w-7 rounded-full ring-2 ring-white overflow-hidden bg-gray-100"
+                              >
+                                <AvatarImage 
+                                  src={getCollaborationSpotlight()?.avatar} 
+                                  alt={getCollaborationSpotlight()?.name || 'Developer'} 
+                                />
+                              </Link>
+                              
+                              {/* Actual collaborator avatars */}
+                              {(getCollaborationSpotlight()?.most_collaborative_merge_request?.collaborators || [])
+                                .filter(collab => collab.id !== getCollaborationSpotlight()?.contributor_id)
+                                .slice(0, 6)
+                                .map((collab, i) => (
+                                  <Link 
+                                    href={`/contributors/${generateContributorSlug(
+                                      collab.name || '', 
+                                      collab.username || '', 
+                                      collab.github_id || ''
+                                    )}`} 
+                                    key={collab.id} 
+                                    className="relative inline-block h-7 w-7 rounded-full ring-2 ring-white overflow-hidden bg-gray-100" 
+                                    style={{zIndex: 25-i}}
+                                  >
+                                    <AvatarImage 
+                                      src={collab.avatar} 
+                                      alt={collab.name || collab.username || 'Collaborator'} 
+                                    />
+              </Link>
+                              ))}
+                              
+                              {/* Additional team members indicator */}
+                              {(getCollaborationSpotlight()?.most_collaborative_merge_request?.collaborator_count || 0) > 7 && (
+                                <div className="relative z-10 inline-flex h-7 w-7 items-center justify-center rounded-full ring-2 ring-white bg-gray-50 text-xs font-medium">
+                                  +{(getCollaborationSpotlight()?.most_collaborative_merge_request?.collaborator_count || 0) - 7}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-sm text-gray-500">No collaborative merge requests found</div>
+                      )}
                     </div>
                     
                     <div className="mt-2 text-xs text-gray-500 italic">
@@ -513,8 +559,8 @@ export default function HomePage() {
               </>
             )}
           </div>
-        </Card>
-        
+          </Card>
+
         {/* Code Titan Card */}
         <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow transition-shadow">
           <div className="p-4">
@@ -566,7 +612,7 @@ export default function HomePage() {
                                 className="font-bold text-sm text-gray-900 hover:underline"
                               >
                                 {volumeLeader.name || volumeLeader.username}
-                              </Link>
+              </Link>
                               <div className="flex items-center">
                                 <span className="text-lg font-bold text-blue-600">{volumeLeader.code_volume_score?.toFixed(1) || '0'}</span>
                                 <span className="text-xs ml-1 text-gray-500">Volume Score</span>
@@ -616,7 +662,7 @@ export default function HomePage() {
               </>
             )}
           </div>
-        </Card>
+          </Card>
       </div>
       
       {/* Developer Table Section */}
@@ -744,10 +790,11 @@ export default function HomePage() {
                           {/* Popular Repository */}
                           <td className="px-4 py-3">
                             {dev.most_popular_repository ? (
-                              <a 
-                                href={dev.most_popular_repository.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              <Link 
+                                href={`/${generateRepositorySlug(
+                                  dev.most_popular_repository.name || 'repository',
+                                  dev.most_popular_repository.github_id || '0'
+                                )}`}
                                 className="text-sm hover:underline hover:text-primary transition-colors flex items-center"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -764,7 +811,7 @@ export default function HomePage() {
                                       : dev.most_popular_repository.stars}
                                   </span>
                                 )}
-                              </a>
+                              </Link>
                             ) : (
                               <span className="text-sm text-muted-foreground">No repositories</span>
                             )}
@@ -858,7 +905,7 @@ export default function HomePage() {
                                 
                                 {/* View Full Profile Button */}
                                 <div className="flex justify-end">
-                                  <Link
+          <Link 
                                     href={`/contributors/${generateContributorSlug(dev.name, dev.username, dev.contributor_github_id)}`}
                                     className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
                                   >
@@ -866,7 +913,7 @@ export default function HomePage() {
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                     </svg>
-                                  </Link>
+          </Link>
                                 </div>
                               </div>
                             </td>

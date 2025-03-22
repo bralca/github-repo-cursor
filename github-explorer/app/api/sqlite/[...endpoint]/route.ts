@@ -12,6 +12,8 @@ import { handlePipelineHistoryClear } from '../handlers/pipeline-history-clear';
 import { getSitemapStatus } from '../handlers/get-sitemap-status';
 import { triggerSitemapGeneration } from '../handlers/trigger-sitemap-generation';
 import { validateSitemapUrls } from '../handlers/validate-sitemap-urls';
+import { handleContributorRankings } from '../handlers/contributor-rankings';
+import { handleBotDetection } from '../handlers/bot-detection';
 
 /**
  * Checks if the user is authenticated, considering that they might already be
@@ -101,6 +103,10 @@ export async function POST(
         return await triggerSitemapGeneration(request);
       case 'validate-sitemap-urls':
         return await validateSitemapUrls(request);
+      case 'contributor-rankings':
+        return await handleContributorRankings(request);
+      case 'bot-detection':
+        return await handleBotDetection(request);
       default:
         return NextResponse.json(
           { error: `Unknown endpoint: ${endpoint}` },

@@ -107,6 +107,7 @@ Stores information about GitHub users who contribute to repositories.
 | `pull_requests_rejected` | INTEGER | Number of PRs rejected |
 | `code_reviews` | INTEGER | Number of code reviews |
 | `is_placeholder` | BOOLEAN | Whether this is a placeholder for an unknown contributor |
+| `is_bot` | BOOLEAN | Whether this contributor is a bot (based on name/bio containing "bot") |
 | `created_at` | TIMESTAMP | When this record was created |
 | `updated_at` | TIMESTAMP | When this record was last updated |
 
@@ -356,6 +357,7 @@ Schema for storing calculated developer rankings and metrics:
 
 1. **Ranking Calculation**
    - Calculate developer scores based on code volume, efficiency, impact, and repository influence
+   - Exclude all contributions from forked repositories to focus on original work
    - Store calculated rankings in the `contributor_rankings` table with timestamp
    - Each calculation creates a new set of records with the same timestamp
 
