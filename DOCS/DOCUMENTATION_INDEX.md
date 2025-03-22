@@ -30,6 +30,9 @@ The documentation is organized into the following categories:
 - [SQLITE_SETUP_GUIDE.md](data-systems/SQLITE_SETUP_GUIDE.md) - Guide for setting up and configuring SQLite for the GitHub Explorer project
 - [DATA_PIPELINE_ARCHITECTURE.md](data-systems/DATA_PIPELINE_ARCHITECTURE.md) - Overview of the data processing pipeline architecture
 - [Pipeline Architecture](data-systems/PIPELINE_ARCHITECTURE.md) - Pipeline implementation details
+- [Database Schema and Access Patterns](data-systems/DATABASE_SCHEMA_AND_ACCESS_PATTERNS.md) - Comprehensive database documentation
+- [SQLite SQL Cheatsheet](data-systems/SQLITE_SQL_CHEATSHEET.md) - Common SQL patterns used in the application
+- [Developer Archetypes](data-systems/DEVELOPER_ARCHETYPES.md) - Classification system for developer contribution patterns
 
 ### Page Architecture
 

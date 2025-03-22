@@ -264,7 +264,10 @@ async function getLatestRankings() {
           cr.calculation_timestamp,
           c.username,
           c.name,
-          c.avatar
+          c.avatar,
+          c.location,
+          c.twitter_username,
+          c.top_languages
         FROM contributor_rankings cr
         JOIN contributors c ON cr.contributor_id = c.id
         WHERE cr.calculation_timestamp = (
