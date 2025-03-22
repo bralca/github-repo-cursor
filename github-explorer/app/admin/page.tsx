@@ -5,6 +5,7 @@ import { CronJobManager } from '@/components/admin/CronJobManager';
 import { EntityStatsOverview } from '@/components/admin/EntityStatsOverview';
 import { PipelineHistory } from '@/components/admin/PipelineHistory';
 import { SitemapControlCard } from '@/components/admin/SitemapControlCard';
+import { DeveloperRankingCard } from '@/components/admin/DeveloperRankingCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Metadata must be moved to a separate layout.tsx file for client components
@@ -78,6 +79,12 @@ export default function AdminDashboardPage() {
         <div className="mt-4">
           <h2 className="text-xl font-semibold mb-4">SEO Tools</h2>
           <SitemapControlCard />
+        </div>
+        
+        {/* Developer Rankings Section */}
+        <div className="mt-4">
+          <h2 className="text-xl font-semibold mb-4">Developer Rankings</h2>
+          <DeveloperRankingCard />
         </div>
       </div>
     </div>

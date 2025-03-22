@@ -268,6 +268,39 @@ Schema for tracking sitemap files and URL counts:
 | `url_count` | INTEGER | Number of URLs in the current sitemap page |
 | `last_updated` | TIMESTAMP | When this record was last updated |
 
+### Analytics Tables
+
+The following table manages developer rankings for the leaderboard homepage:
+
+#### `contributor_rankings`
+
+Schema for storing calculated developer rankings and metrics:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | TEXT | Primary key (UUID) |
+| `contributor_id` | TEXT | Reference to the contributor ID |
+| `contributor_github_id` | BIGINT | GitHub ID of the contributor |
+| `rank_position` | INTEGER | Numerical rank position (1st, 2nd, etc.) |
+| `total_score` | REAL | Combined ranking score (0-100) |
+| `code_volume_score` | REAL | Score based on total code volume (0-100) |
+| `code_efficiency_score` | REAL | Score based on code efficiency metrics (0-100) |
+| `commit_impact_score` | REAL | Score based on commit impact (0-100) |
+| `repo_influence_score` | REAL | Score based on repository influence (0-100) |
+| `followers_score` | REAL | Score based on follower count (0-100) |
+| `profile_completeness_score` | REAL | Score based on profile data completeness (0-100) |
+| `followers_count` | INTEGER | Raw count of GitHub followers |
+| `raw_lines_added` | INTEGER | Total lines of code added |
+| `raw_lines_removed` | INTEGER | Total lines of code removed |
+| `raw_commits_count` | INTEGER | Total number of commits |
+| `repositories_contributed` | INTEGER | Number of repositories contributed to |
+| `calculation_timestamp` | TIMESTAMP | When this ranking was calculated |
+
+**Indices:**
+- `idx_contributor_rankings_contributor_id` on the `contributor_id` column
+- `idx_contributor_rankings_timestamp` on the `calculation_timestamp` column
+- `idx_contributor_rankings_rank` on the `rank_position` column
+
 ## Common Access Patterns
 
 ### Pipeline Status and Control
@@ -318,6 +351,23 @@ Schema for tracking sitemap files and URL counts:
    - When new entities are added, update sitemap metadata
    - Increment URL count for the appropriate entity type
    - Create new sitemap pages when current page is full (>49,000 URLs)
+
+### Developer Rankings
+
+1. **Ranking Calculation**
+   - Calculate developer scores based on code volume, efficiency, impact, and repository influence
+   - Store calculated rankings in the `contributor_rankings` table with timestamp
+   - Each calculation creates a new set of records with the same timestamp
+
+2. **Homepage Leaderboard Display**
+   - Query the most recent rankings by maximum `calculation_timestamp`
+   - Sort by `rank_position` to display the top developers
+   - Join with `contributors` table to get profile information
+
+3. **Trend Analysis**
+   - Compare ranking positions across different calculation timestamps
+   - Calculate changes in rank position and scores over time
+   - Generate trend data for visualization
 
 ## Connection Management
 

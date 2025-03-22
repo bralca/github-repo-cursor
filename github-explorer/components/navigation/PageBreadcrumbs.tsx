@@ -87,7 +87,28 @@ export function PageBreadcrumbs({ className, ...props }: PageBreadcrumbsProps) {
       }
     }
     
-    if (segment === 'commits' && i === 3) {
+    if (segment === 'authors' && i === 3) {
+      breadcrumbItems.push({
+        href: currentPath,
+        label: 'Authors',
+      });
+      continue;
+    }
+    
+    if (i === 4 && segments[3] === 'authors') {
+      // This is likely a contributor slug
+      const contributorInfo = parseContributorSlug(segment);
+      if (contributorInfo) {
+        // Link directly to the main contributors page for this contributor
+        breadcrumbItems.push({
+          href: `/contributors/${segment}`,
+          label: contributorInfo.name || contributorInfo.username || 'Contributor',
+        });
+        continue;
+      }
+    }
+    
+    if (segment === 'commits' && (i === 5 || i === 3)) {
       breadcrumbItems.push({
         href: currentPath,
         label: 'Commits',
@@ -103,7 +124,6 @@ export function PageBreadcrumbs({ className, ...props }: PageBreadcrumbsProps) {
   }
   
   // Helper function to truncate text with ellipsis
-  // Using "Merge Requests" (14 chars) as baseline and adding some buffer
   const truncateText = (text: string, maxLength: number = 20) => {
     if (text.length <= maxLength) return text;
     return `${text.substring(0, maxLength)}...`;
