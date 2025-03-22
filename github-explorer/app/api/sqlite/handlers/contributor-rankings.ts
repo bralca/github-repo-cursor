@@ -243,13 +243,13 @@ async function calculateRankings() {
             nm.name,
             -- Calculate total score using weighted average (now including repo popularity)
             (
-              nm.code_volume_score * 0.10 + 
-              nm.commit_impact_score * 0.05 + 
-              nm.code_efficiency_score * 0.10 +
-              nm.collaboration_score * 0.25 +
-              nm.repo_popularity_score * 0.25 +
+              nm.code_volume_score * 0.05 + 
+              nm.commit_impact_score * 0.10 + 
+              nm.code_efficiency_score * 0.15 +
+              nm.collaboration_score * 0.20 +
+              nm.repo_popularity_score * 0.20 +
               COALESCE(nm.repo_influence_score, 0) * 0.10 + 
-              COALESCE(nm.followers_score, 0) * 0.10 + 
+              COALESCE(nm.followers_score, 0) * 0.15 + 
               nm.profile_completeness * 0.05
             ) AS total_score,
             nm.code_volume_score,
@@ -267,13 +267,13 @@ async function calculateRankings() {
             nm.repos_contributed,
             RANK() OVER (ORDER BY 
               (
-                nm.code_volume_score * 0.10 + 
-                nm.commit_impact_score * 0.05 + 
-                nm.code_efficiency_score * 0.10 +
-                nm.collaboration_score * 0.25 +
-                nm.repo_popularity_score * 0.25 +
+                nm.code_volume_score * 0.05 + 
+                nm.commit_impact_score * 0.10 + 
+                nm.code_efficiency_score * 0.15 +
+                nm.collaboration_score * 0.20 +
+                nm.repo_popularity_score * 0.20 +
                 COALESCE(nm.repo_influence_score, 0) * 0.10 + 
-                COALESCE(nm.followers_score, 0) * 0.10 + 
+                COALESCE(nm.followers_score, 0) * 0.15 + 
                 nm.profile_completeness * 0.05
               ) DESC
             ) AS rank_position

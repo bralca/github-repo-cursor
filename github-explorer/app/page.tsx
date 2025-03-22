@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowUp, ArrowDown, TrendingUp, BarChart3, Zap } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { TableHead, TableCell } from '@/components/ui/table';
 import { generateContributorSlug, generateRepositorySlug, generateMergeRequestSlug } from '@/lib/url-utils';
+import { Avatar } from '@/components/ui/avatar';
 
 // Interfaces for type safety
 interface ContributorRanking {
@@ -217,14 +218,11 @@ function MetricsVisualization({
 
 // Custom hook for contributor rankings
 function useContributorRankings() {
-  const [rankings, setRankings] = useState<ContributorRanking[]>(mockRankings);
+  const [rankings, setRankings] = useState<ContributorRanking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTimeframe, setSelectedTimeframe] = useState<Timeframe>('7d');
   
-  const timeframes: Timeframe[] = ['24h', '7d', '30d', 'all'];
-  
-  React.useEffect(() => {
+  useEffect(() => {
     async function fetchRankings() {
       setIsLoading(true);
       setError(null);
@@ -257,41 +255,34 @@ function useContributorRankings() {
     fetchRankings();
   }, []);
   
-  // Find spotlight developers
   const getPopularitySpotlight = () => {
     if (!rankings || rankings.length === 0) return null;
-    // We don't need to filter for is_bot here as the API already filters them out
-    return rankings.reduce((champion, dev) => 
-      (dev.repo_popularity_score > (champion?.repo_popularity_score || 0)) ? dev : champion, null as ContributorRanking | null);
+    return rankings.filter(r => r.most_popular_repository).sort((a, b) => b.repo_popularity_score - a.repo_popularity_score)[0];
   };
-  
+
   const getCollaborationSpotlight = () => {
     if (!rankings || rankings.length === 0) return null;
-    // We don't need to filter for is_bot here as the API already filters them out
-    return rankings.reduce((champion, dev) => 
-      (dev.collaboration_score > (champion?.collaboration_score || 0)) ? dev : champion, null as ContributorRanking | null);
+    return rankings.sort((a, b) => b.collaboration_score - a.collaboration_score)[0];
   };
-  
-  const setTimeframe = (timeframe: Timeframe) => {
-    // In a real implementation, we would refetch the data for the selected timeframe
-    setSelectedTimeframe(timeframe);
+
+  const getInfluenceSpotlight = () => {
+    if (!rankings || rankings.length === 0) return null;
+    return rankings.sort((a, b) => (b.repo_influence_score || 0) - (a.repo_influence_score || 0))[0];
   };
-  
+
   return {
     rankings,
     isLoading,
     error,
-    timeframes,
-    selectedTimeframe,
-    setTimeframe,
     getPopularitySpotlight,
-    getCollaborationSpotlight
+    getCollaborationSpotlight,
+    getInfluenceSpotlight
   };
 }
 
 export default function HomePage() {
   const [showHighlights, setShowHighlights] = useState(true);
-  const { rankings, isLoading, timeframes, selectedTimeframe, setTimeframe, getPopularitySpotlight, getCollaborationSpotlight } = useContributorRankings();
+  const { rankings, isLoading, error, getPopularitySpotlight, getCollaborationSpotlight, getInfluenceSpotlight } = useContributorRankings();
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
   
   const toggleExpandedRow = (id: string) => {
@@ -561,108 +552,91 @@ export default function HomePage() {
           </div>
           </Card>
 
-        {/* Code Titan Card */}
-        <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow transition-shadow">
-          <div className="p-4">
-            <div className="flex items-center mb-3">
-              <div className="p-1.5 bg-blue-50 rounded-full border border-blue-100">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 className="ml-2 font-bold text-base text-gray-900">Code Titan</h3>
+        {/* Card 3: Previously Code Volume Leader, now Repository Influence */}
+        <Card className="h-full">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="h-4 w-4 text-primary"
+              >
+                <path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"></path>
+              </svg>
+              <CardTitle className="text-base font-medium">Network Nexus</CardTitle>
             </div>
-            
+          </CardHeader>
+          <CardContent>
             {isLoading ? (
-              <div className="flex items-center justify-center h-16">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+              <div className="animate-pulse flex flex-col items-center justify-center space-y-2 p-4">
+                <div className="rounded-full bg-gray-200 h-12 w-12"></div>
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
               </div>
+            ) : error ? (
+              <div className="text-sm text-destructive">Error loading data</div>
+            ) : !getInfluenceSpotlight() ? (
+              <div className="text-sm text-muted-foreground">No data available</div>
             ) : (
-              <>
-                {rankings && rankings.length > 0 ? (
-                  <>
-                    {(() => {
-                      const volumeLeader = rankings.reduce((champion, dev) => 
-                        (dev.code_volume_score > (champion?.code_volume_score || 0)) ? dev : champion, 
-                        null as ContributorRanking | null);
-                        
-                      return volumeLeader ? (
-                        <>
-                          <div className="flex items-center mb-3">
-                            <Link 
-                              href={`/contributors/${generateContributorSlug(
-                                volumeLeader.name || '', 
-                                volumeLeader.username || '', 
-                                volumeLeader.contributor_github_id || ''
-                              )}`}
-                              className="relative h-10 w-10 rounded-full overflow-hidden bg-gray-100 border border-gray-200"
-                            >
-                              <AvatarImage 
-                                src={volumeLeader.avatar} 
-                                alt={volumeLeader.name || 'Developer'} 
-                              />
-                            </Link>
-                            <div className="ml-3">
-                              <Link 
-                                href={`/contributors/${generateContributorSlug(
-                                  volumeLeader.name || '', 
-                                  volumeLeader.username || '', 
-                                  volumeLeader.contributor_github_id || ''
-                                )}`}
-                                className="font-bold text-sm text-gray-900 hover:underline"
-                              >
-                                {volumeLeader.name || volumeLeader.username}
-              </Link>
-                              <div className="flex items-center">
-                                <span className="text-lg font-bold text-blue-600">{volumeLeader.code_volume_score?.toFixed(1) || '0'}</span>
-                                <span className="text-xs ml-1 text-gray-500">Volume Score</span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-gray-50 rounded-md p-3 border border-gray-100">
-                            <div className="text-xs font-medium text-gray-500 mb-1">Code Contribution</div>
-                            
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <div className="text-xs text-gray-500">Lines Added</div>
-                                <div className="font-bold text-sm text-gray-900">{volumeLeader.raw_lines_added?.toLocaleString() || '0'}</div>
-                              </div>
-                              <div>
-                                <div className="text-xs text-gray-500">Lines Removed</div>
-                                <div className="font-bold text-sm text-gray-900">{volumeLeader.raw_lines_removed?.toLocaleString() || '0'}</div>
-                              </div>
-                              <div>
-                                <div className="text-xs text-gray-500">Commits</div>
-                                <div className="font-bold text-sm text-gray-900">{volumeLeader.raw_commits_count?.toLocaleString() || '0'}</div>
-                              </div>
-                              <div>
-                                <div className="text-xs text-gray-500">Repositories</div>
-                                <div className="font-bold text-sm text-gray-900">{volumeLeader.repositories_contributed?.toLocaleString() || '0'}</div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="mt-2 text-xs text-gray-500 italic">
-                            Delivers extraordinary output and impact across projects
-                          </div>
-                        </>
-                      ) : (
-                        <div className="p-3 text-center text-gray-500 text-sm">
-                          No developer data available
-                        </div>
-                      );
-                    })()}
-                  </>
-                ) : (
-                  <div className="p-3 text-center text-gray-500 text-sm">
-                    No rankings available
+              <div className="flex flex-col space-y-4">
+                <div className="flex items-center space-x-3">
+                  <Link 
+                    href={`/contributors/${generateContributorSlug(
+                      getInfluenceSpotlight()?.name || '', 
+                      getInfluenceSpotlight()?.username || '', 
+                      getInfluenceSpotlight()?.contributor_github_id || ''
+                    )}`}
+                    className="relative h-10 w-10 rounded-full overflow-hidden"
+                  >
+                    <img 
+                      src={getInfluenceSpotlight()?.avatar || ''} 
+                      alt={getInfluenceSpotlight()?.name || getInfluenceSpotlight()?.username || 'Developer'} 
+                      className="h-full w-full object-cover"
+                    />
+                  </Link>
+                  <div>
+                    <Link 
+                      href={`/contributors/${generateContributorSlug(
+                        getInfluenceSpotlight()?.name || '', 
+                        getInfluenceSpotlight()?.username || '', 
+                        getInfluenceSpotlight()?.contributor_github_id || ''
+                      )}`}
+                      className="font-medium text-sm hover:underline"
+                    >
+                      {getInfluenceSpotlight()?.username}
+                    </Link>
+                    <div className="text-primary font-bold text-lg">
+                      {getInfluenceSpotlight()?.repo_influence_score?.toFixed(1) || '0'} <span className="text-xs font-normal text-muted-foreground">Influence Score</span>
+                    </div>
                   </div>
-                )}
-              </>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div>
+                    <div className="font-medium text-gray-900">Repositories</div>
+                    <div className="mt-1 text-lg font-bold text-gray-800">{getInfluenceSpotlight()?.repositories_contributed || 0}</div>
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">Followers</div>
+                    <div className="mt-1 text-lg font-bold text-gray-800">{getInfluenceSpotlight()?.followers_count || 0}</div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="font-medium text-gray-900">Cross-Repository Impact</div>
+                    <div className="mt-1 text-sm">Contributions span across multiple projects with significant influence</div>
+                  </div>
+                </div>
+              </div>
             )}
-          </div>
-          </Card>
+          </CardContent>
+          <CardFooter className="pt-0 text-xs text-muted-foreground">
+            <p>Delivers widespread impact across multiple repositories</p>
+          </CardFooter>
+        </Card>
       </div>
       
       {/* Developer Table Section */}
@@ -694,7 +668,9 @@ export default function HomePage() {
                     </td>
                   </tr>
                 ) : rankings && rankings.length > 0 ? (
-                  rankings.map((dev: ContributorRanking, index: number) => {
+                  [...rankings]
+                    .sort((a, b) => a.rank_position - b.rank_position)
+                    .map((dev: ContributorRanking, index: number) => {
                     // Try to parse top languages
                     let languages: string[] = [];
                     try {
@@ -848,31 +824,31 @@ export default function HomePage() {
                                       <tr className="border-b">
                                         <td className="py-2 px-4 text-sm font-medium">Code Volume</td>
                                         <td className="py-2 px-4 text-sm">Normalized score (0-100) based on total lines of code added and removed. Calculated as: (developer's total lines / highest total lines) × 100. Higher values indicate more code contributions relative to other developers.</td>
-                                        <td className="py-2 px-4 text-center text-sm">10%</td>
+                                        <td className="py-2 px-4 text-center text-sm">5%</td>
                                         <td className="py-2 px-4 text-center font-medium text-sm">{(dev.code_volume_score ?? 0).toFixed(1)}</td>
                                       </tr>
                                       <tr className="border-b">
                                         <td className="py-2 px-4 text-sm font-medium">Code Efficiency</td>
                                         <td className="py-2 px-4 text-sm">Measures how closely final PR changes match commit changes. Calculated as: AVG(1 - |PR changes - commit changes| / commit changes) × 100. Perfect 100 means efficient coding with minimal wasted effort between commits and final PR.</td>
-                                        <td className="py-2 px-4 text-center text-sm">10%</td>
+                                        <td className="py-2 px-4 text-center text-sm">15%</td>
                                         <td className="py-2 px-4 text-center font-medium text-sm">{(dev.code_efficiency_score ?? 0).toFixed(1)}</td>
                                       </tr>
                                       <tr className="border-b">
                                         <td className="py-2 px-4 text-sm font-medium">Commit Impact</td>
                                         <td className="py-2 px-4 text-sm">Normalized score (0-100) based on commit frequency. Calculated as: (developer's commit count / highest commit count) × 100. Higher scores indicate a developer who commits code more frequently than others.</td>
-                                        <td className="py-2 px-4 text-center text-sm">5%</td>
+                                        <td className="py-2 px-4 text-center text-sm">10%</td>
                                         <td className="py-2 px-4 text-center font-medium text-sm">{(dev.commit_impact_score ?? 0).toFixed(1)}</td>
                                       </tr>
                                       <tr className="border-b">
                                         <td className="py-2 px-4 text-sm font-medium">Team Collaboration</td>
                                         <td className="py-2 px-4 text-sm">Measures work with multiple contributors on PRs. Uses an asymptotic formula: 100 * (1 - 1/(collaborators^0.8)). Solo developers (1 collaborator) score 0, with 2 collaborators scoring 43, 3 collaborators scoring 65, and 10+ collaborators approaching but never exceeding 100. Rewards larger team sizes while maintaining the 0-100 scale.</td>
-                                        <td className="py-2 px-4 text-center text-sm">25%</td>
+                                        <td className="py-2 px-4 text-center text-sm">20%</td>
                                         <td className="py-2 px-4 text-center font-medium text-sm">{(dev.collaboration_score ?? 0).toFixed(1)}</td>
                                       </tr>
                                       <tr className="border-b">
                                         <td className="py-2 px-4 text-sm font-medium">Repository Popularity</td>
                                         <td className="py-2 px-4 text-sm">Based on stars/forks of contributed repos: 60% from total popularity (log scale) + 40% from # of popular repos (1000+ stars). Formula: (ln(total_popularity+1)/ln(25000)×60) + (min(popular_repos_count,5)×8). Rewards contributing to widely-used projects.</td>
-                                        <td className="py-2 px-4 text-center text-sm">25%</td>
+                                        <td className="py-2 px-4 text-center text-sm">20%</td>
                                         <td className="py-2 px-4 text-center font-medium text-sm">{(dev.repo_popularity_score ?? 0).toFixed(1)}</td>
                                       </tr>
                                       <tr className="border-b">
@@ -884,7 +860,7 @@ export default function HomePage() {
                                       <tr className="border-b">
                                         <td className="py-2 px-4 text-sm font-medium">Followers</td>
                                         <td className="py-2 px-4 text-sm">Normalized score (0-100) based on GitHub follower count. Calculated as: (developer's followers / highest follower count) × 100. Measures the developer's social influence in the GitHub community.</td>
-                                        <td className="py-2 px-4 text-center text-sm">10%</td>
+                                        <td className="py-2 px-4 text-center text-sm">15%</td>
                                         <td className="py-2 px-4 text-center font-medium text-sm">{(dev.followers_score ?? 0).toFixed(1)}</td>
                                       </tr>
                                       <tr className="border-b">
@@ -895,7 +871,7 @@ export default function HomePage() {
                                       </tr>
                                       <tr className="font-medium bg-muted/30">
                                         <td className="py-2 px-4 text-sm">Total Score</td>
-                                        <td className="py-2 px-4 text-sm">Weighted average of: Code Volume (10%), Code Efficiency (10%), Commit Impact (5%), Team Collaboration (25%), Repo Popularity (25%), Repo Influence (10%), Followers (10%), Profile (5%). Maximum 100 points possible.</td>
+                                        <td className="py-2 px-4 text-sm">Weighted average of: Code Volume (5%), Code Efficiency (15%), Commit Impact (10%), Team Collaboration (20%), Repo Popularity (20%), Repo Influence (10%), Followers (15%), Profile (5%). Maximum 100 points possible.</td>
                                         <td className="py-2 px-4 text-center text-sm">100%</td>
                                         <td className="py-2 px-4 text-center text-sm">{(dev.total_score ?? 0).toFixed(1)}</td>
                                       </tr>
