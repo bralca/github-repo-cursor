@@ -2,18 +2,18 @@
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
     <loc>http://localhost:3000/sitemaps/repositories-sitemap.xml</loc>
-    <lastmod>2025-03-21</lastmod>
+    <lastmod>2025-03-22</lastmod>
   </sitemap>
   <sitemap>
     <loc>http://localhost:3000/sitemaps/contributors-sitemap.xml</loc>
-    <lastmod>2025-03-21</lastmod>
+    <lastmod>2025-03-22</lastmod>
   </sitemap>
   <sitemap>
     <loc>http://localhost:3000/sitemaps/merge-requests-sitemap.xml</loc>
-    <lastmod>2025-03-21</lastmod>
+    <lastmod>2025-03-22</lastmod>
   </sitemap>
   <sitemap>
     <loc>http://localhost:3000/sitemaps/commits-sitemap.xml</loc>
-    <lastmod>2025-03-21</lastmod>
+    <lastmod>2025-03-22</lastmod>
   </sitemap>
 </sitemapindex>

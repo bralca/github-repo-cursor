@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 // Types for commit data
-interface CommitDetails {
+export interface CommitDetails {
   id: string;
   sha: string;
   message: string;
@@ -14,6 +15,25 @@ interface CommitDetails {
   contributor_name?: string;
   contributor_username?: string;
   contributor_avatar?: string;
+  committer_name?: string;
+  committer_email?: string;
+  committer_avatar?: string;
+  stats?: {
+    additions: number;
+    deletions: number;
+    total: number;
+  };
+  files?: CommitFile[];
+  changed_files?: number;
+}
+
+export interface CommitFile {
+  filename: string;
+  status: string;
+  additions: number;
+  deletions: number;
+  changes?: number;
+  patch?: string;
 }
 
 interface CommitDiff {
@@ -24,7 +44,7 @@ interface CommitDiff {
   deletions: number;
 }
 
-interface RelatedCommit {
+export interface RelatedCommit {
   id: string;
   sha: string;
   message: string;
@@ -36,53 +56,29 @@ interface RelatedCommit {
   contributor_avatar?: string;
   contributor_slug?: string;
   file_slug?: string;
+  changed_files?: number;
+  author_name?: string;
+  author_email?: string;
+  author_avatar?: string;
+  author_slug?: string;
 }
 
 // Hook for fetching commit details
 export function useCommitDetails(repositoryGithubId: string, commitSha: string) {
-  const [data, setData] = useState<CommitDetails | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchCommitDetails() {
-      setIsLoading(true);
-      try {
-        // In a real implementation, this would fetch from an API
-        // For demo purposes, we're using a timeout to simulate network request
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Mock data for demonstration
-        const mockData: CommitDetails = {
-          id: `commit-${commitSha}`,
-          sha: commitSha,
-          message: "Fix bug in navigation component",
-          additions: 25,
-          deletions: 10,
-          complexity_score: 5,
-          committed_at: new Date().toISOString(),
-          contributor_name: "John Doe",
-          contributor_username: "johndoe",
-          contributor_avatar: "https://avatars.githubusercontent.com/u/12345678"
-        };
-        
-        setData(mockData);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching commit details:", err);
-        setError("Failed to load commit details. Please try again.");
-        setData(null);
-      } finally {
-        setIsLoading(false);
+  return useQuery({
+    queryKey: ['commitDetails', repositoryGithubId, commitSha],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/repositories/${repositoryGithubId}/commits/${commitSha}`
+      );
+      if (!response.ok) {
+        throw new Error('Failed to fetch commit details');
       }
-    }
-
-    if (repositoryGithubId && commitSha) {
-      fetchCommitDetails();
-    }
-  }, [repositoryGithubId, commitSha]);
-
-  return { data, isLoading, error };
+      return response.json() as Promise<CommitDetails>;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1,
+  });
 }
 
 // Hook for fetching commit diff
@@ -162,7 +158,11 @@ export function useCommitRelated(repositoryGithubId: string, mergeRequestGithubI
             contributor_username: "janesmith",
             contributor_avatar: "https://avatars.githubusercontent.com/u/87654321",
             contributor_slug: "jane-smith-janesmith-87654321",
-            file_slug: "package-json-abc123def456"
+            file_slug: "package-json-abc123def456",
+            author_name: "Jane Smith",
+            author_avatar: "https://avatars.githubusercontent.com/u/87654321",
+            author_slug: "jane-smith-janesmith-87654321",
+            changed_files: 3
           },
           {
             id: `commit-2`,
@@ -175,7 +175,11 @@ export function useCommitRelated(repositoryGithubId: string, mergeRequestGithubI
             contributor_username: "johndoe",
             contributor_avatar: "https://avatars.githubusercontent.com/u/12345678",
             contributor_slug: "john-doe-johndoe-12345678",
-            file_slug: "src-auth-controller-def456ghi789"
+            file_slug: "src-auth-controller-def456ghi789",
+            author_name: "John Doe",
+            author_avatar: "https://avatars.githubusercontent.com/u/12345678",
+            author_slug: "john-doe-johndoe-12345678",
+            changed_files: 2
           },
           {
             id: `commit-3`,
@@ -188,7 +192,11 @@ export function useCommitRelated(repositoryGithubId: string, mergeRequestGithubI
             contributor_username: "alexj",
             contributor_avatar: "https://avatars.githubusercontent.com/u/56781234",
             contributor_slug: "alex-johnson-alexj-56781234",
-            file_slug: "tests-feature-spec-ghi789jkl012"
+            file_slug: "tests-feature-spec-ghi789jkl012",
+            author_name: "Alex Johnson",
+            author_avatar: "https://avatars.githubusercontent.com/u/56781234",
+            author_slug: "alex-johnson-alexj-56781234",
+            changed_files: 5
           }
         ];
         
@@ -209,4 +217,24 @@ export function useCommitRelated(repositoryGithubId: string, mergeRequestGithubI
   }, [repositoryGithubId, mergeRequestGithubId]);
 
   return { data, isLoading, error };
+}
+
+/**
+ * Hook to fetch all files changed in a commit
+ */
+export function useCommitFiles(repositoryGithubId: string, commitSha: string) {
+  return useQuery({
+    queryKey: ['commitFiles', repositoryGithubId, commitSha],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/repositories/${repositoryGithubId}/commits/${commitSha}/files`
+      );
+      if (!response.ok) {
+        throw new Error('Failed to fetch commit files');
+      }
+      return response.json() as Promise<CommitFile[]>;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1,
+  });
 } 

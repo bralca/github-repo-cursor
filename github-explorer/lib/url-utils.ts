@@ -332,10 +332,10 @@ export function parseFileSlug(slug: string): { filename: string, githubId: strin
 
 /**
  * Builds a complete URL for a commit
- * @param repository Repository object
- * @param mergeRequest Merge request object
- * @param contributor Contributor object
- * @param file File object
+ * @param repository Repository object with name and github_id
+ * @param mergeRequest MergeRequest object with title and github_id
+ * @param contributor Contributor object with name, username, and github_id
+ * @param file File object with filename and github_id (commit SHA)
  * @returns Complete URL for the commit
  */
 export function buildCommitUrl(
@@ -356,14 +356,14 @@ export function buildCommitUrl(
     throw new Error('Valid contributor with github_id is required');
   }
   
-  if (!file?.filename || !file?.github_id) {
-    throw new Error('Valid file with filename and github_id is required');
+  if (!file?.github_id) {
+    throw new Error('Valid file with github_id is required');
   }
   
   const repoSlug = generateRepositorySlug(repository.name, repository.github_id);
   const mrSlug = generateMergeRequestSlug(mergeRequest.title, mergeRequest.github_id);
   const contributorSlug = generateContributorSlug(contributor.name, contributor.username, contributor.github_id);
-  const fileSlug = generateFileSlug(file.filename, file.github_id);
   
-  return `/${repoSlug}/merge-requests/${mrSlug}/commits/${contributorSlug}/${fileSlug}`;
+  // New URL structure: /repository-name-githubID/merge-requests/merge_request-title-githubid/commits/commit-gihubId/author/name-username-githubID
+  return `/${repoSlug}/merge-requests/${mrSlug}/commits/${file.github_id}/author/${contributorSlug}`;
 } 

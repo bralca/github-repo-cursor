@@ -3,8 +3,7 @@ import { notFound } from 'next/navigation';
 import { 
   parseRepositorySlug, 
   parseMergeRequestSlug, 
-  parseContributorSlug,
-  parseFileSlug
+  parseContributorSlug
 } from '@/lib/url-utils';
 import { 
   getRepositorySEODataByGithubId 
@@ -16,12 +15,10 @@ import {
   getContributorBaseDataByGithubId
 } from '@/lib/database/contributors';
 import {
-  getCommitSEODataBySha
+  getCommitSEODataBySha,
+  getCommitFiles
 } from '@/lib/database/commits';
 import { generateCommitMetadata } from '@/lib/metadata-utils';
-import Link from 'next/link';
-import Image from 'next/image';
-import { format, formatDistanceToNow } from 'date-fns';
 import CommitContent from '@/components/commit/CommitContent';
 
 // Define types for the page props
@@ -30,7 +27,7 @@ interface CommitPageProps {
     repositorySlug: string;
     mergeRequestSlug: string;
     contributorSlug: string;
-    fileSlug: string;
+    commitId: string;
   }>;
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
@@ -42,9 +39,9 @@ export async function generateMetadata({ params }: CommitPageProps): Promise<Met
   const repositorySlugInfo = parseRepositorySlug(paramsObj.repositorySlug);
   const mergeRequestSlugInfo = parseMergeRequestSlug(paramsObj.mergeRequestSlug);
   const contributorSlugInfo = parseContributorSlug(paramsObj.contributorSlug);
-  const fileSlugInfo = parseFileSlug(paramsObj.fileSlug);
+  const commitId = paramsObj.commitId;
   
-  if (!repositorySlugInfo || !mergeRequestSlugInfo || !contributorSlugInfo || !fileSlugInfo) {
+  if (!repositorySlugInfo || !mergeRequestSlugInfo || !contributorSlugInfo || !commitId) {
     return {
       title: 'Commit Not Found',
       description: 'The requested commit could not be found.',
@@ -59,7 +56,7 @@ export async function generateMetadata({ params }: CommitPageProps): Promise<Met
   );
   const contributor = await getContributorBaseDataByGithubId(contributorSlugInfo.githubId);
   const commit = await getCommitSEODataBySha(
-    fileSlugInfo.githubId, // Using fileSlugInfo.githubId as the SHA for now
+    commitId, // The commitId is the commit SHA
     repositorySlugInfo.githubId
   );
   
@@ -68,7 +65,7 @@ export async function generateMetadata({ params }: CommitPageProps): Promise<Met
     commit ? {
       sha: commit.sha,
       message: commit.message,
-      file_name: fileSlugInfo.filename,
+      file_name: undefined, // We're no longer dealing with a single file
       author_name: contributor?.name || contributor?.username || undefined,
       repository_name: repository?.name,
       committed_at: commit.committed_at,
@@ -86,18 +83,6 @@ export async function generateMetadata({ params }: CommitPageProps): Promise<Met
   );
   
   return metadata;
-}
-
-/**
- * Format date to display '3 days ago' format
- */
-function formatDate(dateString: string | null) {
-  if (!dateString) return 'Unknown';
-  try {
-    return formatDistanceToNow(new Date(dateString), { addSuffix: true });
-  } catch (error) {
-    return 'Unknown';
-  }
 }
 
 /**
@@ -120,10 +105,10 @@ export default async function CommitPage({ params }: CommitPageProps) {
   const contributorSlugInfo = parseContributorSlug(paramsObj.contributorSlug);
   console.log('Commit Page - Contributor slug info:', contributorSlugInfo);
   
-  const fileSlugInfo = parseFileSlug(paramsObj.fileSlug);
-  console.log('Commit Page - File slug info:', fileSlugInfo);
+  const commitId = paramsObj.commitId;
+  console.log('Commit Page - Commit ID:', commitId);
   
-  if (!repositorySlugInfo || !mergeRequestSlugInfo || !contributorSlugInfo || !fileSlugInfo) {
+  if (!repositorySlugInfo || !mergeRequestSlugInfo || !contributorSlugInfo || !commitId) {
     console.log('Commit Page - Some slug info is missing, returning 404');
     notFound();
   }
@@ -147,12 +132,17 @@ export default async function CommitPage({ params }: CommitPageProps) {
     const contributor = await getContributorBaseDataByGithubId(contributorSlugInfo.githubId);
     console.log('Commit Page - Contributor result:', contributor ? 'Found' : 'Not found');
     
-    console.log('Commit Page - Fetching commit with SHA:', fileSlugInfo.githubId);
+    console.log('Commit Page - Fetching commit with SHA:', commitId);
     const commit = await getCommitSEODataBySha(
-      fileSlugInfo.githubId,
+      commitId,
       repositorySlugInfo.githubId
     );
     console.log('Commit Page - Commit result:', commit ? 'Found' : 'Not found');
+    
+    // Get all files for this commit
+    console.log('Commit Page - Fetching files for commit:', commitId);
+    const files = await getCommitFiles(commitId, repositorySlugInfo.githubId);
+    console.log('Commit Page - Found', files?.length || 0, 'files for this commit');
     
     // Handle case where data is not found
     if (!repository || !mergeRequest || !contributor || !commit) {
@@ -163,22 +153,8 @@ export default async function CommitPage({ params }: CommitPageProps) {
     // Continue with the rest of the page rendering
     console.log('Commit Page - All data found, continuing with rendering');
     
-    // Get status display text and color
-    const getStatusInfo = (status: string) => {
-      switch (status.toLowerCase()) {
-        case 'added':
-          return { text: 'Added', bgColor: 'bg-green-100', textColor: 'text-green-800', dotColor: 'bg-green-600' };
-        case 'modified':
-          return { text: 'Modified', bgColor: 'bg-yellow-100', textColor: 'text-yellow-800', dotColor: 'bg-yellow-600' };
-        case 'deleted':
-          return { text: 'Deleted', bgColor: 'bg-red-100', textColor: 'text-red-800', dotColor: 'bg-red-600' };
-        default:
-          return { text: 'Changed', bgColor: 'bg-blue-100', textColor: 'text-blue-800', dotColor: 'bg-blue-600' };
-      }
-    };
-    
-    // We don't have status in the commit data, so use a default
-    const statusInfo = getStatusInfo('modified');
+    // Find the first file to use as default
+    const defaultFilename = files && files.length > 0 ? files[0].filename : "No files available";
     
     // Prepare initial data for the client component
     const initialData = {
@@ -190,7 +166,7 @@ export default async function CommitPage({ params }: CommitPageProps) {
         committed_at: commit.committed_at,
         additions: commit.additions,
         deletions: commit.deletions,
-        changed_files: commit.changed_files || 1,
+        changed_files: commit.changed_files || (files?.length || 1),
         complexity_score: commit.complexity_score
       },
       repository: {
@@ -211,7 +187,7 @@ export default async function CommitPage({ params }: CommitPageProps) {
         github_id: mergeRequest.github_id.toString(),
         title: mergeRequest.title
       },
-      filename: fileSlugInfo.filename
+      filename: defaultFilename // Setting a default filename
     };
     
     return (
@@ -221,7 +197,7 @@ export default async function CommitPage({ params }: CommitPageProps) {
           repositorySlug={paramsObj.repositorySlug}
           mergeRequestSlug={paramsObj.mergeRequestSlug}
           contributorSlug={paramsObj.contributorSlug}
-          fileSlug={paramsObj.fileSlug}
+          commitId={commitId}
         />
       </main>
     );

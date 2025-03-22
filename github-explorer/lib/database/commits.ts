@@ -54,6 +54,18 @@ export interface CommitSEOData extends CommitBaseData {
 }
 
 /**
+ * File change information for a commit
+ */
+export interface CommitFile {
+  id: string;
+  filename: string;
+  status: string;
+  additions: number;
+  deletions: number;
+  patch?: string;
+}
+
+/**
  * Get a commit by its SHA (github_id)
  * @param sha The SHA (github_id) of the commit
  * @param repositoryGithubId The GitHub ID of the repository
@@ -255,5 +267,39 @@ export async function getCommitCount(repositoryGithubId?: string): Promise<numbe
     const result = await db.get<{ count: number }>(query, params);
     
     return result?.count || 0;
+  });
+}
+
+/**
+ * Get all files changed in a specific commit
+ * @param sha The commit SHA
+ * @param repositoryGithubId The GitHub ID of the repository
+ * @returns Array of file changes for the commit
+ */
+export async function getCommitFiles(
+  sha: string,
+  repositoryGithubId: string
+): Promise<CommitFile[]> {
+  return withDb(async (db: SQLiteDatabase) => {
+    try {
+      const files = await db.all<CommitFile[]>(
+        `SELECT 
+          id, 
+          filename, 
+          status, 
+          additions, 
+          deletions, 
+          patch
+        FROM commits
+        WHERE github_id = ? 
+        AND repository_github_id = ?`,
+        [sha, repositoryGithubId]
+      );
+      
+      return files || [];
+    } catch (error) {
+      console.error('Error getting commit files:', error);
+      return [];
+    }
   });
 } 

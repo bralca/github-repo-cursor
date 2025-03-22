@@ -95,7 +95,7 @@ function generateMergeRequestUrl(repoName: string, repoGithubId: number | string
 
 /**
  * Generate commit URL according to pattern: 
- * /repository-name-githubID/merge-requests/merge_request-title-githubid/commits/name-username-githubID/filename-githubID
+ * /repository-name-githubID/merge-requests/merge_request-title-githubid/commits/commit-gihubId/author/name-username-githubID
  */
 function generateCommitUrl(
   repoName: string, 
@@ -109,13 +109,12 @@ function generateCommitUrl(
   commitId: string
 ): string | null {
   // Skip if any required components are missing
-  if (!repoName || !repoGithubId || !contributorUsername || !contributorGithubId || !filename || !mrTitle || !mrGithubId) {
+  if (!repoName || !repoGithubId || !contributorUsername || !contributorGithubId || !mrTitle || !mrGithubId) {
     const missingFields = [];
     if (!repoName) missingFields.push('repoName');
     if (!repoGithubId) missingFields.push('repoGithubId');
     if (!contributorUsername) missingFields.push('contributorUsername');
     if (!contributorGithubId) missingFields.push('contributorGithubId');
-    if (!filename) missingFields.push('filename');
     if (!mrTitle) missingFields.push('mrTitle');
     if (!mrGithubId) missingFields.push('mrGithubId');
     
@@ -129,9 +128,8 @@ function generateCommitUrl(
   const contributorNamePart = contributorName ? `${generateSlug(contributorName)}-` : '';
   const contributorSegment = `${contributorNamePart}${generateSlug(contributorUsername)}-${contributorGithubId}`;
   
-  const fileSegment = `${generateSlug(filename)}-${commitId}`;
-  
-  return `${repoUrl}/${mrSegment}/commits/${contributorSegment}/${fileSegment}`;
+  // New URL structure: /[repoSlug]/merge-requests/[mrSlug]/commits/[commitId]/author/[contributorSlug]
+  return `${repoUrl}/${mrSegment}/commits/${commitId}/author/${contributorSegment}`;
 }
 
 /**
@@ -389,7 +387,6 @@ async function generateCommitsSitemap(): Promise<SitemapResult> {
       repoGithubId: 0,
       contributorUsername: 0,
       contributorGithubId: 0,
-      filename: 0,
       mrTitle: 0,
       mrGithubId: 0
     };
@@ -400,7 +397,6 @@ async function generateCommitsSitemap(): Promise<SitemapResult> {
       if (!commit.repository_github_id) missingFieldStats.repoGithubId++;
       if (!commit.contributor_username) missingFieldStats.contributorUsername++;
       if (!commit.contributor_github_id) missingFieldStats.contributorGithubId++;
-      if (!commit.filename) missingFieldStats.filename++;
       if (!commit.merge_request_title) missingFieldStats.mrTitle++;
       if (!commit.merge_request_github_id) missingFieldStats.mrGithubId++;
       
