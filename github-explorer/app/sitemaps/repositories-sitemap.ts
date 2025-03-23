@@ -39,7 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const repositories = await getRepositoriesForSitemap(page);
   
   // Base URL for the application
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://github-explorer.example.com';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://github-explorer.example.com';
   
   // Generate sitemap entries for each repository
   return repositories.map((repo) => {

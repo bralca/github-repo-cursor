@@ -52,7 +52,7 @@ interface SitemapResult {
 }
 
 // Get the base URL from environment variables or use a default
-const getBaseUrl = () => process.env.NEXT_PUBLIC_BASE_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://github-explorer.example.com');
+const getBaseUrl = () => process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://github-explorer.example.com');
 
 /**
  * Helper function to generate URL-friendly slugs

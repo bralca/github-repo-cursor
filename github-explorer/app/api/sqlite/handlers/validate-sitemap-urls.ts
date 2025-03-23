@@ -87,7 +87,7 @@ export async function validateSitemapUrls(request: NextRequest) {
   console.log('SERVER-SIDE: Starting sitemap URL validation');
   
   try {
-    const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://github-explorer.example.com');
+    const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://github-explorer.example.com');
     const sitemapIndexPath = path.join(process.cwd(), 'public', 'sitemap.xml');
     
     console.log('SERVER-SIDE: Reading sitemap index from:', sitemapIndexPath);
