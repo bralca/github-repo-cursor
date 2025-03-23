@@ -1,17 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { withDb } from '@/lib/database/connection';
 
-type RouteParams = {
-  repositoryId: string;
-  commitId: string;
-};
-
 export async function GET(
-  request: NextRequest,
-  context: { params: RouteParams }
+  request: Request,
+  { params }: { params: Promise<{ repositoryId: string; commitId: string }> }
 ) {
   try {
-    const { repositoryId, commitId } = context.params;
+    const resolvedParams = await params;
+    const { repositoryId, commitId } = resolvedParams;
 
     // Validate params
     if (!repositoryId || !commitId) {

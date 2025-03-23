@@ -3,10 +3,11 @@ import { withDb } from '@/lib/database/connection';
 
 export async function GET(
   request: Request,
-  { params }: { params: { repositoryId: string; commitId: string } }
+  { params }: { params: Promise<{ repositoryId: string; commitId: string }> }
 ) {
   try {
-    const { repositoryId, commitId } = params;
+    const resolvedParams = await params;
+    const { repositoryId, commitId } = resolvedParams;
 
     // Validate params
     if (!repositoryId || !commitId) {
