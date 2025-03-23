@@ -4560,4 +4560,40 @@
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+  <url>
+    <loc>http://localhost:3000/tuw-479980272/merge-requests/code-optimizations-for-binary-size-101</loc>
+    <lastmod>2025-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/plot-fe-917886573/merge-requests/110-add-onselectfunction-method-to-optioninput-com-116</loc>
+    <lastmod>2025-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/winget-pkgs-197275551/merge-requests/moved-mozillathunderbirdesrgl-version-12860-238736</loc>
+    <lastmod>2025-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/backend-945619687/merge-requests/adio-crud-de-relatrio-3</loc>
+    <lastmod>2025-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/homelab-561037666/merge-requests/choredeps-update-portainerportainer-ce-docker-tag--210</loc>
+    <lastmod>2025-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/itunesjson-880999325/merge-requests/update-to-httpsgithubcombolsingaitunes_jsonrelease-37</loc>
+    <lastmod>2025-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
 </urlset>

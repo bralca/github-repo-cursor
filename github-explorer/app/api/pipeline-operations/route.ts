@@ -47,6 +47,8 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
     
+    // Log environment details for debugging
+    console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
     console.log(`Connecting to pipeline server at: ${serverUrl}/api/pipeline/${actualOperation}`);
     
     // Log the started operation to pipeline_history
@@ -110,37 +112,25 @@ export async function POST(request: NextRequest) {
       const serverData = await serverResponse.json();
       return NextResponse.json({ success: true, data: serverData });
     } catch (error: any) {
-      console.error('Error calling pipeline server:', error);
+      console.error('Error connecting to pipeline server:', error);
       
-      // Update history entry to show failure
-      await supabase
-        .from('pipeline_history')
-        .update({
-          status: 'failed',
-          completed_at: new Date().toISOString(),
-          error_message: `Failed to connect to pipeline server: ${error.message || 'Unknown error'}`
-        })
-        .eq('id', historyEntry.id);
-      
-      // Check if it's a connection error and provide helpful message
-      const isConnectionError = error.code === 'UND_ERR_SOCKET' || 
-                               error.code === 'ECONNREFUSED' ||
-                               error.message?.includes('fetch failed');
-      
-      if (isConnectionError) {
+      // Check if it's a connection error
+      if (error.code === 'ECONNREFUSED') {
         return NextResponse.json({ 
-          error: 'Cannot connect to pipeline server',
-          details: `Make sure the pipeline server is running at ${serverUrl} and accessible`
-        }, { status: 503 });
+          error: 'Connection refused when trying to reach pipeline server',
+          details: `Could not connect to ${serverUrl}. Make sure the server is running and accessible.`,
+          serverUrl: serverUrl
+        }, { status: 500 });
       }
       
       return NextResponse.json({ 
-        error: `Error calling pipeline server: ${error.message}`,
-        details: 'Check server logs for more information'
+        error: `Error connecting to pipeline server: ${error.message}`,
+        details: 'This might be due to misconfigured server URL or network issues',
+        serverUrl: serverUrl
       }, { status: 500 });
     }
   } catch (error: any) {
-    console.error('Unexpected error in pipeline operations API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error in pipeline operations API:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 } 

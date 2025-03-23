@@ -7,6 +7,7 @@ const PORT = process.env.PORT || 3002;
 
 // Log the port we're trying to use
 console.log(`Attempting to start server on port ${PORT}`);
+logger.info(`Using database path: ${process.env.DB_PATH}`);
 
 // Start the server
 try {

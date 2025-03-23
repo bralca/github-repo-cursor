@@ -76,7 +76,9 @@ export function useSQLiteEntityCounts() {
     queryKey: ['sqlite-entity-counts'],
     queryFn: async () => {
       try {
+        console.log('Fetching entity counts from API...');
         const rawCounts = await sqliteClient.entities.getCounts() as RawEntityCounts;
+        console.log('API returned entity counts:', rawCounts);
         
         // Normalize the response to ensure consistent field names
         const normalizedCounts: EntityCounts = {
@@ -96,13 +98,19 @@ export function useSQLiteEntityCounts() {
           total_raw_merge_requests: rawCounts.total_raw_merge_requests || 0,
         };
         
+        console.log('Normalized entity counts:', normalizedCounts);
         return normalizedCounts;
       } catch (error: any) {
         console.error('Error fetching entity counts:', error);
         throw new Error(error.message || 'Failed to fetch entity counts');
       }
     },
-    refetchInterval: anyPipelineRunning ? 15000 : 60000, // Refetch more frequently when pipelines are running
+    // Refresh data more frequently, especially when pipelines are running
+    refetchInterval: anyPipelineRunning ? 5000 : 30000, 
+    // Short stale time to ensure fresh data
+    staleTime: anyPipelineRunning ? 3000 : 15000,
+    // Always refetch on window focus
+    refetchOnWindowFocus: true,
   });
 
   return {

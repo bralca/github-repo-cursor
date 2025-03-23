@@ -229,21 +229,28 @@ export function PipelineControlCard({
   const getItemCount = () => {
     if (!counts) return 0;
     
+    console.log(`Getting count for pipeline type: ${pipelineType}`, counts);
+    
     switch (pipelineType) {
       case 'github_sync':
         // Show total count of all raw merge requests
+        console.log('Total raw merge requests:', counts.total_raw_merge_requests);
         return counts.total_raw_merge_requests || 0;
       case 'data_processing':
         // Show count of unprocessed raw merge requests
+        console.log('Unprocessed merge requests:', counts.unprocessed_merge_requests);
         return counts.unprocessed_merge_requests || 0;
       case 'data_enrichment':
         // Count of entities waiting to be enriched
         const unenrichedRepos = (counts.repositories || 0) - (counts.enriched_repositories || 0);
         const unenrichedContributors = (counts.contributors || 0) - (counts.enriched_contributors || 0);
         const unenrichedMRs = (counts.mergeRequests || 0) - (counts.enriched_mergeRequests || 0);
-        return unenrichedRepos + unenrichedContributors + unenrichedMRs;
+        const total = unenrichedRepos + unenrichedContributors + unenrichedMRs;
+        console.log('Unenriched entities total:', total);
+        return total;
       case 'ai_analysis':
         // All enriched items waiting for AI analysis
+        console.log('Enriched repositories:', counts.enriched_repositories);
         return counts.enriched_repositories || 0;
       default:
         return 0;

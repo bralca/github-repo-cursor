@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
+    "dev": "nodemon --watch src --ignore data/ --ignore *.db --ext js,json,ts src/server.js",
     "test": "node src/scripts/test-pipeline.js",
     "test:repo": "node src/scripts/test-repository-processor.js",
     "test:contrib-repo": "node src/scripts/test-contributor-repository-processor.js",

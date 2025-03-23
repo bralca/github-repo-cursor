@@ -35,23 +35,28 @@ app.use(compression()); // Compress responses
 app.use(cors()); // Enable CORS
 app.use(express.json({ limit: '5mb' })); // Parse JSON bodies with size limit
 
-// Initialize server components
+/**
+ * Initialize all server components
+ */
 function initializeServer() {
-  logger.info('Initializing server components');
-  
-  // Initialize Supabase client
   try {
-    supabaseClientFactory.createClient();
-    logger.info('Supabase client initialized successfully');
+    // Initialize Supabase client
+    try {
+      supabaseClientFactory.createClient();
+      logger.info('Supabase client initialized');
+    } catch (supabaseError) {
+      logger.warn('Failed to initialize Supabase client:', { error: supabaseError });
+      logger.info('Continuing without Supabase integration');
+    }
+    
+    // Initialize pipelines
+    initializePipelines();
+    
+    logger.info('Server initialization completed successfully');
   } catch (error) {
-    logger.error('Failed to initialize Supabase client', { error });
+    logger.error('Server initialization failed', { error });
     throw error;
   }
-  
-  // Initialize pipelines
-  initializePipelines();
-  
-  logger.info('Server components initialized successfully');
 }
 
 /**
