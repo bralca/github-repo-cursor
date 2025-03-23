@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { withDb } from '@/lib/database/connection';
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { repositoryId: string; commitId: string } }
 ) {
   try {
