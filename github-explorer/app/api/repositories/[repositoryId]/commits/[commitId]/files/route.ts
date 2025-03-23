@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withDb } from '@/lib/database/connection';
 
+type RouteParams = {
+  repositoryId: string;
+  commitId: string;
+};
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { repositoryId: string; commitId: string } }
+  context: { params: RouteParams }
 ) {
   try {
-    const { repositoryId, commitId } = params;
+    const { repositoryId, commitId } = context.params;
 
     // Validate params
     if (!repositoryId || !commitId) {
