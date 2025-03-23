@@ -12,7 +12,7 @@
     "format": "prettier --write \"**/*.{js,ts,tsx,md,json}\"",
     "type-check": "tsc --noEmit",
     "check": "npm run lint && npm run type-check",
-    "prepare": "is-ci || husky",
+    "prepare": "echo Skip husky setup in production",
     "clean": "rimraf .next",
     "test-url-utils": "tsx scripts/test-url-utils.ts"
   },
@@ -80,7 +80,6 @@
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^5.2.0",
     "husky": "^9.1.7",
-    "is-ci": "^3.0.1",
     "lint-staged": "^15.4.3",
     "node-fetch": "^3.3.2",
     "prettier": "^3.5.3",
