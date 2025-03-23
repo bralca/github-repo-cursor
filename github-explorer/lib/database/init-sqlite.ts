@@ -184,6 +184,36 @@ export async function initSQLiteDatabase() {
       )
     `);
     
+    // Contributor Rankings Table
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS contributor_rankings (
+        id TEXT PRIMARY KEY,
+        contributor_id TEXT NOT NULL,
+        contributor_github_id INTEGER NOT NULL,
+        rank_position INTEGER NOT NULL,
+        total_score REAL NOT NULL,
+        code_volume_score REAL NOT NULL,
+        code_efficiency_score REAL NOT NULL,
+        commit_impact_score REAL NOT NULL,
+        collaboration_score REAL NOT NULL,
+        repo_popularity_score REAL NOT NULL,
+        repo_influence_score REAL NOT NULL,
+        followers_score REAL NOT NULL,
+        profile_completeness_score REAL NOT NULL,
+        followers_count INTEGER,
+        raw_lines_added INTEGER,
+        raw_lines_removed INTEGER,
+        raw_commits_count INTEGER,
+        repositories_contributed INTEGER,
+        calculation_timestamp TIMESTAMP NOT NULL
+      )
+    `);
+    
+    // Create indices for efficient querying of contributor rankings
+    await db.exec(`CREATE INDEX IF NOT EXISTS idx_contributor_rankings_contributor_id ON contributor_rankings(contributor_id)`);
+    await db.exec(`CREATE INDEX IF NOT EXISTS idx_contributor_rankings_timestamp ON contributor_rankings(calculation_timestamp)`);
+    await db.exec(`CREATE INDEX IF NOT EXISTS idx_contributor_rankings_rank ON contributor_rankings(rank_position)`);
+    
     // Insert sample data for testing purposes if tables are empty
     const reposCount = await db.get('SELECT COUNT(*) as count FROM repositories');
     if (reposCount.count === 0) {

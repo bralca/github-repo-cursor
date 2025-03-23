@@ -15,6 +15,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Log server startup time
+const SERVER_START_TIME = new Date();
+console.log(`[SERVER] Initializing Next.js application at ${SERVER_START_TIME.toISOString()}`);
+console.log(`[SERVER] Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`[SERVER] Node version: ${process.version}`);
+console.log(`[SERVER] Working directory: ${process.cwd()}`);
+console.log(`[SERVER] Database path: ${process.env.SQLITE_DB_PATH || process.env.DB_PATH || 'Using default path'}`);
+
 export const metadata: Metadata = {
   title: "GitHub Explorer",
   description: "Explore GitHub repositories, contributors, merge requests, and commits",
