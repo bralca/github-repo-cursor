@@ -1,10 +1,39 @@
 'use client';
 
 import { useState } from 'react';
-import { useRepositoryData } from './useRepositoryData';
-import { useContributorData } from './useContributorData';
-import { useMergeRequestData } from './useMergeRequestData';
-import { useCommitData } from './useCommitData';
+// We're keeping these imports but will handle them differently
+// as we've removed the underlying implementation
+
+/**
+ * Stub hooks that return empty data after removing the pages
+ */
+const useRepositoryData = () => ({ 
+  data: null, 
+  isLoading: false, 
+  error: null, 
+  refetch: () => ({}) 
+});
+
+const useContributorData = () => ({ 
+  data: null, 
+  isLoading: false, 
+  error: null, 
+  refetch: () => ({}) 
+});
+
+const useMergeRequestData = () => ({ 
+  data: null, 
+  isLoading: false, 
+  error: null, 
+  refetch: () => ({}) 
+});
+
+const useCommitData = () => ({ 
+  data: null, 
+  isLoading: false, 
+  error: null, 
+  refetch: () => ({}) 
+});
 
 interface UseEntityDataOptions {
   initialData?: any;
@@ -33,120 +62,17 @@ export function useEntityData(
   },
   options: UseEntityDataOptions = {}
 ) {
-  const [notInitialized, setNotInitialized] = useState<boolean>(true);
+  const [usingInitialData] = useState(!!options.initialData);
+
+  // Return empty data with warning in console
+  console.warn(`Entity type ${entityType} is no longer supported in navigation`);
   
-  // Repository data hook
-  const {
-    data: repositoryData,
-    isLoading: repositoryLoading,
-    error: repositoryError,
-    retry: repositoryRetry,
-    isRetrying: repositoryRetrying
-  } = useRepositoryData(
-    slugs.repositorySlug || '',
-    {
-      ...options,
-      skipFetch: !slugs.repositorySlug || entityType !== 'repository' || options.skipFetch
-    }
-  );
-  
-  // Contributor data hook
-  const {
-    data: contributorData,
-    isLoading: contributorLoading,
-    error: contributorError,
-    retry: contributorRetry,
-    isRetrying: contributorRetrying
-  } = useContributorData(
-    slugs.contributorSlug || '',
-    {
-      ...options,
-      skipFetch: !slugs.contributorSlug || entityType !== 'contributor' || options.skipFetch
-    }
-  );
-  
-  // Merge request data hook
-  const {
-    data: mergeRequestData,
-    isLoading: mergeRequestLoading,
-    error: mergeRequestError,
-    retry: mergeRequestRetry,
-    isRetrying: mergeRequestRetrying
-  } = useMergeRequestData(
-    slugs.repositorySlug || '',
-    slugs.mergeRequestSlug || '',
-    {
-      ...options,
-      skipFetch: !slugs.repositorySlug || !slugs.mergeRequestSlug || entityType !== 'mergeRequest' || options.skipFetch
-    }
-  );
-  
-  // Commit data hook
-  const {
-    data: commitData,
-    isLoading: commitLoading,
-    error: commitError,
-    retry: commitRetry,
-    isRetrying: commitRetrying
-  } = useCommitData(
-    slugs.repositorySlug || '',
-    slugs.commitSha || '',
-    slugs.fileSlug,
-    {
-      ...options,
-      skipFetch: !slugs.repositorySlug || !slugs.commitSha || entityType !== 'commit' || options.skipFetch
-    }
-  );
-  
-  // Get the appropriate data, loading, error, and retry function based on entity type
-  let data, isLoading, error, retry, isRetrying;
-  
-  switch (entityType) {
-    case 'repository':
-      data = repositoryData;
-      isLoading = repositoryLoading;
-      error = repositoryError;
-      retry = repositoryRetry;
-      isRetrying = repositoryRetrying;
-      break;
-      
-    case 'contributor':
-      data = contributorData;
-      isLoading = contributorLoading;
-      error = contributorError;
-      retry = contributorRetry;
-      isRetrying = contributorRetrying;
-      break;
-      
-    case 'mergeRequest':
-      data = mergeRequestData;
-      isLoading = mergeRequestLoading;
-      error = mergeRequestError;
-      retry = mergeRequestRetry;
-      isRetrying = mergeRequestRetrying;
-      break;
-      
-    case 'commit':
-      data = commitData;
-      isLoading = commitLoading;
-      error = commitError;
-      retry = commitRetry;
-      isRetrying = commitRetrying;
-      break;
-      
-    default:
-      data = null;
-      isLoading = false;
-      error = new Error(`Unknown entity type: ${entityType}`);
-      retry = () => {};
-      isRetrying = false;
-  }
-  
+  // Return standardized result shape with null data
   return {
-    data,
-    isLoading,
-    error,
-    retry,
-    isRetrying
+    data: null,
+    isLoading: false,
+    error: null,
+    refetch: () => {},
+    usingInitialData
   };
 } 

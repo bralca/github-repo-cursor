@@ -1,8 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { getContributorBySlug } from '@/lib/database/contributors';
-import { parseContributorSlug } from '@/lib/url-utils';
+import { useEntityData } from '@/hooks/entity/mockEntityHooks';
 
 interface UseContributorDataOptions {
   initialData?: any;
@@ -10,64 +8,27 @@ interface UseContributorDataOptions {
 }
 
 /**
- * Hook for loading contributor data on the client
+ * Stub hook for loading contributor data on the client
+ * This now redirects to the mock implementation since we've removed the actual data sources.
  * 
  * @param contributorSlug The contributor slug from the URL
  * @param options Options for the data fetching
  * @returns Contributor data and loading/error states
  */
 export function useContributorData(contributorSlug: string, options: UseContributorDataOptions = {}) {
-  const [data, setData] = useState<any>(options.initialData || null);
-  const [isLoading, setIsLoading] = useState<boolean>(!options.initialData && !options.skipFetch);
-  const [error, setError] = useState<Error | null>(null);
-  const [isRetrying, setIsRetrying] = useState<boolean>(false);
-
-  // Function to fetch the data
-  const fetchData = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Parse the slug to get the GitHub ID
-      const parsed = parseContributorSlug(contributorSlug);
-      if (!parsed) {
-        throw new Error('Invalid contributor slug');
-      }
-
-      // Fetch the contributor data
-      const contributorData = await getContributorBySlug(contributorSlug);
-      if (!contributorData) {
-        throw new Error('Contributor not found');
-      }
-
-      setData(contributorData);
-    } catch (err) {
-      console.error('Error fetching contributor data:', err);
-      setError(err instanceof Error ? err : new Error('Failed to load contributor data'));
-    } finally {
-      setIsLoading(false);
-      setIsRetrying(false);
-    }
-  };
-
-  // Retry function exposed to the component
-  const retry = () => {
-    setIsRetrying(true);
-    fetchData();
-  };
-
-  // Fetch data on mount or when slug changes
-  useEffect(() => {
-    if (!options.skipFetch) {
-      fetchData();
-    }
-  }, [contributorSlug, options.skipFetch]);
-
+  console.warn('Using stub implementation of useContributorData');
+  
+  const result = useEntityData(
+    'contributor',
+    { contributorSlug },
+    options
+  );
+  
   return {
-    data,
-    isLoading,
-    error,
-    retry,
-    isRetrying
+    data: result.data,
+    isLoading: result.isLoading,
+    error: result.error,
+    retry: result.retry || (() => {}),
+    isRetrying: result.isRetrying || false
   };
 } 

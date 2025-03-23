@@ -16,6 +16,8 @@ interface EntityWrapperProps {
  * A wrapper component that handles loading and error states for any entity type
  * It uses the useEntityData hook to fetch the entity data and renders the appropriate
  * loading or error state components while data is loading or if an error occurs.
+ * 
+ * Note: This component now uses mock data as the actual entity pages have been removed.
  */
 export function EntityWrapper({
   entityType,
@@ -31,6 +33,7 @@ export function EntityWrapper({
     [repositorySlug, mergeRequestSlug] = slug.split('/');
   }
   
+  // Always use the mock hooks to prevent errors
   const { data, isLoading, error, retry, isRetrying } = useEntityData(
     entityType,
     {
@@ -39,25 +42,26 @@ export function EntityWrapper({
       mergeRequestSlug: entityType === 'mergeRequest' ? mergeRequestSlug : undefined,
       commitSha: entityType === 'commit' ? slug : undefined
     },
-    {
-      initialData,
-      skipFetch
-    }
+    { initialData, skipFetch }
   );
 
   if (isLoading) {
     return <EntityLoadingSkeleton entityType={entityType} />;
   }
 
-  if (error || !data) {
+  if (error) {
     return (
-      <EntityErrorState 
+      <EntityErrorState
         entityType={entityType}
         error={error}
         retry={retry}
         isRetrying={isRetrying}
       />
     );
+  }
+
+  if (!data) {
+    return <EntityErrorState entityType={entityType} error={new Error('Entity not found')} />;
   }
 
   return <>{children(data)}</>;

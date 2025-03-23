@@ -16,10 +16,6 @@ export function NavigationMenu({ mobile = false }: NavigationMenuProps) {
   const pathname = usePathname();
   
   const navigationItems = [
-    { name: 'Repositories', href: '/repositories' },
-    { name: 'Contributors', href: '/contributors' },
-    { name: 'Merge Requests', href: '/merge-requests' },
-    { name: 'Commits', href: '/commits' },
     { name: 'Admin', href: '/admin' },
   ];
 

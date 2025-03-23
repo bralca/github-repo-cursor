@@ -49,29 +49,11 @@ export function Header({ className }: HeaderProps) {
           </Link>
         </div>
 
-        <div className="flex-1 hidden md:flex relative max-w-xs mx-4">
-          <input
-            type="search"
-            placeholder="Search by repository ID..."
-            className="block w-full py-1.5 pl-3 pr-3 text-sm bg-muted/50 rounded-md border-0 ring-1 ring-inset ring-border focus:ring-2 focus:ring-primary"
-          />
-        </div>
+        <div className="flex-1"></div>
 
         {!hideNavigation && (
           <div className="flex flex-1 justify-between md:justify-end">
             <div className="hidden md:flex md:items-center">
-              <Link href="/repositories" className="px-3 py-2 text-sm font-medium text-foreground/80 hover:text-foreground">
-                Repositories
-              </Link>
-              <Link href="/contributors" className="px-3 py-2 text-sm font-medium text-foreground/80 hover:text-foreground">
-                Contributors
-              </Link>
-              <Link href="/merge-requests" className="px-3 py-2 text-sm font-medium text-foreground/80 hover:text-foreground whitespace-nowrap">
-                Merge Requests
-              </Link>
-              <Link href="/commits" className="px-3 py-2 text-sm font-medium text-foreground/80 hover:text-foreground">
-                Commits
-              </Link>
               <Link href="/admin" className="px-3 py-2 text-sm font-medium text-foreground/80 hover:text-foreground">
                 Admin
               </Link>
