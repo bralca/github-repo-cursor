@@ -8,12 +8,10 @@ import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { useAdminEvents } from './AdminEventContext';
 
-interface EntityStatsOverviewProps {
-  useSQLite?: boolean; // Flag to use SQLite instead of Supabase (kept for backward compatibility)
-}
+interface EntityStatsOverviewProps {}
 
-export function EntityStatsOverview({ useSQLite = true }: EntityStatsOverviewProps) {
-  // Use the new API hook for entity counts
+export function EntityStatsOverview({}: EntityStatsOverviewProps) {
+  // The hook is already using the new API
   const { counts, isLoading, error, refetch } = useEntityCounts();
   
   // Use the admin events context for real-time updates

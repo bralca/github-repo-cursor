@@ -15,9 +15,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // };
 
 export default function AdminDashboardPage() {
-  // Set to true to use SQLite, false to use Supabase
-  const useSQLite = true;
-
   return (
     <div className="container py-8">
       <div className="flex flex-col gap-8">
@@ -33,25 +30,21 @@ export default function AdminDashboardPage() {
             pipelineType="github_sync" 
             title="Closed Merge Requests" 
             description="Pull new raw data from recent merge requests"
-            useSQLite={useSQLite}
           />
           <PipelineControlCard 
             pipelineType="data_processing" 
             title="Pending Entity Extraction" 
             description="Process raw GitHub data into entities"
-            useSQLite={useSQLite}
           />
           <PipelineControlCard 
             pipelineType="data_enrichment" 
             title="Pending Entity Enrichment" 
             description="Enrich extracted entities with details"
-            useSQLite={useSQLite}
           />
           <PipelineControlCard 
             pipelineType="ai_analysis" 
             title="Pending AI Analysis" 
             description="Analyze data with AI for insights"
-            useSQLite={useSQLite}
           />
         </div>
         
@@ -63,15 +56,15 @@ export default function AdminDashboardPage() {
           </TabsList>
           
           <TabsContent value="entity-stats" className="mt-6">
-            <EntityStatsOverview useSQLite={useSQLite} />
+            <EntityStatsOverview />
           </TabsContent>
           
           <TabsContent value="process-control" className="mt-6">
-            <CronJobManager useSQLite={useSQLite} />
+            <CronJobManager />
           </TabsContent>
           
           <TabsContent value="history" className="mt-6">
-            <PipelineHistory useSQLite={useSQLite} />
+            <PipelineHistory />
           </TabsContent>
         </Tabs>
         

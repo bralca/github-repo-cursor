@@ -5,10 +5,8 @@ import { StatsCard } from '@/components/ui/stats-card';
 import { formatDistanceToNow } from 'date-fns';
 import { usePipelineStatus } from '@/hooks/admin/use-pipeline-status';
 import { usePipelineOperations } from '@/hooks/admin/use-pipeline-operations';
-import { useSQLitePipelineStatus } from '@/hooks/admin/use-sqlite-pipeline-status';
-import { useSQLitePipelineOperations } from '@/hooks/admin/use-sqlite-pipeline-operations';
 import { useAdminEvents } from './AdminEventContext';
-import { useSQLiteEntityCounts } from '@/hooks/admin/use-sqlite-entity-counts';
+import { useEntityCounts } from '@/hooks/admin/use-entity-counts';
 import { 
   GitBranch, 
   Database, 
@@ -21,6 +19,7 @@ import {
   Activity
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
 
 type PipelineType = 'github_sync' | 'data_processing' | 'data_enrichment' | 'ai_analysis';
 
@@ -28,56 +27,46 @@ export interface PipelineControlCardProps {
   pipelineType: PipelineType;
   title: string;
   description: string;
-  useSQLite?: boolean; // Flag to use SQLite instead of Supabase
 }
 
 export function PipelineControlCard({ 
   pipelineType,
   title,
   description,
-  useSQLite = true // Default to SQLite
 }: PipelineControlCardProps) {
-  // Use either SQLite or Supabase hooks based on the flag
+  // Use only the new API hooks
   const { 
-    status: supabaseStatus, 
-    isLoading: isSupabaseLoading, 
-    error: supabaseError, 
-    refetch: refetchSupabase 
+    status, 
+    isLoading, 
+    error, 
+    refetch 
   } = usePipelineStatus(pipelineType);
   
+  // We don't need these from the hook anymore as we're going back to direct API calls
   const { 
-    status: sqliteStatus, 
-    isLoading: isSqliteLoading, 
-    error: sqliteError, 
-    refetch: refetchSqlite 
-  } = useSQLitePipelineStatus(pipelineType);
-  
-  const { 
-    startPipeline: startSupabasePipeline, 
-    stopPipeline: stopSupabasePipeline, 
-    isStarting: isSupabaseStarting, 
-    isStopping: isSupabaseStopping 
+    startPipeline, 
+    stopPipeline, 
+    isStarting: hookIsStarting, 
+    isStopping: hookIsStopping 
   } = usePipelineOperations();
   
-  const { 
-    startPipeline: startSqlitePipeline, 
-    stopPipeline: stopSqlitePipeline, 
-    isStarting: isSqliteStarting, 
-    isStopping: isSqliteStopping 
-  } = useSQLitePipelineOperations();
+  // Create local state for tracking loading states
+  const [localIsStarting, setLocalIsStarting] = useState<Record<PipelineType, boolean>>({
+    github_sync: false,
+    data_processing: false,
+    data_enrichment: false,
+    ai_analysis: false
+  });
+  
+  const [localIsStopping, setLocalIsStopping] = useState<Record<PipelineType, boolean>>({
+    github_sync: false,
+    data_processing: false,
+    data_enrichment: false,
+    ai_analysis: false
+  });
   
   // Get entity counts for displaying numbers
-  const { counts } = useSQLiteEntityCounts();
-  
-  // Determine which status and operations to use
-  const status = useSQLite ? sqliteStatus : supabaseStatus;
-  const isLoading = useSQLite ? isSqliteLoading : isSupabaseLoading;
-  const error = useSQLite ? sqliteError : supabaseError;
-  const refetch = useSQLite ? refetchSqlite : refetchSupabase;
-  const startPipeline = useSQLite ? startSqlitePipeline : startSupabasePipeline;
-  const stopPipeline = useSQLite ? stopSqlitePipeline : stopSupabasePipeline;
-  const isStarting = useSQLite ? isSqliteStarting : isSupabaseStarting;
-  const isStopping = useSQLite ? isSqliteStopping : isSupabaseStopping;
+  const { counts } = useEntityCounts();
   
   // Use ref to track polling interval
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -302,27 +291,99 @@ export function PipelineControlCard({
   // Handle start button click
   const handleStart = async () => {
     try {
-      // Start the pipeline
-      await startPipeline(pipelineType);
+      // Set loading state for this pipeline type
+      setLocalIsStarting(prev => ({...prev, [pipelineType]: true}));
+      
+      // Call the API directly (using the original pattern before the refactoring)
+      const response = await fetch('/api/sqlite/pipeline-operations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          operation: 'start',
+          pipelineType,
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || `Failed to start ${pipelineType} pipeline`);
+      }
+      
+      // Show success toast
+      toast({
+        title: "Pipeline Started",
+        description: `Started ${pipelineType} pipeline successfully`,
+        variant: "default"
+      });
       
       // Immediately refetch status to potentially clear "running" state
       // if the execution completed directly
       refetch();
     } catch (error) {
       console.error("Error starting pipeline:", error);
+      // Show error toast
+      toast({
+        title: "Pipeline Start Failed",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive"
+      });
+    } finally {
+      // Reset loading state
+      setLocalIsStarting(prev => ({...prev, [pipelineType]: false}));
     }
   };
   
   // Handle stop button click
   const handleStop = async () => {
-    await stopPipeline(pipelineType);
-    refetch();
+    try {
+      // Set loading state for this pipeline type
+      setLocalIsStopping(prev => ({...prev, [pipelineType]: true}));
+      
+      // Call the API directly (using the original pattern before the refactoring)
+      const response = await fetch('/api/sqlite/pipeline-operations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          operation: 'stop',
+          pipelineType,
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || `Failed to stop ${pipelineType} pipeline`);
+      }
+      
+      // Show success toast
+      toast({
+        title: "Pipeline Stopped",
+        description: `Stopped ${pipelineType} pipeline successfully`,
+        variant: "default"
+      });
+      
+      refetch();
+    } catch (error) {
+      console.error("Error stopping pipeline:", error);
+      // Show error toast
+      toast({
+        title: "Pipeline Stop Failed",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive"
+      });
+    } finally {
+      // Reset loading state
+      setLocalIsStopping(prev => ({...prev, [pipelineType]: false}));
+    }
   };
   
   // Render action buttons
   const renderActionButtons = () => {
     const isRunning = status?.isRunning;
-    const loading = isStarting[pipelineType] || isStopping[pipelineType];
+    const loading = localIsStarting[pipelineType] || localIsStopping[pipelineType];
     
     return (
       <>
@@ -332,7 +393,7 @@ export function PipelineControlCard({
           onClick={handleStart}
           disabled={loading || isRunning}
         >
-          {isStarting[pipelineType] ? (
+          {localIsStarting[pipelineType] ? (
             <Loader2 className="h-4 w-4 mr-1 animate-spin" />
           ) : (
             <PlayCircle className="h-4 w-4 mr-1" />
@@ -347,7 +408,7 @@ export function PipelineControlCard({
             onClick={handleStop}
             disabled={loading}
           >
-            {isStopping[pipelineType] ? (
+            {localIsStopping[pipelineType] ? (
               <Loader2 className="h-4 w-4 mr-1 animate-spin" />
             ) : (
               <StopCircle className="h-4 w-4 mr-1" />

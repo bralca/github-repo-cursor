@@ -12,7 +12,7 @@ The SQLite database is configured in the `.env` file:
 DB_PATH=/path/to/your/github_explorer.db
 ```
 
-If not specified, the database will be located at the workspace root as `github_explorer.db`. A standardized utility module (`github-explorer/server/src/utils/db-path.js`) is used throughout the application to ensure consistent database path resolution.
+If not specified, the database will be located at the server/db directory as `github_explorer.db`. A standardized utility module (`github-explorer/server/src/utils/db-path.js`) is used throughout the application to ensure consistent database path resolution.
 
 ## Core Schema Principles
 
@@ -307,69 +307,104 @@ Schema for storing calculated developer rankings and metrics:
 ### Pipeline Status and Control
 
 1. **Pipeline Status Check**
-   - Get current pipeline status using the pipeline server API
-   - Count relevant items based on pipeline type (e.g., unprocessed repositories)
+   - Frontend calls the API endpoint `/api/pipeline-status?pipeline_type=<type>`
+   - Backend controller queries the database and returns current pipeline status
+   - Frontend uses React Query to manage data fetching and caching
 
 2. **Pipeline Control Operations**
-   - Start pipeline: POST request to pipeline server API
-   - Stop pipeline: POST request to pipeline server API with stop command
+   - Start pipeline: Frontend sends POST request to `/api/pipeline-operations` with operation="start"
+   - Stop pipeline: Frontend sends POST request to `/api/pipeline-operations` with operation="stop"
+   - Backend controller handles the database operations and pipeline state changes
 
 3. **Entity Counts**
-   - Count repositories, contributors, merge requests, and commits for dashboard metrics
+   - Frontend calls the API endpoint `/api/entity-counts`
+   - Backend executes consolidated queries to count repositories, contributors, merge requests, and commits
+   - Frontend displays the results in dashboard cards with automatic refresh
 
 ### Data Processing Flow
 
 1. **GitHub Sync Pipeline**
-   - Fetches public events from GitHub API to find recently merged pull requests
+   - Backend pipeline fetches public events from GitHub API to find recently merged pull requests
    - Stores raw data in the `closed_merge_requests_raw` table with `is_processed = 0`
    - Checks for duplicates by examining the pull request ID in the JSON data
    - Updates existing records if the same pull request is fetched again
 
 2. **Data Processing Pipeline**
-   - Reads from `closed_merge_requests_raw` where `is_processed = 0` 
+   - Backend reads from `closed_merge_requests_raw` where `is_processed = 0` 
    - Extracts entities (repositories, contributors, merge requests, commits) from the raw JSON data
    - Writes extracted entities to their respective tables
    - Updates the `is_processed` flag to `1` after successful processing
 
 3. **Data Enrichment Pipeline**
-   - Reads entities where `is_enriched = false` from core tables
+   - Backend reads entities where `is_enriched = false` from core tables
    - Fetches additional data from GitHub API
    - Updates records with enriched information
 
 4. **AI Analysis Pipeline**
-   - Reads `commits` where `complexity_score IS NULL`
+   - Backend reads `commits` where `complexity_score IS NULL`
    - Generates scores with AI models
    - Updates records with complexity metrics
 
 ### SEO Management
 
 1. **Sitemap Generation**
-   - Check `sitemap_metadata` to determine current page for each entity type
-   - Generate sitemap XML files with up to 49,000 URLs per file
-   - Update metadata when new pages are needed
+   - Frontend triggers sitemap generation via `/api/generate-sitemap` endpoint
+   - Backend checks `sitemap_metadata` to determine current page for each entity type
+   - Backend generates sitemap XML files with up to 49,000 URLs per file
+   - Backend updates metadata when new pages are needed
 
 2. **Entity URL Updates**
-   - When new entities are added, update sitemap metadata
-   - Increment URL count for the appropriate entity type
-   - Create new sitemap pages when current page is full (>49,000 URLs)
+   - When new entities are added via backend processing, sitemap metadata is updated
+   - URL count for the appropriate entity type is incremented
+   - New sitemap pages are created when current page is full (>49,000 URLs)
 
 ### Developer Rankings
 
 1. **Ranking Calculation**
-   - Calculate developer scores based on code volume, efficiency, impact, and repository influence
-   - Exclude all contributions from forked repositories to focus on original work
-   - Store calculated rankings in the `contributor_rankings` table with timestamp
+   - Frontend triggers ranking calculation via `/api/contributor-rankings` endpoint
+   - Backend calculates developer scores based on code volume, efficiency, impact, and repository influence
+   - Backend excludes all contributions from forked repositories to focus on original work
+   - Backend stores calculated rankings in the `contributor_rankings` table with timestamp
    - Each calculation creates a new set of records with the same timestamp
 
 2. **Homepage Leaderboard Display**
-   - Query the most recent rankings by maximum `calculation_timestamp`
-   - Sort by `rank_position` to display the top developers
-   - Join with `contributors` table to get profile information
+   - Frontend queries the backend `/api/contributor-rankings` endpoint
+   - Backend retrieves the most recent rankings by maximum `calculation_timestamp`
+   - Backend sorts by `rank_position` to return the top developers
+   - Frontend displays the formatted results
 
 3. **Trend Analysis**
-   - Compare ranking positions across different calculation timestamps
-   - Calculate changes in rank position and scores over time
-   - Generate trend data for visualization
+   - Frontend queries the backend for ranking data over time
+   - Backend compares ranking positions across different calculation timestamps
+   - Backend calculates changes in rank position and scores over time
+   - Frontend generates trend data visualization
+
+## API-Based Data Access
+
+All data access from the frontend follows these principles:
+
+1. **No Direct Database Access**: Frontend code never connects directly to the database
+2. **API-Based Communication**: All data is accessed through HTTP calls to the backend API
+3. **Consistent Error Handling**: API endpoints provide standardized error responses
+4. **Clear Separation of Concerns**:
+   - Backend is responsible for data persistence and business logic
+   - Frontend is responsible for presentation and user interaction
+
+The API client is implemented in the `github-explorer/lib/client` directory, with specialized modules for different entity types:
+
+```typescript
+// Example API client usage
+import { apiClient } from '@/lib/client/api-client';
+
+// Fetch entity counts
+const counts = await apiClient.entities.getCounts();
+
+// Start a pipeline
+await apiClient.pipeline.performOperation('github_sync', 'start');
+
+// Get repositories
+const repos = await apiClient.repositories.getAll({ limit: 10, offset: 0 });
+```
 
 ## Connection Management
 

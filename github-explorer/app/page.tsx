@@ -10,58 +10,8 @@ import { Switch } from '@/components/ui/switch';
 import { TableHead, TableCell } from '@/components/ui/table';
 import { generateContributorSlug, generateRepositorySlug, generateMergeRequestSlug } from '@/lib/url-utils';
 import { Avatar } from '@/components/ui/avatar';
-
-// Interfaces for type safety
-interface ContributorRanking {
-  id: string;
-  contributor_id: string;
-  contributor_github_id: string;
-  rank_position: number;
-  username: string;
-  name?: string;
-  avatar?: string;
-  total_score: number;
-  code_volume_score: number;
-  code_efficiency_score: number;
-  commit_impact_score: number;
-  collaboration_score: number;
-  repo_popularity_score: number;
-  repo_influence_score: number;
-  followers_score: number;
-  profile_completeness_score: number;
-  followers_count: number;
-  repositories_contributed: number;
-  raw_commits_count: number;
-  raw_lines_added: number;
-  raw_lines_removed: number;
-  calculation_timestamp: string;
-  location?: string;
-  twitter_username?: string;
-  top_languages?: string; // JSON string of top languages
-  most_popular_repository?: {
-    name: string;
-    full_name: string;
-    url: string;
-    stars: number;
-    github_id?: string;
-  }
-  most_collaborative_merge_request?: {
-    id?: string;
-    github_id?: string;
-    title: string;
-    repository_url: string;
-    repository_name?: string;
-    repository_github_id?: string;
-    collaborators: {
-      id: string;
-      github_id: string;
-      name: string;
-      username: string;
-      avatar: string;
-    }[];
-    collaborator_count: number;
-  }
-}
+import { useContributorRankings } from '@/hooks/contributor-rankings';
+import { ContributorRanking } from '@/lib/client/api-client';
 
 type Timeframe = '24h' | '7d' | '30d' | 'all';
 
@@ -216,81 +166,37 @@ function MetricsVisualization({
   );
 }
 
-// Custom hook for contributor rankings
-function useContributorRankings() {
-  const [rankings, setRankings] = useState<ContributorRanking[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function HomePage() {
+  const [showHighlights, setShowHighlights] = useState(true);
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   
-  useEffect(() => {
-    async function fetchRankings() {
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        const response = await fetch('/api/sqlite/contributor-rankings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            operation: 'get_latest',
-          }),
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch rankings');
-        }
-        
-        const data = await response.json();
-        setRankings(data.rankings || []);
-      } catch (err: any) {
-        console.error('Error fetching contributor rankings:', err);
-        setError(err.message || 'An error occurred while fetching rankings');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    
-    fetchRankings();
-  }, []);
+  const toggleExpandedRow = (id: string) => {
+    setExpandedRowId(expandedRowId === id ? null : id);
+  };
   
+  // Get rankings data
+  const { rankings, isLoading, error, timeframes, selectedTimeframe, setTimeframe } = useContributorRankings();
+  
+  // Helper functions for spotlight sections
   const getPopularitySpotlight = () => {
     if (!rankings || rankings.length === 0) return null;
-    return rankings.filter(r => r.most_popular_repository).sort((a, b) => b.repo_popularity_score - a.repo_popularity_score)[0];
+    return rankings.filter(r => r.most_popular_repository).sort((a, b) => 
+      (b.repo_popularity_score || 0) - (a.repo_popularity_score || 0)
+    )[0];
   };
 
   const getCollaborationSpotlight = () => {
     if (!rankings || rankings.length === 0) return null;
-    return rankings.sort((a, b) => b.collaboration_score - a.collaboration_score)[0];
+    return rankings.sort((a, b) => 
+      (b.collaboration_score || 0) - (a.collaboration_score || 0)
+    )[0];
   };
 
   const getInfluenceSpotlight = () => {
     if (!rankings || rankings.length === 0) return null;
-    return rankings.sort((a, b) => (b.repo_influence_score || 0) - (a.repo_influence_score || 0))[0];
-  };
-
-  return {
-    rankings,
-    isLoading,
-    error,
-    getPopularitySpotlight,
-    getCollaborationSpotlight,
-    getInfluenceSpotlight
-  };
-}
-
-export default function HomePage() {
-  const [showHighlights, setShowHighlights] = useState(true);
-  const { rankings, isLoading, error, getPopularitySpotlight, getCollaborationSpotlight, getInfluenceSpotlight } = useContributorRankings();
-  const [expandedRows, setExpandedRows] = useState<string[]>([]);
-  
-  const toggleExpandedRow = (id: string) => {
-    if (expandedRows.includes(id)) {
-      setExpandedRows(expandedRows.filter((i) => i !== id));
-    } else {
-      setExpandedRows([...expandedRows, id]);
-    }
+    return rankings.sort((a, b) => 
+      (b.repo_influence_score || 0) - (a.repo_influence_score || 0)
+    )[0];
   };
   
   return (
@@ -681,7 +587,7 @@ export default function HomePage() {
                       console.error('Failed to parse languages:', e);
                     }
                     
-                    const isExpanded = expandedRows.includes(dev.contributor_id);
+                    const isExpanded = expandedRowId === dev.contributor_id;
                     
                     return (
                       <React.Fragment key={dev.contributor_id}>

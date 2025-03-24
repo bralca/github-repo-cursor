@@ -111,16 +111,20 @@ function initializePipelines() {
 }
 
 // Register API routes
+app.use('/api', apiRoutes); // API routes for frontend-backend separation
+
+// Health and system routes - keep these
 app.use('/api/health', healthRoutes);
-app.use('/api/github', githubRoutes);
-app.use('/api/webhooks', webhookRoutes);
-app.use('/api/repositories', repositoryRoutes);
-app.use('/api/contributors', contributorRoutes);
-app.use('/api/merge-requests', mergeRequestRoutes);
+app.use('/api/pipeline', pipelineOperationsRoutes);
 app.use('/api/scheduler', pipelineSchedulerRoutes);
 app.use('/api/notifications', pipelineNotificationRoutes);
-app.use('/api/pipeline', pipelineOperationsRoutes);
-app.use('/api', apiRoutes); // New API routes for frontend-backend separation
+app.use('/api/webhooks', webhookRoutes);
+
+// Remove legacy entity routes
+// app.use('/api/github', githubRoutes);
+// app.use('/api/repositories', repositoryRoutes);
+// app.use('/api/contributors', contributorRoutes);
+// app.use('/api/merge-requests', mergeRequestRoutes);
 
 // API Routes
 app.get('/health', (req, res) => {

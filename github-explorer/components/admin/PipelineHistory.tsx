@@ -28,10 +28,10 @@ interface PipelineRun {
 }
 
 interface PipelineHistoryProps {
-  useSQLite?: boolean; // Flag kept for backward compatibility
+  // Remove the useSQLite flag
 }
 
-export function PipelineHistory({ useSQLite = true }: PipelineHistoryProps) {
+export function PipelineHistory({}: PipelineHistoryProps) {
   const [pipelineType, setPipelineType] = useState<string | undefined>(undefined);
   const [isClearing, setIsClearing] = useState(false);
   

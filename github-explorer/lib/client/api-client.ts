@@ -10,6 +10,7 @@ import { fetchFromApi } from './api';
 import { entitiesApi } from './entities-api';
 import { pipelineApi } from './pipeline-api';
 import { sitemapApi } from './sitemap-api';
+import { rankingsApi } from './rankings-api';
 
 // Export the core API function
 export { fetchFromApi };
@@ -18,10 +19,12 @@ export { fetchFromApi };
 export const apiClient = {
   entities: entitiesApi,
   pipeline: pipelineApi,
-  sitemap: sitemapApi
+  sitemap: sitemapApi,
+  rankings: rankingsApi
 };
 
 // Export individual API clients and their types
 export * from './entities-api';
 export * from './pipeline-api';
-export * from './sitemap-api'; 
+export * from './sitemap-api';
+export * from './rankings-api'; 

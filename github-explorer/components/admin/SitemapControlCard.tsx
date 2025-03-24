@@ -23,10 +23,10 @@ import {
 import { useState } from 'react';
 
 interface SitemapControlCardProps {
-  useSQLite?: boolean; // Kept for backward compatibility
+  // Removed useSQLite flag
 }
 
-export function SitemapControlCard({ useSQLite = true }: SitemapControlCardProps) {
+export function SitemapControlCard({}: SitemapControlCardProps) {
   const { generateSitemap, isGenerating, status, isError, lastUpdated, refreshStatus } = useSitemapGeneration();
   const { validateSitemap, isValidating, validationResults, validationError } = useSitemapValidation();
   const [activeTab, setActiveTab] = useState<string>('generation');

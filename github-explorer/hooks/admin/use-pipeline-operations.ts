@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/client/api-client';
 import { toast } from '@/components/ui/use-toast';
 
+type PipelineType = 'github_sync' | 'data_processing' | 'data_enrichment' | 'ai_analysis';
+
 /**
  * Hook to provide pipeline operations (start/stop)
  * @returns Functions to start and stop pipelines
@@ -63,10 +65,31 @@ export function usePipelineOperations() {
     }
   });
 
+  // Helper function to create objects tracking status by pipeline type
+  const createPipelineStatusMap = (): Record<PipelineType, boolean> => ({
+    github_sync: false,
+    data_processing: false,
+    data_enrichment: false,
+    ai_analysis: false
+  });
+
+  // Create objects to track isStarting and isStopping status by pipeline type
+  const isStarting: Record<PipelineType, boolean> = createPipelineStatusMap();
+  const isStopping: Record<PipelineType, boolean> = createPipelineStatusMap();
+
+  // Update the status maps based on current mutation state
+  if (startPipelineMutation.isPending && typeof startPipelineMutation.variables === 'string') {
+    isStarting[startPipelineMutation.variables as PipelineType] = true;
+  }
+  
+  if (stopPipelineMutation.isPending && typeof stopPipelineMutation.variables === 'string') {
+    isStopping[stopPipelineMutation.variables as PipelineType] = true;
+  }
+
   return {
     startPipeline: startPipelineMutation.mutate,
     stopPipeline: stopPipelineMutation.mutate,
-    isStarting: startPipelineMutation.isPending,
-    isStopping: stopPipelineMutation.isPending
+    isStarting,
+    isStopping
   };
 } 

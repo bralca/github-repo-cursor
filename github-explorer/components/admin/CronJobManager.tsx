@@ -22,10 +22,10 @@ const PIPELINE_TYPES = [
 ];
 
 interface CronJobManagerProps {
-  useSQLite?: boolean; // Kept for backward compatibility
+  // Removed useSQLite flag
 }
 
-export function CronJobManager({ useSQLite = true }: CronJobManagerProps) {
+export function CronJobManager({}: CronJobManagerProps) {
   const [activeTab, setActiveTab] = useState(PIPELINE_TYPES[0].id);
   const [cronExpression, setCronExpression] = useState('');
   const [isActive, setIsActive] = useState(true);
