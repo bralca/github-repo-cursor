@@ -16,6 +16,19 @@ interface RawEntityCounts {
   enriched_commits?: number;
   unprocessed_merge_requests?: number;
   total_raw_merge_requests?: number;
+  unenriched_repositories?: number;
+  unenriched_contributors?: number;
+  unenriched_merge_requests?: number;
+  total_unenriched_entities?: number;
+  enrichedRepositories?: number;
+  enrichedContributors?: number;
+  enrichedMergeRequests?: number;
+  unenrichedRepositories?: number;
+  unenrichedContributors?: number;
+  unenrichedMergeRequests?: number;
+  unprocessedMergeRequests?: number;
+  closedMergeRequestsRaw?: number;
+  totalUnenriched?: number;
   [key: string]: number | undefined;
 }
 
@@ -34,6 +47,19 @@ interface EntityCounts {
   enriched_commits?: number;
   unprocessed_merge_requests?: number;
   total_raw_merge_requests?: number;
+  unenriched_repositories?: number;
+  unenriched_contributors?: number;
+  unenriched_merge_requests?: number;
+  total_unenriched_entities?: number;
+  enrichedRepositories?: number;
+  enrichedContributors?: number;
+  enrichedMergeRequests?: number;
+  unenrichedRepositories?: number;
+  unenrichedContributors?: number;
+  unenrichedMergeRequests?: number;
+  unprocessedMergeRequests?: number;
+  closedMergeRequestsRaw?: number;
+  totalUnenriched?: number;
 }
 
 /**
@@ -80,8 +106,12 @@ export function useSQLiteEntityCounts() {
         const rawCounts = await sqliteClient.entities.getCounts() as RawEntityCounts;
         console.log('API returned entity counts:', rawCounts);
         
+        // IMPORTANT: Check if totalUnenriched is present in the response
+        console.log('totalUnenriched in API response:', rawCounts.totalUnenriched);
+        
         // Normalize the response to ensure consistent field names
         const normalizedCounts: EntityCounts = {
+          // Basic counts
           repositories: rawCounts.repositories || 0,
           contributors: rawCounts.contributors || 0,
           mergeRequests: rawCounts.mergeRequests || rawCounts.merge_requests || 0,
@@ -89,16 +119,50 @@ export function useSQLiteEntityCounts() {
           commits: rawCounts.commits || 0,
           files: rawCounts.files,
           comments: rawCounts.comments,
-          enriched_repositories: rawCounts.enriched_repositories || 0,
-          enriched_contributors: rawCounts.enriched_contributors || 0,
-          enriched_merge_requests: rawCounts.enriched_merge_requests || rawCounts.enriched_mergeRequests || 0,
-          enriched_mergeRequests: rawCounts.enriched_mergeRequests || rawCounts.enriched_merge_requests || 0,
+          
+          // Enriched counts - support both camelCase and snake_case
+          enriched_repositories: rawCounts.enriched_repositories || rawCounts.enrichedRepositories || 0,
+          enriched_contributors: rawCounts.enriched_contributors || rawCounts.enrichedContributors || 0,
+          enriched_merge_requests: rawCounts.enriched_merge_requests || rawCounts.enrichedMergeRequests || 0,
+          enriched_mergeRequests: rawCounts.enriched_mergeRequests || rawCounts.enrichedMergeRequests || 0,
           enriched_commits: rawCounts.enriched_commits || 0,
-          unprocessed_merge_requests: rawCounts.unprocessed_merge_requests || 0,
-          total_raw_merge_requests: rawCounts.total_raw_merge_requests || 0,
+          
+          // Unenriched counts - support both formats
+          unenriched_repositories: rawCounts.unenriched_repositories || rawCounts.unenrichedRepositories || 0,
+          unenriched_contributors: rawCounts.unenriched_contributors || rawCounts.unenrichedContributors || 0,
+          unenriched_merge_requests: rawCounts.unenriched_merge_requests || rawCounts.unenrichedMergeRequests || 0,
+          
+          // Pipeline-specific counts - support both formats
+          unprocessed_merge_requests: rawCounts.unprocessed_merge_requests || rawCounts.unprocessedMergeRequests || 0,
+          total_raw_merge_requests: rawCounts.total_raw_merge_requests || rawCounts.closedMergeRequestsRaw || 0,
+          total_unenriched_entities: rawCounts.total_unenriched_entities || rawCounts.totalUnenriched || 0,
+          
+          // Add new camelCase fields directly
+          enrichedRepositories: rawCounts.enrichedRepositories || rawCounts.enriched_repositories || 0,
+          enrichedContributors: rawCounts.enrichedContributors || rawCounts.enriched_contributors || 0, 
+          enrichedMergeRequests: rawCounts.enrichedMergeRequests || rawCounts.enriched_merge_requests || 0,
+          unenrichedRepositories: rawCounts.unenrichedRepositories || rawCounts.unenriched_repositories || 0,
+          unenrichedContributors: rawCounts.unenrichedContributors || rawCounts.unenriched_contributors || 0,
+          unenrichedMergeRequests: rawCounts.unenrichedMergeRequests || rawCounts.unenriched_merge_requests || 0,
+          unprocessedMergeRequests: rawCounts.unprocessedMergeRequests || rawCounts.unprocessed_merge_requests || 0, 
+          closedMergeRequestsRaw: rawCounts.closedMergeRequestsRaw || rawCounts.total_raw_merge_requests || 0,
+          totalUnenriched: rawCounts.totalUnenriched || rawCounts.total_unenriched_entities || 0
         };
         
-        console.log('Normalized entity counts:', normalizedCounts);
+        // IMPORTANT: Explicitly check for totalUnenriched value
+        console.log('totalUnenriched in normalized counts:', normalizedCounts.totalUnenriched);
+        
+        // Calculate totalUnenriched directly if not present
+        if (!normalizedCounts.totalUnenriched) {
+          normalizedCounts.totalUnenriched = (
+            (normalizedCounts.unenrichedRepositories || 0) + 
+            (normalizedCounts.unenrichedContributors || 0) + 
+            (normalizedCounts.unenrichedMergeRequests || 0)
+          );
+          console.log('Calculated totalUnenriched:', normalizedCounts.totalUnenriched);
+        }
+        
+        console.log('Final normalized entity counts:', normalizedCounts);
         return normalizedCounts;
       } catch (error: any) {
         console.error('Error fetching entity counts:', error);
@@ -126,7 +190,19 @@ export function useSQLiteEntityCounts() {
       enriched_mergeRequests: 0,
       enriched_commits: 0,
       unprocessed_merge_requests: 0,
-      total_raw_merge_requests: 0
+      total_raw_merge_requests: 0,
+      total_unenriched_entities: 0,
+      
+      // Add new camelCase fields
+      enrichedRepositories: 0,
+      enrichedContributors: 0,
+      enrichedMergeRequests: 0,
+      unenrichedRepositories: 0,
+      unenrichedContributors: 0,
+      unenrichedMergeRequests: 0,
+      unprocessedMergeRequests: 0,
+      closedMergeRequestsRaw: 0,
+      totalUnenriched: 0
     },
     isLoading,
     error,

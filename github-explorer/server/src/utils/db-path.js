@@ -5,19 +5,27 @@
  * use the same database file.
  */
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+// Determine server root directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const serverRoot = path.resolve(__dirname, '../../');
+
 /**
  * Get the absolute path to the main database file
- * Uses environment variable if set
+ * Uses environment variable if set or falls back to standard location
  * @returns {string} Absolute path to database file
  */
 export function getDbPath() {
-  // Use DB_PATH from environment
-  if (!process.env.DB_PATH) {
-    throw new Error('DB_PATH environment variable is not set. Please configure it in your .env file.');
+  if (process.env.DB_PATH) {
+    return process.env.DB_PATH;
   }
   
-  // Return the configured path
-  return process.env.DB_PATH;
+  // Fall back to the standard location within the server directory
+  return path.resolve(serverRoot, 'db/github_explorer.db');
 }
 
 /**
@@ -26,7 +34,6 @@ export function getDbPath() {
  */
 export function getDbDir() {
   // Simply get the directory from the DB_PATH without creating anything
-  const path = require('path');
   return path.dirname(getDbPath());
 }
 

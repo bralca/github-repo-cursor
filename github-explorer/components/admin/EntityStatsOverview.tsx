@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useSQLiteEntityCounts } from '@/hooks/admin/use-sqlite-entity-counts';
+import { useEntityCounts } from '@/hooks/admin/use-entity-counts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Grid2X2Icon, UsersIcon, GitPullRequestIcon, GitCommitIcon, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,12 +9,12 @@ import { formatDistanceToNow } from 'date-fns';
 import { useAdminEvents } from './AdminEventContext';
 
 interface EntityStatsOverviewProps {
-  useSQLite?: boolean; // Flag to use SQLite instead of Supabase
+  useSQLite?: boolean; // Flag to use SQLite instead of Supabase (kept for backward compatibility)
 }
 
 export function EntityStatsOverview({ useSQLite = true }: EntityStatsOverviewProps) {
-  // Use the SQLite hook for entity counts
-  const { counts, isLoading, error, refetch } = useSQLiteEntityCounts();
+  // Use the new API hook for entity counts
+  const { counts, isLoading, error, refetch } = useEntityCounts();
   
   // Use the admin events context for real-time updates
   const { connectionStatus, lastEventTimestamp, latestEventsByType } = useAdminEvents();
@@ -133,9 +133,9 @@ export function EntityStatsOverview({ useSQLite = true }: EntityStatsOverviewPro
             <GitPullRequestIcon className="mr-3 h-5 w-5 text-purple-500" />
             <div>
               <p className="text-sm font-medium">Merge Requests</p>
-              <p className="text-2xl font-bold">{formatNumber(counts.mergeRequests || counts.merge_requests || 0)}</p>
+              <p className="text-2xl font-bold">{formatNumber(counts.mergeRequests)}</p>
               <p className="text-xs text-muted-foreground">
-                {formatNumber((counts.enriched_merge_requests || counts.enriched_mergeRequests || 0))} enriched
+                {formatNumber(counts.enriched_merge_requests || 0)} enriched
               </p>
             </div>
           </div>

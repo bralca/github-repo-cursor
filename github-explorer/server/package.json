@@ -17,7 +17,8 @@
     "test:scheduler": "node src/scripts/test-scheduler.js",
     "test:quick-scheduler": "node src/scripts/test-quick-scheduler.js",
     "setup:db": "node src/scripts/setup-database.js",
-    "test:schema-manager": "node tests/test-schema-manager.js"
+    "test:schema-manager": "node tests/test-schema-manager.js",
+    "migrate-db": "node scripts/migrate-db.js"
   },
   "dependencies": {
     "@octokit/plugin-retry": "^7.2.0",

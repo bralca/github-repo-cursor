@@ -231,27 +231,56 @@ export function PipelineControlCard({
     
     console.log(`Getting count for pipeline type: ${pipelineType}`, counts);
     
+    // For data_enrichment, log the entire counts object to debug
+    if (pipelineType === 'data_enrichment') {
+      console.log('DETAILED COUNTS FOR ENRICHMENT:', {
+        totalUnenriched: counts.totalUnenriched,
+        unenrichedRepositories: counts.unenrichedRepositories,
+        unenrichedContributors: counts.unenrichedContributors,
+        unenrichedMergeRequests: counts.unenrichedMergeRequests,
+        // Log snake_case versions too
+        total_unenriched_entities: counts.total_unenriched_entities,
+        unenriched_repositories: counts.unenriched_repositories,
+        unenriched_contributors: counts.unenriched_contributors,
+        unenriched_merge_requests: counts.unenriched_merge_requests,
+        // Full counts object
+        fullCounts: JSON.stringify(counts)
+      });
+    }
+    
     switch (pipelineType) {
       case 'github_sync':
-        // Show total count of all raw merge requests
-        console.log('Total raw merge requests:', counts.total_raw_merge_requests);
-        return counts.total_raw_merge_requests || 0;
+        // Show total count of all closed raw merge requests
+        console.log('Total raw merge requests:', counts.closedMergeRequestsRaw);
+        return counts.closedMergeRequestsRaw || 0;
       case 'data_processing':
         // Show count of unprocessed raw merge requests
-        console.log('Unprocessed merge requests:', counts.unprocessed_merge_requests);
-        return counts.unprocessed_merge_requests || 0;
+        console.log('Unprocessed merge requests:', counts.unprocessedMergeRequests);
+        return counts.unprocessedMergeRequests || 0;
       case 'data_enrichment':
-        // Count of entities waiting to be enriched
-        const unenrichedRepos = (counts.repositories || 0) - (counts.enriched_repositories || 0);
-        const unenrichedContributors = (counts.contributors || 0) - (counts.enriched_contributors || 0);
-        const unenrichedMRs = (counts.mergeRequests || 0) - (counts.enriched_mergeRequests || 0);
-        const total = unenrichedRepos + unenrichedContributors + unenrichedMRs;
-        console.log('Unenriched entities total:', total);
-        return total;
+        // Calculate directly from individual counts to avoid any issues with property names
+        const unenrichedRepos = counts.unenrichedRepositories || counts.unenriched_repositories || 0;
+        const unenrichedContribs = counts.unenrichedContributors || counts.unenriched_contributors || 0;
+        const unenrichedMRs = counts.unenrichedMergeRequests || counts.unenriched_merge_requests || 0;
+        
+        // Sum them up
+        const directSum = unenrichedRepos + unenrichedContribs + unenrichedMRs;
+        
+        console.log('Direct calculation of unenriched entities:', {
+          repos: unenrichedRepos,
+          contribs: unenrichedContribs,
+          mrs: unenrichedMRs,
+          sum: directSum
+        });
+        
+        return directSum;
       case 'ai_analysis':
-        // All enriched items waiting for AI analysis
-        console.log('Enriched repositories:', counts.enriched_repositories);
-        return counts.enriched_repositories || 0;
+        // For AI analysis, calculate directly too
+        return (
+          (counts.unenrichedRepositories || counts.unenriched_repositories || 0) +
+          (counts.unenrichedContributors || counts.unenriched_contributors || 0) +
+          (counts.unenrichedMergeRequests || counts.unenriched_merge_requests || 0)
+        );
       default:
         return 0;
     }
@@ -370,6 +399,7 @@ export function PipelineControlCard({
         <div className="flex w-full justify-between items-center">
           <div className="text-xs text-muted-foreground">
             Last run: {isLoading ? '...' : getFormattedDate()}
+            {renderLiveActivity()}
           </div>
           <div className="flex gap-2">
             {renderActionButtons()}

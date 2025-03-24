@@ -29,6 +29,8 @@ export async function handleEntityCounts(request: NextRequest) {
             entityCounts[outputKey] = 0;
             if (countEnriched) {
               entityCounts[`enriched_${outputKey}`] = 0;
+              // Add unenriched counts too
+              entityCounts[`unenriched_${outputKey}`] = 0;
             }
             return;
           }
@@ -45,12 +47,19 @@ export async function handleEntityCounts(request: NextRequest) {
             const enrichedResult = await db.get(`SELECT COUNT(*) as count FROM ${tableName} WHERE is_enriched = 1`);
             entityCounts[`enriched_${outputKey}`] = enrichedResult?.count || 0;
             console.log(`${tableName} enriched count: ${entityCounts[`enriched_${outputKey}`]}`);
+            
+            // Also count unenriched items
+            console.log(`Counting unenriched items in ${tableName}`);
+            const unenrichedResult = await db.get(`SELECT COUNT(*) as count FROM ${tableName} WHERE is_enriched = 0 OR is_enriched IS NULL`);
+            entityCounts[`unenriched_${outputKey}`] = unenrichedResult?.count || 0;
+            console.log(`${tableName} unenriched count: ${entityCounts[`unenriched_${outputKey}`]}`);
           }
         } catch (e) {
           console.error(`Error counting ${tableName}:`, e);
           entityCounts[outputKey] = 0;
           if (countEnriched) {
             entityCounts[`enriched_${outputKey}`] = 0;
+            entityCounts[`unenriched_${outputKey}`] = 0;
           }
         }
       }
@@ -103,6 +112,31 @@ export async function handleEntityCounts(request: NextRequest) {
         entityCounts.total_raw_merge_requests = 0;
         entityCounts.unprocessed_merge_requests = 0;
       }
+      
+      // Calculate total unenriched entities for the enrichment pipeline
+      const totalUnenriched = (
+        (entityCounts.unenriched_repositories || 0) +
+        (entityCounts.unenriched_contributors || 0) +
+        (entityCounts.unenriched_merge_requests || 0)
+      );
+      
+      // Add to the counts with both snake_case and camelCase for compatibility
+      entityCounts.total_unenriched_entities = totalUnenriched;
+      entityCounts.totalUnenriched = totalUnenriched;
+      
+      // Also add camelCase versions of all properties for frontend compatibility
+      entityCounts.closedMergeRequestsRaw = entityCounts.total_raw_merge_requests;
+      entityCounts.unprocessedMergeRequests = entityCounts.unprocessed_merge_requests;
+      
+      // Add camelCase versions of enriched/unenriched counts
+      entityCounts.enrichedRepositories = entityCounts.enriched_repositories;
+      entityCounts.enrichedContributors = entityCounts.enriched_contributors;
+      entityCounts.enrichedMergeRequests = entityCounts.enriched_merge_requests;
+      entityCounts.unenrichedRepositories = entityCounts.unenriched_repositories;
+      entityCounts.unenrichedContributors = entityCounts.unenriched_contributors;
+      entityCounts.unenrichedMergeRequests = entityCounts.unenriched_merge_requests;
+      
+      console.log('Added unenriched counts and totalUnenriched:', totalUnenriched);
       
       return entityCounts;
     });

@@ -14,7 +14,9 @@
     "check": "npm run lint && npm run type-check",
     "prepare": "echo Skip husky setup in production",
     "clean": "rm -rf .next",
-    "test-url-utils": "tsx scripts/test-url-utils.ts"
+    "test-url-utils": "tsx scripts/test-url-utils.ts",
+    "test-api": "node test-api-client.js",
+    "test-api-ts": "tsx test-api-client.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",

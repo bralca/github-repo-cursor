@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Providers } from "./providers";
 import "./globals.css";
-import '@/lib/database/init-sqlite';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

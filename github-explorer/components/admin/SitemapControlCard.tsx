@@ -23,7 +23,7 @@ import {
 import { useState } from 'react';
 
 interface SitemapControlCardProps {
-  useSQLite?: boolean; // Flag to use SQLite instead of Supabase
+  useSQLite?: boolean; // Kept for backward compatibility
 }
 
 export function SitemapControlCard({ useSQLite = true }: SitemapControlCardProps) {

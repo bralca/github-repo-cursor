@@ -25,6 +25,7 @@ import mergeRequestRoutes from './routes/merge-request.routes.js';
 import pipelineSchedulerRoutes from './routes/pipeline-scheduler-routes.js';
 import pipelineNotificationRoutes from './routes/pipeline-notification-routes.js';
 import pipelineOperationsRoutes from './routes/pipeline-operations-routes.js';
+import apiRoutes from './routes/api-routes.js';
 
 // Create Express app
 const app = express();
@@ -119,6 +120,7 @@ app.use('/api/merge-requests', mergeRequestRoutes);
 app.use('/api/scheduler', pipelineSchedulerRoutes);
 app.use('/api/notifications', pipelineNotificationRoutes);
 app.use('/api/pipeline', pipelineOperationsRoutes);
+app.use('/api', apiRoutes); // New API routes for frontend-backend separation
 
 // API Routes
 app.get('/health', (req, res) => {

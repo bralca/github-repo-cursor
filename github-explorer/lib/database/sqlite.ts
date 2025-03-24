@@ -83,8 +83,23 @@ export interface EntityCountsResponse {
   contributors: number;
   mergeRequests: number;
   commits: number;
-  files: number;
-  comments: number;
+  files?: number;
+  comments?: number;
+  
+  // Enriched counts
+  enrichedRepositories?: number;
+  enrichedContributors?: number;
+  enrichedMergeRequests?: number;
+  
+  // Unenriched counts
+  unenrichedRepositories?: number;
+  unenrichedContributors?: number;
+  unenrichedMergeRequests?: number;
+  
+  // Pipeline-specific counts
+  closedMergeRequestsRaw?: number;
+  unprocessedMergeRequests?: number;
+  totalUnenriched?: number;
 }
 
 // Types for pipeline item count

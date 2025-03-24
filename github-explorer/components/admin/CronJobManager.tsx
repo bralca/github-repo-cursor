@@ -10,7 +10,6 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Play, Pause, Save } from 'lucide-react';
 import { toast } from 'sonner';
-import { useSQLitePipelineSchedules } from '@/hooks/admin/use-sqlite-pipeline-schedules';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
@@ -23,189 +22,241 @@ const PIPELINE_TYPES = [
 ];
 
 interface CronJobManagerProps {
-  useSQLite: boolean;
+  useSQLite?: boolean; // Kept for backward compatibility
 }
 
-export function CronJobManager({ useSQLite }: CronJobManagerProps) {
+export function CronJobManager({ useSQLite = true }: CronJobManagerProps) {
   const [activeTab, setActiveTab] = useState(PIPELINE_TYPES[0].id);
   const [cronExpression, setCronExpression] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isActive, setIsActive] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   
+  // Use the cron jobs hook
   const { 
     cronJobs, 
     isLoading, 
-    error, 
-    createOrUpdateCronJob, 
-    toggleCronJobStatus 
-  } = useCronJobs(activeTab);
+    error,
+    createOrUpdateCronJob,
+    toggleCronJobStatus
+  } = useCronJobs();
   
-  const currentCronJob = cronJobs.length > 0 ? cronJobs[0] : null;
+  // Find the current job for the active tab
+  const currentJob = cronJobs.find(job => job.pipeline_type === activeTab);
   
-  // Set initial cron expression when job is loaded
+  // Update the form when the tab changes
   useEffect(() => {
-    if (currentCronJob?.cron_expression && !cronExpression) {
-      setCronExpression(currentCronJob.cron_expression);
+    if (currentJob) {
+      setCronExpression(currentJob.cron_expression || '');
+      setIsActive(currentJob.is_active || false);
+    } else {
+      // Default values for a new job
+      setCronExpression('0 0 * * *'); // Daily at midnight
+      setIsActive(true);
     }
-  }, [currentCronJob, cronExpression]);
+  }, [activeTab, currentJob]);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    setCronExpression(''); // Reset cron expression when changing tabs
   };
   
   const handleSaveSchedule = async () => {
-    if (!cronExpression.trim()) {
-      toast.error('Please enter a valid cron expression');
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
     try {
-      await createOrUpdateCronJob.mutateAsync({
+      setIsProcessing(true);
+      
+      const jobData = {
         pipeline_type: activeTab,
         cron_expression: cronExpression,
-      });
+        is_active: isActive
+      };
       
-      toast.success('Schedule saved successfully');
-    } catch (error) {
-      console.error('Error saving schedule:', error);
+      await createOrUpdateCronJob.mutateAsync(jobData);
+      
+      toast.success(currentJob ? 'Schedule updated successfully' : 'New schedule created successfully');
+    } catch (err) {
+      console.error('Error saving schedule:', err);
       toast.error('Failed to save schedule');
     } finally {
-      setIsSubmitting(false);
+      setIsProcessing(false);
     }
   };
   
-  const handleToggleStatus = async (isActive: boolean) => {
+  const handleToggleStatus = async (newIsActive: boolean) => {
+    if (!currentJob) return;
+    
     try {
+      setIsProcessing(true);
+      
       await toggleCronJobStatus.mutateAsync({
         pipeline_type: activeTab,
-        is_active: isActive,
+        is_active: newIsActive
       });
       
-      toast.success(`Pipeline ${isActive ? 'activated' : 'deactivated'} successfully`);
-    } catch (error) {
-      console.error('Error toggling status:', error);
-      toast.error('Failed to update pipeline status');
+      setIsActive(newIsActive);
+      
+      toast.success(
+        newIsActive ? 
+          'Schedule activated successfully' : 
+          'Schedule deactivated successfully'
+      );
+    } catch (err) {
+      console.error('Error toggling status:', err);
+      toast.error('Failed to update schedule status');
+    } finally {
+      setIsProcessing(false);
     }
   };
   
-  if (error) {
-    return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Pipeline Schedule Management</CardTitle>
-          <CardDescription>Error loading pipeline schedules</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-red-500">
-            Failed to load pipeline schedules. Please try again later.
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const getNextRunText = (expression: string) => {
+    try {
+      // This is just a placeholder - in a real app we would calculate the next run time
+      return 'Soon';
+    } catch (e) {
+      return 'Invalid schedule';
+    }
+  };
   
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Pipeline Schedule Management</CardTitle>
-        <CardDescription>
-          Configure and manage cron schedules for pipeline jobs
-        </CardDescription>
+        <CardTitle>Pipeline Schedules</CardTitle>
+        <CardDescription>Set up automated schedules for pipeline execution</CardDescription>
       </CardHeader>
+      
       <CardContent>
-        <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="grid grid-cols-4 mb-6">
-            {PIPELINE_TYPES.map((type) => (
+        <Tabs 
+          defaultValue={PIPELINE_TYPES[0].id} 
+          value={activeTab}
+          onValueChange={handleTabChange}
+        >
+          <TabsList className="grid grid-cols-4 mb-4">
+            {PIPELINE_TYPES.map(type => (
               <TabsTrigger key={type.id} value={type.id}>
                 {type.name}
               </TabsTrigger>
             ))}
           </TabsList>
           
-          {PIPELINE_TYPES.map((type) => (
-            <TabsContent key={type.id} value={type.id} className="space-y-4">
-              {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-medium">{type.name} Pipeline</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {currentCronJob?.is_active 
-                            ? 'Currently active and running on schedule' 
-                            : 'Currently inactive'}
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={currentCronJob?.is_active || false}
-                          onCheckedChange={handleToggleStatus}
-                          disabled={!currentCronJob || toggleCronJobStatus.isPending}
-                        />
-                        <span className="text-sm">
-                          {currentCronJob?.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="cron-expression">Cron Schedule</Label>
-                    <div className="flex space-x-2">
-                      <Input
-                        id="cron-expression"
-                        placeholder="*/10 * * * *"
-                        value={cronExpression || currentCronJob?.cron_expression || ''}
-                        onChange={(e) => setCronExpression(e.target.value)}
-                      />
-                      <Button 
-                        onClick={handleSaveSchedule}
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <Save className="h-4 w-4 mr-2" />
-                        )}
-                        Save
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Use cron syntax (e.g., "*/10 * * * *" for every 10 minutes)
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : error ? (
+            <div className="p-4 text-destructive">
+              Error loading schedules: {error.message}
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label htmlFor="cron-expression">Cron Expression</Label>
+                  <Input
+                    id="cron-expression"
+                    placeholder="e.g. 0 0 * * *"
+                    value={cronExpression}
+                    onChange={e => setCronExpression(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Format: minute hour day-of-month month day-of-week
+                  </p>
+                  {cronExpression && (
+                    <p className="text-xs">
+                      Next run: {getNextRunText(cronExpression)}
                     </p>
-                  </div>
-                  
-                  {currentCronJob && (
-                    <div className="pt-4 border-t">
-                      <h4 className="text-sm font-medium mb-2">Schedule Information</h4>
-                      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                        <dt className="text-muted-foreground">Last Updated</dt>
-                        <dd>
-                          {new Date(currentCronJob.updated_at).toLocaleString()}
-                        </dd>
-                        <dt className="text-muted-foreground">Created</dt>
-                        <dd>
-                          {new Date(currentCronJob.created_at).toLocaleString()}
-                        </dd>
-                      </dl>
-                    </div>
                   )}
-                </>
-              )}
-            </TabsContent>
-          ))}
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="active"
+                    checked={isActive}
+                    onCheckedChange={setIsActive}
+                  />
+                  <Label htmlFor="active">Active</Label>
+                </div>
+              </div>
+              
+              <div className="mt-6">
+                <h3 className="text-sm font-medium mb-2">All Scheduled Jobs</h3>
+                {cronJobs && cronJobs.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Pipeline</TableHead>
+                        <TableHead>Schedule</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Last Run</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {cronJobs.map((job: CronJob) => (
+                        <TableRow key={job.id}>
+                          <TableCell>
+                            {PIPELINE_TYPES.find(p => p.id === job.pipeline_type)?.name || job.pipeline_type}
+                          </TableCell>
+                          <TableCell>{job.cron_expression}</TableCell>
+                          <TableCell>
+                            <Badge variant={job.is_active ? "success" : "secondary"}>
+                              {job.is_active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {job.updated_at ? formatDistanceToNow(new Date(job.updated_at), { addSuffix: true }) : 'Never'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No scheduled jobs yet.</p>
+                )}
+              </div>
+            </>
+          )}
         </Tabs>
       </CardContent>
-      <CardFooter className="flex justify-between border-t pt-4">
-        <p className="text-xs text-muted-foreground">
-          Changes to schedules take effect immediately
-        </p>
+      
+      <CardFooter className="flex justify-between">
+        <div className="flex space-x-2">
+          {currentJob && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleToggleStatus(!isActive)}
+                disabled={isProcessing || toggleCronJobStatus.isPending}
+              >
+                {isActive ? (
+                  <>
+                    <Pause className="h-4 w-4 mr-2" />
+                    Disable
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4 mr-2" />
+                    Enable
+                  </>
+                )}
+              </Button>
+            </>
+          )}
+        </div>
+        
+        <Button 
+          onClick={handleSaveSchedule}
+          disabled={isProcessing || createOrUpdateCronJob.isPending || !cronExpression}
+        >
+          {isProcessing || createOrUpdateCronJob.isPending ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Save Schedule
+            </>
+          )}
+        </Button>
       </CardFooter>
     </Card>
   );

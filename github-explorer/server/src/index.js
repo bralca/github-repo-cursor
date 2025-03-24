@@ -10,6 +10,7 @@ import repositoryRoutes from './routes/repository.routes.js';
 import contributorRoutes from './routes/contributor.routes.js';
 import mergeRequestRoutes from './routes/merge-request.routes.js';
 import webhookRoutes from './routes/webhook.js';
+import apiRoutes from './routes/api-routes.js';
 
 // Import pipeline components
 import { registerWebhookProcessorPipeline } from './pipeline/stages/webhook-processor-pipeline.js';
@@ -67,6 +68,7 @@ app.use('/api/repositories', repositoryRoutes);
 app.use('/api/contributors', contributorRoutes);
 app.use('/api/merge-requests', mergeRequestRoutes);
 app.use('/webhooks', webhookRoutes);
+app.use('/api', apiRoutes); // New API routes for frontend-backend separation
 
 // Root route
 app.get('/', (req, res) => {
@@ -80,7 +82,8 @@ app.get('/', (req, res) => {
       repositories: '/api/repositories',
       contributors: '/api/contributors',
       mergeRequests: '/api/merge-requests',
-      webhooks: '/webhooks'
+      webhooks: '/webhooks',
+      api: '/api' // Add the new API endpoints
     }
   });
 });

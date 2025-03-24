@@ -25,12 +25,16 @@ The GitHub Explorer project is organized with distinct separation between fronte
 │   │   │   └── sqlite.ts        # Frontend client for SQLite API
 │   ├── providers/               # React context providers
 │   ├── server/                  # Backend server components
+│   │   ├── db/                  # Database directory
+│   │   │   └── github_explorer.db  # SQLite database file
 │   │   ├── src/                 # Server source code
 │   │   │   ├── controllers/     # API controllers
+│   │   │   │   └── api/         # API endpoint controllers
 │   │   │   ├── pipeline/        # Pipeline implementation
 │   │   │   │   ├── core/        # Core pipeline functionality
 │   │   │   │   └── processors/  # Pipeline data processors
 │   │   │   └── utils/           # Server utilities
+│   │   │       └── db-path.js   # Database path resolution utility
 │   ├── types/                   # TypeScript type definitions
 │   ├── public/                  # Static assets
 │   └── ...                      # Configuration files
@@ -40,7 +44,7 @@ The GitHub Explorer project is organized with distinct separation between fronte
 │   └── database/                # Root-level database utilities (legacy)
 ├── app/                         # Root-level app (legacy)
 │   └── api/                     # Root-level API endpoints (legacy)
-└── github_explorer.db           # SQLite database file (at root level)
+└── github_explorer.db           # Legacy SQLite database file (will be removed)
 ```
 
 ## Key Components
@@ -59,8 +63,8 @@ The GitHub Explorer project is organized with distinct separation between fronte
 
 - **Location**: `/github-explorer/app/api`
 - **Key Directories**:
-  - `sqlite/`: API endpoints for SQLite operations
-  - `sqlite/handlers/`: Individual API handlers for different operations
+  - `sqlite/`: API endpoints for SQLite operations (legacy, will be removed)
+  - `sqlite/handlers/`: Individual API handlers for different operations (legacy, will be removed)
 
 ### Backend
 
@@ -69,13 +73,14 @@ The GitHub Explorer project is organized with distinct separation between fronte
   - Pipeline processing logic
   - Database operations
   - Data extraction and processing
+  - API controllers for all data operations
 
 ### Database
 
-- **File**: `/github_explorer.db` (at workspace root level)
+- **File**: `/github-explorer/server/db/github_explorer.db`
 - **Type**: SQLite
 - **Path Resolution**: Standardized through `github-explorer/server/src/utils/db-path.js`
-- **Configuration**: Connection managed through `github-explorer/lib/database/connection.ts`
+- **Configuration**: Connection managed through `github-explorer/lib/database/connection.ts` (will be updated to use API client)
 - **Documentation**: `DOCS/data-systems/DATABASE_SCHEMA_AND_ACCESS_PATTERNS.md`
 
 ## Development Guidelines
@@ -92,23 +97,24 @@ The GitHub Explorer project is organized with distinct separation between fronte
 - Server-side code should be in `/github-explorer/server`
 - Pipeline processors go in `/github-explorer/server/src/pipeline/processors`
 - Database operations in `/github-explorer/server/src/controllers`
+- API controllers in `/github-explorer/server/src/controllers/api`
 
 ### Database Operations
 
-- SQLite database file is stored at the workspace root: `/github_explorer.db`
+- SQLite database file is stored in the server directory: `/github-explorer/server/db/github_explorer.db`
 - All schema changes must be documented in `DOCS/data-systems/DATABASE_SCHEMA_AND_ACCESS_PATTERNS.md`
-- Frontend database access is through API endpoints in `/github-explorer/app/api/sqlite/`
+- Frontend database access is through API endpoints (HTTP calls to backend API)
 
 ### API Endpoint Structure
 
-- API endpoints should be in `/github-explorer/app/api/`
-- Each endpoint has a route file and corresponding handler functions
-- Handlers should be in `/github-explorer/app/api/sqlite/handlers/`
+- Frontend API endpoints should be in `/github-explorer/app/api/` (will be replaced by backend API calls)
+- Backend API endpoints are defined in `/github-explorer/server/src/controllers/api/`
+- API routes are configured in `/github-explorer/server/src/routes/api-routes.js`
 
 ## Important Notes
 
 1. Do not confuse the root-level `app/` and `lib/` directories with those in the `github-explorer/` directory
 2. Database access is standardized through `github-explorer/server/src/utils/db-path.js` utility
-3. The SQLite database file is stored at the workspace root, not in the `github-explorer/` directory
+3. The SQLite database file is stored in the `/github-explorer/server/db/` directory
 4. Use the `DB_PATH` environment variable to override the default database location
-5. Frontend code should only interact with the database through API endpoints 
+5. Frontend code should only interact with the database through HTTP calls to the backend API 

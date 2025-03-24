@@ -22,7 +22,7 @@ The implementation plan is organized into epics, stories, and tasks following ou
 
 ## Implementation Plan
 
-### Epic 1: Backend API Development
+### Epic 1: Infrastructure Preparation
 
 #### Story 1: Database Location & Configuration
 
@@ -98,11 +98,128 @@ node test-db-path.js
 DB_PATH=/custom/path node test-db-path.js
 ```
 
-#### Story 2: Backend API Controller Implementation
+#### Story 2: Database Migration
+
+**Objective**: Move the database from its current location to the backend server directory.
+
+##### Task 2.1: Create Database Migration Script
+
+**Description**: Create a script to copy the database from the workspace root to the backend server directory.
+
+**Files to Create**:
+- `github-explorer/server/scripts/migrate-db.js`
+
+**Implementation**:
+```javascript
+import fs from 'fs';
+import path from 'path';
+
+const sourceDbPath = path.resolve(process.cwd(), '../github_explorer.db');
+const targetDbDir = path.resolve(process.cwd(), 'db');
+const targetDbPath = path.resolve(targetDbDir, 'github_explorer.db');
+
+// Create the db directory if it doesn't exist
+if (!fs.existsSync(targetDbDir)) {
+  console.log(`Creating directory: ${targetDbDir}`);
+  fs.mkdirSync(targetDbDir, { recursive: true });
+}
+
+// Check if source database exists
+if (!fs.existsSync(sourceDbPath)) {
+  console.error(`Source database not found at: ${sourceDbPath}`);
+  process.exit(1);
+}
+
+// Copy the database file
+console.log(`Copying database from ${sourceDbPath} to ${targetDbPath}`);
+fs.copyFileSync(sourceDbPath, targetDbPath);
+
+console.log('Database migration completed successfully');
+```
+
+**Testing**:
+1. Run the script
+2. Verify the database is copied to the target location
+3. Test database access from the backend
+
+##### Task 2.2: Add Migration Script to Package.json
+
+**Description**: Add the migration script to the backend package.json.
+
+**Files to Modify**:
+- `github-explorer/server/package.json`
+
+**Implementation**:
+```json
+"scripts": {
+  "migrate-db": "node scripts/migrate-db.js"
+}
+```
+
+**Testing**:
+1. Run the script using npm: `npm run migrate-db`
+2. Verify it executes successfully
+
+#### Story 3: Environment Configuration
+
+**Objective**: Update environment configuration for both frontend and backend.
+
+##### Task 3.1: Update Frontend Environment
+
+**Description**: Create or update frontend environment files.
+
+**Files to Create/Modify**:
+- `github-explorer/.env.local`
+- `github-explorer/.env.production`
+
+**Implementation**:
+For `.env.local`:
+```
+NEXT_PUBLIC_BACKEND_API_URL=http://localhost:3001/api
+```
+
+For `.env.production`:
+```
+NEXT_PUBLIC_BACKEND_API_URL=https://your-backend-service.render.com/api
+```
+
+**Testing**:
+1. Verify the environment variables are accessible in the application
+2. Test with both local and production settings
+
+##### Task 3.2: Update Backend Environment
+
+**Description**: Create backend environment files.
+
+**Files to Create**:
+- `github-explorer/server/.env`
+- `github-explorer/server/.env.production`
+
+**Implementation**:
+For `.env`:
+```
+DB_PATH=./db/github_explorer.db
+PORT=3001
+CORS_ORIGIN=http://localhost:3000
+```
+
+For `.env.production`:
+```
+PORT=10000
+CORS_ORIGIN=https://your-frontend-service.render.com
+```
+
+**Testing**:
+1. Start the server with the environment files
+2. Verify the server uses the correct configuration
+
+### Epic 2: Backend API Development
+
+#### Story 1: Backend API Controller Implementation
 
 **Objective**: Create backend API controllers for all database operations currently performed by the frontend.
 
-##### Task 2.1: Set Up API Controller Structure
+##### Task 1.1: Set Up API Controller Structure
 
 **Description**: Create the directory structure for API controllers.
 
@@ -115,7 +232,7 @@ mkdir -p github-explorer/server/src/controllers/api
 **Testing**:
 - Verify the directory exists: `ls -la github-explorer/server/src/controllers/api`
 
-##### Task 2.2: Implement Entity Counts Controller
+##### Task 1.2: Implement Entity Counts Controller
 
 **Description**: Create a controller to handle entity count requests.
 
@@ -164,7 +281,7 @@ export async function getEntityCounts(req, res) {
 2. Make a request to the endpoint using curl or Postman
 3. Verify the response includes repository, contributor, merge request, and commit counts
 
-##### Task 2.3: Implement Pipeline Status Controller
+##### Task 1.3: Implement Pipeline Status Controller
 
 **Description**: Create a controller to handle pipeline status requests.
 
@@ -218,7 +335,7 @@ export async function getPipelineStatus(req, res) {
 3. Verify the response includes pipeline status information
 4. Test error handling by making a request without a pipeline type
 
-##### Task 2.4: Implement Pipeline Operations Controller
+##### Task 1.4: Implement Pipeline Operations Controller
 
 **Description**: Create a controller to handle pipeline start/stop operations.
 
@@ -299,7 +416,7 @@ export async function handlePipelineOperations(req, res) {
 4. Verify the response indicates success
 5. Test error handling with invalid requests
 
-##### Task 2.5: Implement Remaining Backend Controllers
+##### Task 1.5: Implement Remaining Backend Controllers
 
 **Description**: Create controllers for the remaining API endpoints.
 
@@ -324,11 +441,11 @@ For each controller, examine the corresponding frontend handler in `github-explo
 3. Verify the responses match the expected format and data
 4. Test error handling scenarios
 
-#### Story 3: Backend API Routes Implementation
+#### Story 2: Backend API Routes Implementation
 
 **Objective**: Create Express routes for all API endpoints.
 
-##### Task 3.1: Create API Routes File
+##### Task 2.1: Create API Routes File
 
 **Description**: Create a routes file to define all API endpoints.
 
@@ -397,7 +514,7 @@ export default router;
 2. Check that all routes are correctly defined
 3. Verify that HTTP methods match the expected operations (GET for retrieving data, POST for operations)
 
-##### Task 3.2: Update Server Main File
+##### Task 2.2: Update Server Main File
 
 **Description**: Update the main server file to use the API routes and add CORS support.
 
@@ -427,7 +544,7 @@ app.use('/api', apiRoutes);
 3. Verify CORS headers are present in the response
 4. Verify the API endpoint is accessible
 
-##### Task 3.3: Install Dependencies
+##### Task 2.3: Install Dependencies
 
 **Description**: Install the required dependencies for CORS support.
 
@@ -442,7 +559,7 @@ npm install cors --save
 1. Check the package.json file to ensure the dependency was added
 2. Start the server to verify there are no errors loading the module
 
-### Epic 2: Frontend API Client Development
+### Epic 3: Frontend API Client Development
 
 #### Story 1: Core API Client Implementation
 
@@ -742,7 +859,7 @@ export { commitsApi } from './commits';
 1. Create a test file that imports from the index
 2. Verify all exports are available
 
-### Epic 3: Frontend Component Updates
+### Epic 4: Frontend Component Updates
 
 #### Story 1: Update Frontend Hooks
 
@@ -1057,128 +1174,13 @@ rm -rf github-explorer/lib/database
 2. Check for any console errors
 3. Verify all components still function correctly
 
-### Epic 4: Infrastructure and Deployment
+### Epic 5: Infrastructure and Deployment
 
-#### Story 1: Environment Configuration
-
-**Objective**: Update environment configuration for both frontend and backend.
-
-##### Task 1.1: Update Frontend Environment
-
-**Description**: Create or update frontend environment files.
-
-**Files to Create/Modify**:
-- `github-explorer/.env.local`
-- `github-explorer/.env.production`
-
-**Implementation**:
-For `.env.local`:
-```
-NEXT_PUBLIC_BACKEND_API_URL=http://localhost:3001/api
-```
-
-For `.env.production`:
-```
-NEXT_PUBLIC_BACKEND_API_URL=https://your-backend-service.render.com/api
-```
-
-**Testing**:
-1. Verify the environment variables are accessible in the application
-2. Test with both local and production settings
-
-##### Task 1.2: Update Backend Environment
-
-**Description**: Create backend environment files.
-
-**Files to Create**:
-- `github-explorer/server/.env`
-- `github-explorer/server/.env.production`
-
-**Implementation**:
-For `.env`:
-```
-DB_PATH=./db/github_explorer.db
-PORT=3001
-CORS_ORIGIN=http://localhost:3000
-```
-
-For `.env.production`:
-```
-PORT=10000
-CORS_ORIGIN=https://your-frontend-service.render.com
-```
-
-**Testing**:
-1. Start the server with the environment files
-2. Verify the server uses the correct configuration
-
-#### Story 2: Database Migration
-
-**Objective**: Implement database migration to move the database to the backend.
-
-##### Task 2.1: Create Database Migration Script
-
-**Description**: Create a script to copy the database from the workspace root to the backend server directory.
-
-**Files to Create**:
-- `github-explorer/server/scripts/migrate-db.js`
-
-**Implementation**:
-```javascript
-import fs from 'fs';
-import path from 'path';
-
-const sourceDbPath = path.resolve(process.cwd(), '../github_explorer.db');
-const targetDbDir = path.resolve(process.cwd(), 'db');
-const targetDbPath = path.resolve(targetDbDir, 'github_explorer.db');
-
-// Create the db directory if it doesn't exist
-if (!fs.existsSync(targetDbDir)) {
-  console.log(`Creating directory: ${targetDbDir}`);
-  fs.mkdirSync(targetDbDir, { recursive: true });
-}
-
-// Check if source database exists
-if (!fs.existsSync(sourceDbPath)) {
-  console.error(`Source database not found at: ${sourceDbPath}`);
-  process.exit(1);
-}
-
-// Copy the database file
-console.log(`Copying database from ${sourceDbPath} to ${targetDbPath}`);
-fs.copyFileSync(sourceDbPath, targetDbPath);
-
-console.log('Database migration completed successfully');
-```
-
-**Testing**:
-1. Run the script
-2. Verify the database is copied to the target location
-3. Test database access from the backend
-
-##### Task 2.2: Add Migration Script to Package.json
-
-**Description**: Add the migration script to the backend package.json.
-
-**Files to Modify**:
-- `github-explorer/server/package.json`
-
-**Implementation**:
-```json
-"scripts": {
-  "migrate-db": "node scripts/migrate-db.js"
-}
-```
-
-**Testing**:
-1. Run the script using npm: `npm run migrate-db`
-2. Verify it executes successfully
-
-#### Story 3: Deployment Configuration
+#### Story 1: Deployment Configuration
 
 **Objective**: Create deployment configuration for render.com.
 
-##### Task 3.1: Create Backend Render Configuration
+##### Task 1.1: Create Backend Render Configuration
 
 **Description**: Create a render.yaml file for the backend service.
 
@@ -1210,7 +1212,7 @@ services:
 1. Validate the YAML syntax
 2. Review the configuration for correctness
 
-##### Task 3.2: Create Frontend Render Configuration
+##### Task 1.2: Create Frontend Render Configuration
 
 **Description**: Create a render.yaml file for the frontend service.
 
@@ -1236,7 +1238,7 @@ services:
 1. Validate the YAML syntax
 2. Review the configuration for correctness
 
-##### Task 3.3: Update Documentation
+##### Task 1.3: Update Documentation
 
 **Description**: Update the project documentation to reflect the new architecture.
 
@@ -1323,7 +1325,7 @@ Follow this sequence for the most efficient implementation:
    - Only remove SQLite code after all components are updated
 
 4. **Infrastructure Last**
-   - Complete Epic 4 (Infrastructure and Deployment) last
+   - Complete Epic 5 (Infrastructure and Deployment) last
    - Test deployment thoroughly in a staging environment
 
 ## Common Pitfalls

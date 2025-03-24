@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSupabaseQuery } from '@/hooks/supabase/use-supabase-query';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, RefreshCw, Trash2 } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { Loader2, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import {
@@ -17,7 +16,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { usePipelineHistory } from '@/hooks/admin/use-pipeline-history';
-import { useSQLitePipelineHistory } from '@/hooks/admin/use-sqlite-pipeline-history';
 
 interface PipelineRun {
   id: string;
@@ -27,37 +25,25 @@ interface PipelineRun {
   status: 'running' | 'completed' | 'failed';
   itemsProcessed: number | null;
   errorMessage: string | null;
-  duration: number | null;
 }
 
 interface PipelineHistoryProps {
-  useSQLite?: boolean; // Flag to use SQLite instead of Supabase
+  useSQLite?: boolean; // Flag kept for backward compatibility
 }
 
 export function PipelineHistory({ useSQLite = true }: PipelineHistoryProps) {
   const [pipelineType, setPipelineType] = useState<string | undefined>(undefined);
   const [isClearing, setIsClearing] = useState(false);
   
-  // Use either SQLite or Supabase hooks based on the flag
+  // Use the new API hook for pipeline history
   const { 
-    history: supabaseHistory, 
-    isLoading: isSupabaseLoading, 
-    error: supabaseError,
-    refetch: supabaseRefetch
-  } = usePipelineHistory();
-  
-  const { 
-    history: sqliteHistory, 
-    isLoading: isSqliteLoading, 
-    error: sqliteError,
-    refetch: sqliteRefetch
-  } = useSQLitePipelineHistory();
-  
-  // Determine which data to use
-  const history = useSQLite ? sqliteHistory : supabaseHistory;
-  const isLoading = useSQLite ? isSqliteLoading : isSupabaseLoading;
-  const error = useSQLite ? sqliteError : supabaseError;
-  const refetch = useSQLite ? sqliteRefetch : supabaseRefetch;
+    history, 
+    isLoading, 
+    error,
+    refetch,
+    clearHistory,
+    isClearing: isClearingFromHook
+  } = usePipelineHistory(pipelineType);
   
   // Format date for display
   const formatDate = (date: string | null) => {
@@ -115,46 +101,8 @@ export function PipelineHistory({ useSQLite = true }: PipelineHistoryProps) {
   };
   
   // Handle clearing history
-  const handleClearHistory = async () => {
-    try {
-      setIsClearing(true);
-      
-      // Choose the appropriate endpoint based on whether we're using SQLite or Supabase
-      const endpoint = useSQLite 
-        ? '/api/sqlite/pipeline-history-clear'
-        : '/api/pipeline-history/clear';
-      
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ pipelineType }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to clear history');
-      }
-      
-      const data = await response.json();
-      toast({
-        title: "History Cleared",
-        description: data.message,
-      });
-      
-      // Refetch history to show updated data
-      refetch();
-    } catch (error) {
-      console.error('Error clearing history:', error);
-      toast({
-        title: "Clear Failed",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsClearing(false);
-    }
+  const handleClearHistory = () => {
+    clearHistory();
   };
   
   // In the Select component's onValueChange handler, specify the type
@@ -191,9 +139,9 @@ export function PipelineHistory({ useSQLite = true }: PipelineHistoryProps) {
             variant="outline" 
             size="sm" 
             onClick={handleClearHistory}
-            disabled={isClearing}
+            disabled={isClearingFromHook}
           >
-            {isClearing ? (
+            {isClearingFromHook ? (
               <Loader2 className="h-4 w-4 mr-1 animate-spin" />
             ) : (
               <Trash2 className="h-4 w-4 mr-1" />
