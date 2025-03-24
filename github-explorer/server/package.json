@@ -5,7 +5,7 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "start": "node src/server.js",
+    "start": "bash startup.sh",
     "dev": "nodemon --watch src --ignore data/ --ignore *.db --ext js,json,ts src/server.js",
     "test": "node src/scripts/test-pipeline.js",
     "test:repo": "node src/scripts/test-repository-processor.js",
@@ -18,7 +18,8 @@
     "test:quick-scheduler": "node src/scripts/test-quick-scheduler.js",
     "setup:db": "node src/scripts/setup-database.js",
     "test:schema-manager": "node tests/test-schema-manager.js",
-    "migrate-db": "node scripts/migrate-db.js"
+    "migrate-db": "node scripts/migrate-db.js",
+    "init-db": "node scripts/init-db.js"
   },
   "dependencies": {
     "@octokit/plugin-retry": "^7.2.0",
