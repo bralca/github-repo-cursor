@@ -31,7 +31,7 @@ export interface Contributor {
 }
 
 export interface ContributorDetail extends Contributor {
-  repositories: {
+  contributedRepositories: {
     id: string;
     github_id: number;
     name: string;
