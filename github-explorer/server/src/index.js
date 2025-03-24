@@ -17,31 +17,23 @@ import apiRoutes from './routes/api-routes.js';
 // Import pipeline components
 import { registerWebhookProcessorPipeline } from './pipeline/stages/webhook-processor-pipeline.js';
 
-// Import Supabase services
-import { RepositoryService } from './services/supabase/repository.service.js';
-import { ContributorService } from './services/supabase/contributor.service.js';
-import { MergeRequestService } from './services/supabase/merge-request.service.js';
-import { SupabaseClient } from './services/supabase/supabase-client.service.js';
-
 // Initialize Express app
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Initialize Supabase client
-const supabaseClient = new SupabaseClient();
-
-// Initialize Supabase services
-const supabaseServices = {
-  repositoryService: new RepositoryService(supabaseClient),
-  contributorService: new ContributorService(supabaseClient),
-  mergeRequestService: new MergeRequestService(supabaseClient),
-  // We don't have a commit service yet, but we'll add it when needed
+// Initialize pipeline services with SQLite instead of Supabase
+const pipelineServices = {
+  // Providing null services or mock implementations
+  // These will be available if needed, but won't cause errors
+  repositoryService: null,
+  contributorService: null,
+  mergeRequestService: null,
   commitService: null
 };
 
 // Register pipeline
 try {
-  registerWebhookProcessorPipeline(supabaseServices);
+  registerWebhookProcessorPipeline(pipelineServices);
   logger.info('Pipeline registered successfully');
 } catch (error) {
   logger.error('Failed to register pipeline', { error });

@@ -1,202 +1,21 @@
-import { createClient } from '@supabase/supabase-js';
-import { z } from 'zod';
-import dotenv from 'dotenv';
-import { logger } from '../../utils/logger.js';
+// This file is kept for import compatibility only.
+// Supabase is only used for auth in the frontend.
 
-// Load environment variables
-dotenv.config();
+export const supabaseClientFactory = {
+  createClient() {
+    return null;
+  },
+  getClient() {
+    return null;
+  }
+};
 
-// Define schema for Supabase configuration
-const supabaseConfigSchema = z.object({
-  SUPABASE_URL: z.string().url('Invalid Supabase URL'),
-  SUPABASE_SERVICE_KEY: z.string().min(1, 'Supabase service key is required'),
-});
-
-// Parse and validate environment variables
-const supabaseConfig = supabaseConfigSchema.parse({
-  SUPABASE_URL: process.env.SUPABASE_URL,
-  SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY,
-});
-
-/**
- * Supabase client for database interactions
- */
 export class SupabaseClient {
   constructor() {
-    this.client = createClient(
-      supabaseConfig.SUPABASE_URL,
-      supabaseConfig.SUPABASE_SERVICE_KEY,
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        },
-      }
-    );
-    
-    logger.info('Supabase client initialized');
+    // No-op constructor
   }
   
-  /**
-   * Get the Supabase client instance
-   */
   getClient() {
-    return this.client;
-  }
-  
-  /**
-   * Store raw GitHub data in the database
-   */
-  async storeRawGitHubData(data) {
-    try {
-      const { data: insertedData, error } = await this.client
-        .from('github_raw_data')
-        .insert(data)
-        .select();
-      
-      if (error) {
-        logger.error({ msg: 'Failed to store raw GitHub data', error });
-        throw error;
-      }
-      
-      return insertedData;
-    } catch (error) {
-      logger.error({ msg: 'Error storing raw GitHub data', error });
-      throw error;
-    }
-  }
-  
-  /**
-   * Get unprocessed GitHub raw data
-   */
-  async getUnprocessedRawData(limit = 100) {
-    try {
-      const { data, error } = await this.client
-        .from('github_raw_data')
-        .select('*')
-        .eq('processed', false)
-        .limit(limit);
-      
-      if (error) {
-        logger.error({ msg: 'Failed to get unprocessed raw data', error });
-        throw error;
-      }
-      
-      return data;
-    } catch (error) {
-      logger.error({ msg: 'Error getting unprocessed raw data', error });
-      throw error;
-    }
-  }
-  
-  /**
-   * Mark raw data as processed
-   */
-  async markRawDataAsProcessed(ids) {
-    try {
-      const { data, error } = await this.client
-        .from('github_raw_data')
-        .update({ processed: true })
-        .in('id', ids)
-        .select();
-      
-      if (error) {
-        logger.error({ msg: 'Failed to mark raw data as processed', error });
-        throw error;
-      }
-      
-      return data;
-    } catch (error) {
-      logger.error({ msg: 'Error marking raw data as processed', error });
-      throw error;
-    }
-  }
-  
-  /**
-   * Upsert repositories
-   */
-  async upsertRepositories(repositories) {
-    try {
-      const { data, error } = await this.client
-        .from('repositories')
-        .upsert(repositories, { onConflict: 'id' })
-        .select();
-      
-      if (error) {
-        logger.error({ msg: 'Failed to upsert repositories', error });
-        throw error;
-      }
-      
-      return data;
-    } catch (error) {
-      logger.error({ msg: 'Error upserting repositories', error });
-      throw error;
-    }
-  }
-  
-  /**
-   * Upsert contributors
-   */
-  async upsertContributors(contributors) {
-    try {
-      const { data, error } = await this.client
-        .from('contributors')
-        .upsert(contributors, { onConflict: 'id' })
-        .select();
-      
-      if (error) {
-        logger.error({ msg: 'Failed to upsert contributors', error });
-        throw error;
-      }
-      
-      return data;
-    } catch (error) {
-      logger.error({ msg: 'Error upserting contributors', error });
-      throw error;
-    }
-  }
-  
-  /**
-   * Upsert merge requests
-   */
-  async upsertMergeRequests(mergeRequests) {
-    try {
-      const { data, error } = await this.client
-        .from('merge_requests')
-        .upsert(mergeRequests, { onConflict: 'id' })
-        .select();
-      
-      if (error) {
-        logger.error({ msg: 'Failed to upsert merge requests', error });
-        throw error;
-      }
-      
-      return data;
-    } catch (error) {
-      logger.error({ msg: 'Error upserting merge requests', error });
-      throw error;
-    }
-  }
-  
-  /**
-   * Upsert commits
-   */
-  async upsertCommits(commits) {
-    try {
-      const { data, error } = await this.client
-        .from('commits')
-        .upsert(commits, { onConflict: 'hash' })
-        .select();
-      
-      if (error) {
-        logger.error({ msg: 'Failed to upsert commits', error });
-        throw error;
-      }
-      
-      return data;
-    } catch (error) {
-      logger.error({ msg: 'Error upserting commits', error });
-      throw error;
-    }
+    return null;
   }
 } 

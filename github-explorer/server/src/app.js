@@ -13,7 +13,6 @@ import { registerDatabaseWriterPipeline } from './pipeline/stages/database-write
 import { processWebhookPayload } from './pipeline/stages/webhook-processor-pipeline.js';
 import { processRepository } from './pipeline/stages/repository-processor-pipeline.js';
 import { createSitemapPipeline } from './pipeline/index.js';
-import { supabaseClientFactory } from './services/supabase/supabase-client.js';
 
 // Import routes
 import healthRoutes from './routes/health.js';
@@ -41,15 +40,6 @@ app.use(express.json({ limit: '5mb' })); // Parse JSON bodies with size limit
  */
 function initializeServer() {
   try {
-    // Initialize Supabase client
-    try {
-      supabaseClientFactory.createClient();
-      logger.info('Supabase client initialized');
-    } catch (supabaseError) {
-      logger.warn('Failed to initialize Supabase client:', { error: supabaseError });
-      logger.info('Continuing without Supabase integration');
-    }
-    
     // Initialize pipelines
     initializePipelines();
     
@@ -66,10 +56,16 @@ function initializeServer() {
 function initializePipelines() {
   logger.info('Initializing data processing pipelines');
   
+  // Initialize pipeline services (using null services since we're not using Supabase)
+  const pipelineServices = {
+    repositoryService: null,
+    contributorService: null,
+    mergeRequestService: null,
+    commitService: null
+  };
+  
   // Register webhook processor pipeline
-  registerWebhookProcessorPipeline({
-    // Any webhook processor configuration
-  });
+  registerWebhookProcessorPipeline(pipelineServices);
   
   // Register repository processor pipeline
   registerRepositoryProcessorPipeline({
@@ -161,13 +157,13 @@ app.post('/api/repositories/:id/process', async (req, res) => {
     const repoId = req.params.id;
     logger.info(`Received request to process repository: ${repoId}`);
     
-    // Get repository data from request body or fetch from database
-    const repository = req.body.repository || await fetchRepositoryFromDatabase(repoId);
+    // Get repository data from request body
+    const repository = req.body.repository;
     
     if (!repository) {
-      return res.status(404).json({
+      return res.status(400).json({
         status: 'error',
-        message: `Repository with ID ${repoId} not found`
+        message: 'Repository data is required in the request body'
       });
     }
     
@@ -194,24 +190,6 @@ app.post('/api/repositories/:id/process', async (req, res) => {
     });
   }
 });
-
-// Helper function to fetch repository from database
-async function fetchRepositoryFromDatabase(repoId) {
-  try {
-    const supabase = supabaseClientFactory.getClient();
-    const { data, error } = await supabase
-      .from('repositories')
-      .select('*')
-      .eq('id', repoId)
-      .single();
-      
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    logger.error(`Failed to fetch repository ${repoId} from database`, { error });
-    return null;
-  }
-}
 
 /**
  * Start the server

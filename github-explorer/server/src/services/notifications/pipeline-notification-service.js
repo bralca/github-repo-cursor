@@ -6,7 +6,6 @@
  */
 
 import { logger } from '../../utils/logger.js';
-import { supabaseClientFactory } from '../supabase/supabase-client.js';
 import schedulerService from '../scheduler/scheduler-service.js';
 
 /**
@@ -17,7 +16,8 @@ export class PipelineNotificationService {
    * Create a new notification service
    */
   constructor() {
-    this.supabase = supabaseClientFactory.getClient();
+    // Use in-memory storage instead of Supabase
+    this.notifications = [];
     this.initializeEventListeners();
     
     // Bind methods
@@ -212,88 +212,50 @@ export class PipelineNotificationService {
    */
   async sendCriticalErrorNotifications(notification) {
     try {
-      // Get notification settings
-      const { data: settings, error } = await this.supabase
-        .from('notification_settings')
-        .select('*')
-        .eq('is_active', true)
-        .eq('level', 'error')
-        .single();
+      // Log the error but don't attempt to send notifications
+      // since we no longer have access to notification settings
+      logger.error('Critical pipeline error', { 
+        title: notification.title,
+        message: notification.message, 
+        details: notification.details 
+      });
       
-      if (error || !settings) {
-        logger.debug('No notification settings found for critical errors');
-        return;
-      }
-      
-      // Send email notifications if configured
-      if (settings.email_enabled && settings.email_recipients) {
-        const recipients = Array.isArray(settings.email_recipients) 
-          ? settings.email_recipients 
-          : settings.email_recipients.split(',');
-        
-        for (const recipient of recipients) {
-          await this.sendEmail({
-            to: recipient.trim(),
-            subject: notification.title,
-            message: `${notification.message}\n\nError: ${notification.details.error}`,
-            details: notification.details
-          });
-        }
-      }
-      
-      // Send webhook notifications if configured
-      if (settings.webhook_enabled && settings.webhook_url) {
-        await this.sendWebhook({
-          url: settings.webhook_url,
-          payload: {
-            type: notification.type,
-            title: notification.title,
-            message: notification.message,
-            details: notification.details,
-            level: notification.level,
-            timestamp: new Date().toISOString()
-          }
-        });
-      }
+      // In a production app, you might implement email/webhook sending here
+      // based on environment variables instead of database settings
     } catch (error) {
       logger.error('Error sending critical error notifications', { error });
     }
   }
   
   /**
-   * Store a notification in the database
+   * Store notification in memory
    * @param {Object} notification - Notification to store
-   * @returns {Promise<Object>} Created notification
+   * @returns {Promise<Object>} Stored notification
    */
   async storeNotification(notification) {
     try {
-      const { type, title, message, details, level = 'info' } = notification;
+      // Generate an ID for the notification
+      const id = `notification-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
       
-      // Ensure details is converted to JSON string
-      const detailsJson = typeof details === 'string' ? details : JSON.stringify(details);
+      // Add metadata
+      const notificationWithMetadata = {
+        id,
+        ...notification,
+        created_at: new Date().toISOString(),
+        is_read: false
+      };
       
-      // Insert notification into database
-      const { data, error } = await this.supabase
-        .from('pipeline_notifications')
-        .insert({
-          type,
-          title,
-          message,
-          details: detailsJson,
-          level,
-          created_at: new Date().toISOString(),
-          is_read: false
-        })
-        .select()
-        .single();
+      // Store in memory
+      this.notifications.unshift(notificationWithMetadata);
       
-      if (error) {
-        throw error;
+      // Only keep the most recent 100 notifications
+      if (this.notifications.length > 100) {
+        this.notifications = this.notifications.slice(0, 100);
       }
       
-      logger.debug(`Stored notification: ${title}`);
+      logger.debug('Notification stored', { id, type: notification.type });
       
-      return data;
+      return notificationWithMetadata;
     } catch (error) {
       logger.error('Error storing notification', { error });
       throw error;
@@ -301,55 +263,35 @@ export class PipelineNotificationService {
   }
   
   /**
-   * Get notifications with pagination
-   * @param {Object} options - Query options
-   * @param {number} [options.limit=20] - Number of notifications to return
-   * @param {number} [options.offset=0] - Offset for pagination
-   * @param {string} [options.type] - Filter by notification type
-   * @param {string} [options.level] - Filter by notification level
-   * @param {boolean} [options.unreadOnly] - Filter to unread notifications only
-   * @returns {Promise<Object>} Notifications and count
+   * Get notifications with filtering and pagination
+   * @param {Object} options - Filter and pagination options
+   * @returns {Promise<Array>} Notifications
    */
   async getNotifications(options = {}) {
     try {
-      const {
-        limit = 20,
-        offset = 0,
-        type,
-        level,
-        unreadOnly
-      } = options;
+      const { limit = 20, offset = 0, type, level, is_read } = options;
       
-      // Build query
-      let query = this.supabase
-        .from('pipeline_notifications')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
+      // Filter notifications
+      let filteredNotifications = [...this.notifications];
       
-      // Apply filters
       if (type) {
-        query = query.eq('type', type);
+        filteredNotifications = filteredNotifications.filter(n => n.type === type);
       }
       
       if (level) {
-        query = query.eq('level', level);
+        filteredNotifications = filteredNotifications.filter(n => n.level === level);
       }
       
-      if (unreadOnly) {
-        query = query.eq('is_read', false);
+      if (is_read !== undefined) {
+        filteredNotifications = filteredNotifications.filter(n => n.is_read === is_read);
       }
       
-      // Execute query
-      const { data, error, count } = await query;
-      
-      if (error) {
-        throw error;
-      }
+      // Apply pagination
+      const paginatedNotifications = filteredNotifications.slice(offset, offset + limit);
       
       return {
-        notifications: data || [],
-        count: count || 0,
+        data: paginatedNotifications,
+        count: filteredNotifications.length,
         limit,
         offset
       };
@@ -360,63 +302,56 @@ export class PipelineNotificationService {
   }
   
   /**
-   * Send an email notification
-   * @param {Object} options - Email options
-   * @param {string} options.to - Recipient email
-   * @param {string} options.subject - Email subject
-   * @param {string} options.message - Email message
-   * @param {Object} options.details - Additional details
-   * @returns {Promise<void>}
+   * Mark notification as read
+   * @param {string} id - Notification ID
+   * @returns {Promise<Object>} Updated notification
    */
-  async sendEmail(options) {
+  async markNotificationAsRead(id) {
     try {
-      const { to, subject, message, details } = options;
+      const notification = this.notifications.find(n => n.id === id);
       
-      logger.info(`Sending email notification to ${to}: ${subject}`);
+      if (!notification) {
+        throw new Error(`Notification with ID ${id} not found`);
+      }
       
-      // In a real implementation, this would send an actual email
-      // For now, we'll just log it
-      logger.debug('Email notification content', {
-        to,
-        subject,
-        message,
-        details
-      });
+      notification.is_read = true;
       
-      // TODO: Implement actual email sending (using nodemailer or similar)
+      return notification;
     } catch (error) {
-      logger.error('Error sending email notification', { error });
+      logger.error('Error marking notification as read', { error });
+      throw error;
     }
   }
   
   /**
-   * Send a webhook notification
+   * Send email notification (mock implementation)
+   * @param {Object} options - Email options
+   * @returns {Promise<void>}
+   */
+  async sendEmail(options) {
+    logger.info(`[MOCK] Email notification would be sent to ${options.to}`, { 
+      subject: options.subject,
+      message: options.message
+    });
+    
+    // In a real implementation, you would integrate with an email service here
+  }
+  
+  /**
+   * Send webhook notification (mock implementation)
    * @param {Object} options - Webhook options
-   * @param {string} options.url - Webhook URL
-   * @param {Object} options.payload - Webhook payload
    * @returns {Promise<void>}
    */
   async sendWebhook(options) {
-    try {
-      const { url, payload } = options;
-      
-      logger.info(`Sending webhook notification to ${url}`);
-      
-      // In a real implementation, this would send an actual HTTP request
-      // For now, we'll just log it
-      logger.debug('Webhook notification content', {
-        url,
-        payload
-      });
-      
-      // TODO: Implement actual webhook sending (using fetch or similar)
-    } catch (error) {
-      logger.error('Error sending webhook notification', { error });
-    }
+    logger.info(`[MOCK] Webhook notification would be sent to ${options.url}`, { 
+      payload: options.payload
+    });
+    
+    // In a real implementation, you would make an HTTP request to the webhook URL
   }
 }
 
-// Create singleton instance
+// Singleton instance
 const pipelineNotificationService = new PipelineNotificationService();
 
 export default pipelineNotificationService; 
