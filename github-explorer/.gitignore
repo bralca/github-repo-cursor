@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Sitemap files (generated locally for each environment)
+/public/sitemap.xml
+/public/sitemaps/
+public/sitemaps/*.xml

@@ -112,4 +112,9 @@ Thumbs.db
 /events/
 events/
 /events/*.json
-events/*.json 
+events/*.json
+
+# Sitemap files (generated locally for each environment)
+/github-explorer/public/sitemap.xml
+/github-explorer/public/sitemaps/
+github-explorer/public/sitemaps/*.xml 
