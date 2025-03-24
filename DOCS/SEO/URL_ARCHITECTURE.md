@@ -7,22 +7,22 @@ This document outlines the SEO-optimized URL architecture for the GitHub Explore
 ## URL Structure
 
 ### Repository URLs
-- **Pattern**: `/repository-name-githubID`
+- **Pattern**: `/{repositorySlug}`
 - **Example**: `/react-facebook-123456`
 - **Components**:
   - Repository name in slug format
   - GitHub ID as a unique identifier
 
 ### Contributor URLs
-- **Pattern**: `/name-username-githubID`
-- **Example**: `/john-doe-johnd-789012`
+- **Pattern**: `/contributors/{contributorSlug}`
+- **Example**: `/contributors/john-doe-johnd-789012`
 - **Components**:
   - Contributor's name in slug format
   - GitHub username in slug format
   - GitHub ID as a unique identifier
 
 ### Merge Request URLs
-- **Pattern**: `/repository-name-githubID/merge-requests/merge_request-title-githubid`
+- **Pattern**: `/{repositorySlug}/merge-requests/{mergeRequestSlug}`
 - **Example**: `/react-facebook-123456/merge-requests/add-new-feature-789012`
 - **Components**:
   - Repository reference with name and GitHub ID
@@ -31,15 +31,15 @@ This document outlines the SEO-optimized URL architecture for the GitHub Explore
   - GitHub ID of the merge request
 
 ### Commit URLs
-- **Pattern**: `/repository-name-githubID/merge-requests/merge_request-title-githubid/commits/name-username-githubID/filename-githubID`
-- **Example**: `/react-facebook-123456/merge-requests/add-new-feature-789012/commits/john-doe-johnd-789012/src-component-file-345678`
+- **Pattern**: `/{repositorySlug}/merge-requests/{mergeRequestSlug}/authors/{contributorSlug}/commits/{commitId}`
+- **Example**: `/react-facebook-123456/merge-requests/add-new-feature-789012/authors/john-doe-johnd-789012/commits/a1b2c3d4`
 - **Components**:
-  - Repository reference
-  - Merge request reference
+  - Repository reference ({repositorySlug})
+  - Merge request reference ({mergeRequestSlug})
+  - "authors" path segment
+  - Contributor reference ({contributorSlug})
   - "commits" path segment
-  - Contributor reference
-  - File name in slug format
-  - GitHub ID of the file
+  - Commit ID (usually the GitHub commit SHA)
 
 ## URL Generation Rules
 
@@ -56,6 +56,37 @@ This document outlines the SEO-optimized URL architecture for the GitHub Explore
 3. **Hierarchy**:
    - URLs reflect the hierarchical relationship between entities
    - Each level includes enough information to be self-contained
+
+## Database Field to URL Mapping
+
+This section maps the database fields used to generate each slug component:
+
+### Repository Slug (`{repositorySlug}`)
+- **Database Fields**: 
+  - `repositories.name` - Used for the human-readable portion
+  - `repositories.github_id` - Used as the unique identifier
+- **Generation Function**: `generateRepositorySlug(name, github_id)`
+- **Example**: For a repository with name "React" and github_id "123456", the slug would be "react-123456"
+
+### Contributor Slug (`{contributorSlug}`)
+- **Database Fields**:
+  - `contributors.name` - Used for the first part of the slug (if available)
+  - `contributors.username` - Used for the username portion (if available)
+  - `contributors.github_id` - Used as the unique identifier
+- **Generation Function**: `generateContributorSlug(name, username, github_id)`
+- **Example**: For a contributor with name "John Doe", username "johndoe", and github_id "789012", the slug would be "john-doe-johndoe-789012"
+
+### Merge Request Slug (`{mergeRequestSlug}`)
+- **Database Fields**:
+  - `merge_requests.title` - Used for the human-readable portion
+  - `merge_requests.github_id` - Used as the unique identifier
+- **Generation Function**: `generateMergeRequestSlug(title, github_id)`
+- **Example**: For a merge request with title "Add new feature" and github_id "456789", the slug would be "add-new-feature-456789"
+
+### Commit ID (`{commitId}`)
+- **Database Field**:
+  - `commits.github_id` - The commit SHA hash used directly
+- **Example**: For a commit with github_id "a1b2c3d4e5f6", the ID would be "a1b2c3d4e5f6"
 
 ## SEO Benefits
 
@@ -89,16 +120,26 @@ The URL architecture supports a hybrid rendering approach:
 ## Implementation Considerations
 
 1. **URL Parsing**:
-   - Extract entity IDs from URL segments
+   - Extract entity IDs from URL segments using parsing functions
+   - Functions like `parseRepositorySlug`, `parseMergeRequestSlug`, and `parseContributorSlug` extract the necessary IDs
    - Use IDs for database queries
-   - Fall back to search when exact matches fail
 
 2. **Redirects**:
    - Handle legacy URL formats
    - Redirect to canonical URLs when slug format changes
 
 3. **Edge Cases**:
-   - Very long names should be truncated appropriately
+   - Very long names should be truncated appropriately (maximum length: 50 characters)
    - Similar names with different IDs need clear visual differentiation
+   - Missing name or username values are replaced with defaults
+
+## Next.js App Router Implementation
+
+The URL structure is implemented using Next.js App Router with dynamic route segments:
+
+- `app/[repositorySlug]/page.tsx` - Repository details
+- `app/contributors/[contributorSlug]/page.tsx` - Contributor details
+- `app/[repositorySlug]/merge-requests/[mergeRequestSlug]/page.tsx` - Merge request details
+- `app/[repositorySlug]/merge-requests/[mergeRequestSlug]/authors/[contributorSlug]/commits/[commitId]/page.tsx` - Commit details
 
 This architecture balances SEO optimization with system requirements, creating a URL structure that is both user-friendly and technically sound. 

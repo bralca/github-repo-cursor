@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
+import fs from 'fs';
+import path from 'path';
 import { logger } from './utils/logger.js';
 import healthRoutes from './routes/health.js';
 import githubRoutes from './routes/github.js';
@@ -19,7 +21,7 @@ import { registerWebhookProcessorPipeline } from './pipeline/stages/webhook-proc
 import { RepositoryService } from './services/supabase/repository.service.js';
 import { ContributorService } from './services/supabase/contributor.service.js';
 import { MergeRequestService } from './services/supabase/merge-request.service.js';
-import { SupabaseClient } from './services/supabase/supabase-client.service.ts';
+import { SupabaseClient } from './services/supabase/supabase-client.service.js';
 
 // Initialize Express app
 const app = express();
@@ -54,6 +56,35 @@ app.use(cors({
 }));
 app.use(compression()); // Compress responses
 app.use(express.json()); // Parse JSON bodies
+app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+
+// Serve sitemap directly from the root path
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const sitemapPath = path.join(process.cwd(), 'public/sitemap.xml');
+    
+    if (fs.existsSync(sitemapPath)) {
+      const sitemapContent = await fs.promises.readFile(sitemapPath, 'utf8');
+      res.setHeader('Content-Type', 'application/xml');
+      res.send(sitemapContent);
+    } else {
+      logger.warn(`Sitemap file not found at ${sitemapPath}`);
+      res.status(404).send('Sitemap not found');
+    }
+  } catch (error) {
+    logger.error(`Error serving sitemap: ${error.message}`, { error });
+    res.status(500).send('Error serving sitemap');
+  }
+});
+
+// Serve static files from the public directory if it exists
+app.use(express.static('public', {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.xml')) {
+      res.setHeader('Content-Type', 'application/xml');
+    }
+  }
+}));
 
 // Request logging
 app.use((req, res, next) => {
@@ -98,11 +129,10 @@ app.use((req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  logger.error(err);
-  res.status(err.status || 500).json({
-    error: err.name || 'ServerError',
-    message: err.message || 'An unexpected error occurred',
-    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+  logger.error('Unhandled error', { error: err });
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'production' ? null : err.message
   });
 });
 

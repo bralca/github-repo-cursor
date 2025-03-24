@@ -435,7 +435,67 @@ async function initializeDatabase() {
     const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table'");
     logger.info('Database tables created:', tables.map(t => t.name).join(', '));
     
-    logger.info('Database initialization completed successfully');
+    logger.info('Creating sitemap_status table...');
+    // Sitemap status table
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS sitemap_status (
+        status TEXT NOT NULL,
+        is_generating BOOLEAN DEFAULT 0,
+        last_generated TIMESTAMP,
+        item_count INTEGER DEFAULT 0,
+        file_size INTEGER DEFAULT 0,
+        error_message TEXT,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    logger.info('Sitemap status table created or already exists');
+
+    // Insert default pipeline statuses
+    logger.info('Inserting default statuses...');
+    
+    // Check if pipeline_status already has records
+    const statusCount = await db.get('SELECT COUNT(*) as count FROM pipeline_status');
+    
+    if (statusCount.count === 0) {
+      logger.info('No pipeline statuses found, inserting defaults...');
+      
+      await db.run(`
+        INSERT INTO pipeline_status (pipeline_type, status, is_running, last_run, updated_at)
+        VALUES ('github_sync', 'idle', 0, NULL, CURRENT_TIMESTAMP);
+      `);
+      
+      await db.run(`
+        INSERT INTO pipeline_status (pipeline_type, status, is_running, last_run, updated_at)
+        VALUES ('data_processing', 'idle', 0, NULL, CURRENT_TIMESTAMP);
+      `);
+      
+      await db.run(`
+        INSERT INTO pipeline_status (pipeline_type, status, is_running, last_run, updated_at)
+        VALUES ('data_enrichment', 'idle', 0, NULL, CURRENT_TIMESTAMP);
+      `);
+
+      logger.info('Default pipeline statuses inserted');
+    } else {
+      logger.info('Pipeline statuses already exist, skipping defaults');
+    }
+    
+    // Insert default sitemap status if not exists
+    const sitemapStatusCount = await db.get('SELECT COUNT(*) as count FROM sitemap_status');
+    
+    if (sitemapStatusCount.count === 0) {
+      logger.info('No sitemap status found, inserting default...');
+      
+      await db.run(`
+        INSERT INTO sitemap_status (status, is_generating, error_message, updated_at)
+        VALUES ('not_generated', 0, NULL, CURRENT_TIMESTAMP);
+      `);
+      
+      logger.info('Default sitemap status inserted');
+    } else {
+      logger.info('Sitemap status already exists, skipping default');
+    }
+
+    logger.info('Database initialized successfully');
   } catch (error) {
     logger.error('Error initializing database:', error);
     throw error;

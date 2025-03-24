@@ -19,7 +19,8 @@
     "setup:db": "node src/scripts/setup-database.js",
     "test:schema-manager": "node tests/test-schema-manager.js",
     "migrate-db": "node scripts/migrate-db.js",
-    "init-db": "node scripts/init-db.js"
+    "init-db": "node scripts/init-db.js",
+    "generate-sitemap": "node scripts/generate-sitemap.js"
   },
   "dependencies": {
     "@octokit/plugin-retry": "^7.2.0",
@@ -32,13 +33,14 @@
     "date-fns": "^4.1.0",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
-    "fast-xml-parser": "^5.0.9",
-    "helmet": "^6.1.5",
+    "fast-xml-parser": "^4.1.3",
+    "helmet": "^7.0.0",
     "node-schedule": "^2.1.1",
-    "octokit": "^4.1.2",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
-    "uuid": "^11.1.0"
+    "octokit": "^3.1.1",
+    "sqlite": "^4.1.2",
+    "sqlite3": "^5.1.6",
+    "uuid": "^9.0.0",
+    "winston": "^3.8.2"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"

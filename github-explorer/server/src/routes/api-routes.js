@@ -5,7 +5,7 @@ import { handlePipelineOperations } from '../controllers/api/pipeline-operations
 import { getPipelineHistory, clearPipelineHistory } from '../controllers/api/pipeline-history.js';
 import { getPipelineSchedules } from '../controllers/api/pipeline-schedules.js';
 import { getPipelineItemCount } from '../controllers/api/pipeline-item-count.js';
-import { getSitemapStatus, triggerSitemapGeneration } from '../controllers/api/sitemap.js';
+import { getSitemapStatus, triggerSitemapGeneration, getSitemapContent } from '../controllers/api/sitemap.js';
 import { handleContributorRankings } from '../controllers/api/contributor-rankings.js';
 import { getRepositories, getRepositoryById, getRepositoryBySlug } from '../controllers/api/repositories.js';
 import { getContributors, getContributorById, getContributorByLogin } from '../controllers/api/contributors.js';
@@ -48,6 +48,7 @@ router.get('/commits/repository/:repository_id/sha/:sha', getCommitBySha);
 // Sitemap endpoints
 router.get('/sitemap-status', getSitemapStatus);
 router.post('/generate-sitemap', triggerSitemapGeneration);
+router.get('/sitemap.xml', getSitemapContent);
 
 // Ranking endpoints
 router.post('/contributor-rankings', handleContributorRankings);
