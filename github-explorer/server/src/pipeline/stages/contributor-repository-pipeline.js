@@ -1,7 +1,6 @@
 import { pipelineFactory } from '../core/pipeline-factory.js';
 import { ContributorRepositoryProcessor } from '../processors/contributor-repository-processor.js';
 import { githubClientFactory } from '../../services/github/github-client.js';
-import { supabaseClientFactory } from '../../services/supabase/supabase-client.js';
 import { logger } from '../../utils/logger.js';
 
 /**
@@ -15,31 +14,16 @@ export function registerContributorRepositoryPipeline(options = {}) {
   // Create required services
   const githubClient = githubClientFactory.createClient();
   
-  // Optional Supabase services
+  // Initialize as null, we're not using Supabase anymore
   let contributorService = null;
   let repositoryService = null;
   
   if (options.supabaseServices) {
     contributorService = options.supabaseServices.contributorService;
     repositoryService = options.supabaseServices.repositoryService;
-  } else if (options.createSupabaseServices !== false) {
-    // Try to create Supabase services if not provided and not explicitly disabled
-    try {
-      const supabaseClient = supabaseClientFactory.createClient();
-      
-      const { ContributorService } = require('../../services/supabase/contributor.service.js');
-      const { RepositoryService } = require('../../services/supabase/repository.service.js');
-      
-      contributorService = new ContributorService(supabaseClient);
-      repositoryService = new RepositoryService(supabaseClient);
-      
-      logger.info('Created Supabase services for contributor-repository pipeline');
-    } catch (error) {
-      logger.warn('Failed to create Supabase services for contributor-repository pipeline', { error });
-      // Continue without Supabase services
-    }
   } else {
-    logger.info('Supabase services not enabled for contributor-repository pipeline');
+    // No longer try to create Supabase services
+    logger.info('Using null services for contributor-repository pipeline');
   }
   
   // Register the contributor-repository processor stage

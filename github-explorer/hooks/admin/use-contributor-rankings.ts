@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
+import { apiClient } from '@/lib/client/api-client';
 
 interface RankingStats {
   calculationsCount: number;
@@ -25,21 +26,7 @@ export function useContributorRankings(): UseContributorRankingsReturn {
     setError(null);
     
     try {
-      const response = await fetch('/api/sqlite/contributor-rankings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          operation: 'calculate',
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to calculate rankings');
-      }
+      const data = await apiClient.rankings.calculate();
       
       setStats(data.stats);
       

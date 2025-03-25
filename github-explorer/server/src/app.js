@@ -18,9 +18,10 @@ import { createSitemapPipeline } from './pipeline/index.js';
 import healthRoutes from './routes/health.js';
 import githubRoutes from './routes/github.js';
 import webhookRoutes from './routes/webhook.js';
-import repositoryRoutes from './routes/repository.routes.js';
-import contributorRoutes from './routes/contributor.routes.js';
-import mergeRequestRoutes from './routes/merge-request.routes.js';
+// Removed imports for deleted routes
+// import repositoryRoutes from './routes/repository.routes.js';
+// import contributorRoutes from './routes/contributor.routes.js';
+// import mergeRequestRoutes from './routes/merge-request.routes.js';
 import pipelineSchedulerRoutes from './routes/pipeline-scheduler-routes.js';
 import pipelineNotificationRoutes from './routes/pipeline-notification-routes.js';
 import pipelineOperationsRoutes from './routes/pipeline-operations-routes.js';
@@ -116,7 +117,7 @@ app.use('/api/scheduler', pipelineSchedulerRoutes);
 app.use('/api/notifications', pipelineNotificationRoutes);
 app.use('/api/webhooks', webhookRoutes);
 
-// Remove legacy entity routes
+// Removed legacy entity routes - no longer needed as they've been deleted
 // app.use('/api/github', githubRoutes);
 // app.use('/api/repositories', repositoryRoutes);
 // app.use('/api/contributors', contributorRoutes);

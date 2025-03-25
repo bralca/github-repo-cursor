@@ -57,6 +57,16 @@ interface RankingsResponse {
   timestamp: string;
 }
 
+export interface RankingCalculationResponse {
+  success: boolean;
+  message: string;
+  stats?: {
+    calculationsCount: number;
+    latestCalculation: string;
+    contributorsRanked: number;
+  };
+}
+
 /**
  * Rankings API client for interacting with contributor ranking endpoints
  */
@@ -89,6 +99,21 @@ export const rankingsApi = {
       {
         operation: 'get_by_timeframe',
         timeframe
+      }
+    );
+  },
+  
+  /**
+   * Calculate new contributor rankings
+   * @returns Result of the calculation operation
+   */
+  async calculate(): Promise<RankingCalculationResponse> {
+    return await fetchFromApi<RankingCalculationResponse>(
+      'contributor-rankings',
+      'POST',
+      undefined,
+      {
+        operation: 'calculate'
       }
     );
   }

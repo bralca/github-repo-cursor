@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import { sqliteClient } from '@/lib/database/sqlite';
 
 type PipelineType = 'github_sync' | 'data_processing' | 'data_enrichment' | 'ai_analysis';
 
@@ -294,22 +295,8 @@ export function PipelineControlCard({
       // Set loading state for this pipeline type
       setLocalIsStarting(prev => ({...prev, [pipelineType]: true}));
       
-      // Call the API directly (using the original pattern before the refactoring)
-      const response = await fetch('/api/sqlite/pipeline-operations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          operation: 'start',
-          pipelineType,
-        }),
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || `Failed to start ${pipelineType} pipeline`);
-      }
+      // Use the sqliteClient directly as in the original implementation
+      const result = await sqliteClient.pipeline.start(pipelineType);
       
       // Show success toast
       toast({
@@ -341,22 +328,8 @@ export function PipelineControlCard({
       // Set loading state for this pipeline type
       setLocalIsStopping(prev => ({...prev, [pipelineType]: true}));
       
-      // Call the API directly (using the original pattern before the refactoring)
-      const response = await fetch('/api/sqlite/pipeline-operations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          operation: 'stop',
-          pipelineType,
-        }),
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || `Failed to stop ${pipelineType} pipeline`);
-      }
+      // Use the sqliteClient directly as in the original implementation
+      const result = await sqliteClient.pipeline.stop(pipelineType);
       
       // Show success toast
       toast({

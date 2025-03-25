@@ -4,8 +4,38 @@
  * Provides utilities for checking database state and structure.
  */
 
-import { supabaseClientFactory } from '../services/supabase/supabase-client.js';
 import { logger } from './logger.js';
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+// Get the current directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Database path is relative to the server directory
+const DEFAULT_DB_PATH = path.join(dirname(__dirname), 'db', 'github_explorer.db');
+
+// Get database path from environment or use default
+const DB_PATH = process.env.SQLITE_DB_PATH || DEFAULT_DB_PATH;
+
+/**
+ * Get a database connection
+ * @returns {Promise<Object>} SQLite database connection
+ */
+async function getDbConnection() {
+  try {
+    return await open({
+      filename: DB_PATH,
+      driver: sqlite3.Database
+    });
+  } catch (error) {
+    logger.error('Failed to open SQLite database', { error, path: DB_PATH });
+    throw error;
+  }
+}
 
 /**
  * Check if a table exists in the database
@@ -14,32 +44,18 @@ import { logger } from './logger.js';
  */
 export async function tableExists(tableName) {
   try {
-    const supabase = supabaseClientFactory.getClient();
+    const db = await getDbConnection();
     
-    // If using a mock client for testing, return false
-    if (supabase.isMock) {
-      return false;
-    }
+    // Check if table exists by querying the sqlite_master table
+    const result = await db.get(
+      `SELECT name FROM sqlite_master WHERE type='table' AND name=?`,
+      [tableName]
+    );
     
-    // Check if table exists by querying it
-    const { error } = await supabase
-      .from(tableName)
-      .select('*')
-      .limit(1);
+    await db.close();
     
-    // If no error, table exists
-    if (!error) {
-      return true;
-    }
-    
-    // Check if error is due to table not existing
-    if (error.message && error.message.includes('does not exist')) {
-      return false;
-    }
-    
-    // Other error - log and assume table might exist
-    logger.warn(`Error checking if table ${tableName} exists: ${error.message}`);
-    return false;
+    // If result exists, table exists
+    return !!result;
   } catch (error) {
     logger.error(`Failed to check if table ${tableName} exists`, { error });
     return false;
@@ -102,35 +118,14 @@ export async function createFallbackTable(tableName, createTableSql) {
     
     logger.info(`Creating fallback table ${tableName}`);
     
-    const supabase = supabaseClientFactory.getClient();
+    const db = await getDbConnection();
     
-    // Try to execute the SQL directly
-    try {
-      // Try using the exec_sql function
-      const { error } = await supabase.rpc('exec_sql', { sql: createTableSql });
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      logger.info(`Successfully created table ${tableName}`);
-      return true;
-    } catch (error) {
-      // If that fails, try using the PostgreSQL extension if available
-      try {
-        const { error: pgError } = await supabase.rpc('pg_execute', { query: createTableSql });
-        
-        if (pgError) {
-          throw new Error(pgError.message);
-        }
-        
-        logger.info(`Successfully created table ${tableName} using pg_execute`);
-        return true;
-      } catch (pgError) {
-        logger.error(`Failed to create table ${tableName}`, { error: pgError });
-        return false;
-      }
-    }
+    // Execute the SQL to create the table
+    await db.exec(createTableSql);
+    await db.close();
+    
+    logger.info(`Successfully created table ${tableName}`);
+    return true;
   } catch (error) {
     logger.error(`Failed to create fallback table ${tableName}`, { error });
     return false;
@@ -143,21 +138,21 @@ export async function createFallbackTable(tableName, createTableSql) {
  * @returns {string} SQL schema for the table
  */
 export function getFallbackTableSchema(tableName) {
-  // Return simplified schemas for common tables
+  // Return simplified schemas for common tables as SQLite compatible schemas
   switch (tableName) {
     case 'pipeline_schedules':
       return `
         CREATE TABLE IF NOT EXISTS pipeline_schedules (
-          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          id TEXT PRIMARY KEY,
           pipeline_type TEXT NOT NULL,
           schedule_name TEXT NOT NULL,
           cron_expression TEXT NOT NULL,
-          configuration_id UUID,
-          is_active BOOLEAN NOT NULL DEFAULT TRUE,
-          last_run_at TIMESTAMPTZ,
-          next_run_at TIMESTAMPTZ,
-          last_result JSONB,
-          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          configuration_id TEXT,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          last_run_at TEXT,
+          next_run_at TEXT,
+          last_result TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
           time_zone TEXT NOT NULL DEFAULT 'UTC'
         );
       `;
@@ -165,24 +160,24 @@ export function getFallbackTableSchema(tableName) {
     case 'pipeline_configurations':
       return `
         CREATE TABLE IF NOT EXISTS pipeline_configurations (
-          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           pipeline_type TEXT NOT NULL,
-          configuration JSONB NOT NULL DEFAULT '{}'::jsonb,
-          is_active BOOLEAN NOT NULL DEFAULT TRUE,
-          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          configuration TEXT NOT NULL DEFAULT '{}',
+          is_active INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
       `;
       
     case 'notification_settings':
       return `
         CREATE TABLE IF NOT EXISTS notification_settings (
-          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          id TEXT PRIMARY KEY,
           level TEXT NOT NULL,
-          email_enabled BOOLEAN NOT NULL DEFAULT FALSE,
-          webhook_enabled BOOLEAN NOT NULL DEFAULT FALSE,
-          is_active BOOLEAN NOT NULL DEFAULT TRUE,
-          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          email_enabled INTEGER NOT NULL DEFAULT 0,
+          webhook_enabled INTEGER NOT NULL DEFAULT 0,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
       `;
       

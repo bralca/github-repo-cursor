@@ -5,7 +5,6 @@
  */
 
 import { BaseController } from './base-controller.js';
-import { supabase } from '../utils/supabase.js';
 import { pipelineFactory } from '../pipeline/core/pipeline-factory.js';
 import { logger } from '../utils/logger.js';
 import { Pipeline } from '../pipeline/core/pipeline.js';
@@ -990,7 +989,7 @@ class PipelineOperationsController extends BaseController {
       // For now, we'll just update the history record
       
       // Update the pipeline history with a stopped status
-      const { error } = await supabase
+      const { error } = await openSQLiteConnection()
         .from('pipeline_history')
         .update({
           status: 'failed',
@@ -1083,7 +1082,7 @@ class PipelineOperationsController extends BaseController {
       if (historyId && typeof historyId === 'string' && historyId.includes('-')) {
         // Only update Supabase if we have a properly formatted UUID
         try {
-          const { error } = await supabase
+          const { error } = await openSQLiteConnection()
             .from('pipeline_history')
             .update(data)
             .eq('id', historyId);
@@ -2883,7 +2882,7 @@ class PipelineOperationsController extends BaseController {
       // For now, we'll just update the history record
       
       // Update the pipeline history with a stopped status
-      const { error } = await supabase
+      const { error } = await openSQLiteConnection()
         .from('pipeline_history')
         .update({
           status: 'failed',
@@ -2976,7 +2975,7 @@ class PipelineOperationsController extends BaseController {
       if (historyId && typeof historyId === 'string' && historyId.includes('-')) {
         // Only update Supabase if we have a properly formatted UUID
         try {
-          const { error } = await supabase
+          const { error } = await openSQLiteConnection()
             .from('pipeline_history')
             .update(data)
             .eq('id', historyId);

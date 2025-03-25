@@ -1,13 +1,15 @@
 /**
  * Database Writer Pipeline
  * 
- * This pipeline stage handles the storage of processed data in the Supabase database.
+ * This pipeline stage handles the storage of processed data in the database.
  * It integrates with all other pipeline stages to provide data persistence.
+ * Note: This is now a stub implementation since we've removed Supabase.
  */
 
 import { pipelineFactory } from '../core/pipeline-factory.js';
 import { DatabaseWriterProcessor } from '../processors/database-writer-processor.js';
-import { supabaseClientFactory } from '../../services/supabase/supabase-client.js';
+// Removed Supabase client import
+// import { supabaseClientFactory } from '../../services/supabase/supabase-client.js';
 import { logger } from '../../utils/logger.js';
 
 /**
@@ -18,13 +20,13 @@ import { logger } from '../../utils/logger.js';
 export function registerDatabaseWriterPipeline(options = {}) {
   logger.info('Registering database writer pipeline stage');
   
-  // Create Supabase client for database access
-  const supabase = options.supabase || supabaseClientFactory.getClient();
+  // Use a null client or one provided in options
+  const dbClient = options.dbClient || null;
   
   // Register the database writer stage
   pipelineFactory.registerStage('store-data', () => {
     return new DatabaseWriterProcessor({
-      supabase,
+      dbClient,
       config: {
         batchSize: options.batchSize || 50,
         maxRetries: options.maxRetries || 3,
@@ -37,7 +39,7 @@ export function registerDatabaseWriterPipeline(options = {}) {
   // Register the database writer pipeline
   pipelineFactory.registerPipeline('database-writer', {
     name: 'database-writer',
-    description: 'Store processed data in the Supabase database',
+    description: 'Store processed data in the database',
     concurrency: 1,
     retries: 2,
     stages: ['store-data']
@@ -47,7 +49,7 @@ export function registerDatabaseWriterPipeline(options = {}) {
 }
 
 /**
- * Store data in the Supabase database
+ * Store data in the database
  * @param {Object} data - Data to store
  * @param {Object} options - Storage options
  * @returns {Promise<Object>} Storage result
@@ -98,7 +100,7 @@ export async function storeData(data, options = {}) {
 }
 
 /**
- * Store repository data in the Supabase database
+ * Store repository data in the database
  * @param {Array<Object>} repositories - Repositories to store
  * @param {Object} options - Storage options
  * @returns {Promise<Object>} Storage result
@@ -108,7 +110,7 @@ export async function storeRepositories(repositories, options = {}) {
 }
 
 /**
- * Store contributor data in the Supabase database
+ * Store contributor data in the database
  * @param {Array<Object>} contributors - Contributors to store
  * @param {Object} options - Storage options
  * @returns {Promise<Object>} Storage result
@@ -118,7 +120,7 @@ export async function storeContributors(contributors, options = {}) {
 }
 
 /**
- * Store merge request data in the Supabase database
+ * Store merge request data in the database
  * @param {Array<Object>} mergeRequests - Merge requests to store
  * @param {Object} options - Storage options
  * @returns {Promise<Object>} Storage result
@@ -128,7 +130,7 @@ export async function storeMergeRequests(mergeRequests, options = {}) {
 }
 
 /**
- * Store commit data in the Supabase database
+ * Store commit data in the database
  * @param {Array<Object>} commits - Commits to store
  * @param {Object} options - Storage options
  * @returns {Promise<Object>} Storage result
@@ -138,7 +140,7 @@ export async function storeCommits(commits, options = {}) {
 }
 
 /**
- * Store commit statistics in the Supabase database
+ * Store commit statistics in the database
  * @param {Object} commitStatistics - Commit statistics to store
  * @param {Object} options - Storage options
  * @returns {Promise<Object>} Storage result
@@ -148,7 +150,7 @@ export async function storeCommitStatistics(commitStatistics, options = {}) {
 }
 
 /**
- * Store contributor-repository relationships in the Supabase database
+ * Store contributor-repository relationships in the database
  * @param {Array<Object>} relationships - Relationships to store
  * @param {Object} options - Storage options
  * @returns {Promise<Object>} Storage result

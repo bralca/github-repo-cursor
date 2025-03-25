@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { apiClient, SitemapStatusResponse } from '@/lib/client/api-client';
 
 interface SitemapMetadata {
   entity_type: string;
@@ -30,12 +31,16 @@ export function useSitemapGeneration() {
     setError(null);
     
     try {
-      const response = await fetch('/api/sqlite/sitemap-status');
-      if (!response.ok) {
-        throw new Error('Failed to fetch sitemap status');
-      }
-      const data = await response.json();
-      setStatus(data);
+      // Use the API client instead of a direct fetch
+      const apiResponse = await apiClient.sitemap.getStatus();
+      
+      // Map API response to our status format
+      setStatus({
+        sitemapExists: apiResponse.status !== 'not_generated',
+        sitemapMetadata: [], // We'll populate this from the API response
+        lastUpdated: apiResponse.lastGenerated ? new Date(apiResponse.lastGenerated).getTime() : null,
+        fileCount: apiResponse.urlCount || 0
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to fetch sitemap status');
       console.error('Error fetching sitemap status:', err);
@@ -50,17 +55,8 @@ export function useSitemapGeneration() {
     setError(null);
     
     try {
-      const response = await fetch('/api/sqlite/generate-sitemap', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to generate sitemap');
-      }
+      // Use the API client instead of a direct fetch
+      await apiClient.sitemap.generate();
       
       // Fetch the updated status
       await fetchStatus();
