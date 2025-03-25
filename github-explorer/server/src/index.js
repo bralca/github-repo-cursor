@@ -8,9 +8,6 @@ import path from 'path';
 import { logger } from './utils/logger.js';
 import healthRoutes from './routes/health.js';
 import githubRoutes from './routes/github.js';
-import repositoryRoutes from './routes/repository.routes.js';
-import contributorRoutes from './routes/contributor.routes.js';
-import mergeRequestRoutes from './routes/merge-request.routes.js';
 import webhookRoutes from './routes/webhook.js';
 import apiRoutes from './routes/api-routes.js';
 
@@ -87,9 +84,6 @@ app.use((req, res, next) => {
 // Routes
 app.use('/health', healthRoutes);
 app.use('/github', githubRoutes);
-app.use('/api/repositories', repositoryRoutes);
-app.use('/api/contributors', contributorRoutes);
-app.use('/api/merge-requests', mergeRequestRoutes);
 app.use('/webhooks', webhookRoutes);
 app.use('/api', apiRoutes); // New API routes for frontend-backend separation
 
@@ -102,9 +96,6 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/health',
       github: '/github',
-      repositories: '/api/repositories',
-      contributors: '/api/contributors',
-      mergeRequests: '/api/merge-requests',
       webhooks: '/webhooks',
       api: '/api' // Add the new API endpoints
     }
