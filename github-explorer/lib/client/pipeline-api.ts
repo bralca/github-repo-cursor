@@ -55,13 +55,19 @@ export const pipelineApi = {
    * @returns Response indicating success or failure
    */
   async start(pipelineType: string): Promise<PipelineOperationResponse> {
+    // Log the request body to debug
+    console.log("Pipeline API start request body:", {
+      pipeline_type: pipelineType,
+      direct_execution: true
+    });
+    
     return await fetchFromApi<PipelineOperationResponse>(
-      'pipeline-operations',
+      'pipeline/start',
       'POST',
       undefined,
       {
-        operation: 'start',
-        pipelineType,
+        pipeline_type: pipelineType,
+        direct_execution: true
       }
     );
   },
@@ -73,12 +79,12 @@ export const pipelineApi = {
    */
   async stop(pipelineType: string): Promise<PipelineOperationResponse> {
     return await fetchFromApi<PipelineOperationResponse>(
-      'pipeline-operations',
+      'pipeline/stop',
       'POST',
       undefined,
       {
-        operation: 'stop',
-        pipelineType,
+        pipeline_type: pipelineType,
+        direct_execution: true
       }
     );
   },

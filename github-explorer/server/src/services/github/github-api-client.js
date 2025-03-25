@@ -450,4 +450,36 @@ export class GitHubApiClient {
       throw new Error(`Failed to fetch pull request files: ${error.message}`);
     }
   }
+  
+  async listPublicEvents(options = {}) {
+    try {
+      logger.info(`GitHub API: Fetching public events`, {
+        options: JSON.stringify(options),
+        clientId: this.clientId
+      });
+      
+      const response = await this.octokit.activity.listPublicEvents({
+        per_page: options.per_page || 100,
+        ...options
+      });
+      
+      // Log API response details
+      logger.info(`GitHub API: Public events fetched successfully`, {
+        status: response.status,
+        items_count: response.data?.length || 0,
+        rate_limit_remaining: response.headers?.['x-ratelimit-remaining'],
+        rate_limit_reset: response.headers?.['x-ratelimit-reset']
+      });
+      
+      return response;
+    } catch (error) {
+      logger.error(`GitHub API: Error fetching public events`, {
+        error: error.message,
+        status: error.status,
+        headers: error.headers,
+        clientId: this.clientId
+      });
+      throw error;
+    }
+  }
 } 

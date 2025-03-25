@@ -1,7 +1,8 @@
-import { getCommitBySha, getCommitSEODataBySha } from '@/lib/database/commits';
+import { getCommitBySha, getCommitSEODataBySha } from '@/lib/server-api/commits';
 import { notFound } from 'next/navigation';
 import { ReactNode } from 'react';
-import { CommitSEOData, RepositorySEOData } from '@/lib/metadata-utils';
+import { CommitSEOData } from '@/lib/server-api/commits';
+import { RepositorySEOData } from '@/lib/server-api/repositories';
 
 interface CommitDataWrapperProps {
   repositorySlug: string;
@@ -22,7 +23,8 @@ export async function CommitDataWrapper({
   children,
   showNotFound = true,
 }: CommitDataWrapperProps) {
-  const commit = await getCommitBySha(repositorySlug, commitSha);
+  // The server-api version takes only the SHA
+  const commit = await getCommitBySha(commitSha);
   
   if (!commit) {
     if (showNotFound) {
@@ -60,7 +62,8 @@ export async function CommitSEODataWrapper({
   children,
   showNotFound = true,
 }: CommitSEODataWrapperProps) {
-  const result = await getCommitSEODataBySha(repositorySlug, commitSha) as CommitSEOResult | null;
+  // The server-api version takes only the SHA
+  const result = await getCommitSEODataBySha(commitSha) as CommitSEOResult | null;
   
   if (!result) {
     if (showNotFound) {

@@ -45,6 +45,8 @@ export async function fetchFromApi<T>(
   
   // Add body if provided
   if (body && (method === 'POST' || method === 'PUT')) {
+    // Debug: Log the exact body before stringifying
+    console.log(`API ${method} request body:`, body);
     options.body = JSON.stringify(body);
   }
   

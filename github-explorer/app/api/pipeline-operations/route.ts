@@ -9,17 +9,26 @@ export async function POST(request: NextRequest) {
   try {
     const requestBody = await request.json();
     
-    // Support both camelCase and snake_case parameter names
+    // Debug: Log the full request body
+    console.log("Received pipeline operation request body:", JSON.stringify(requestBody));
+    
+    // Extract parameters from request body
     const { 
       operation, 
-      pipelineType, 
-      pipeline_type,
+      pipelineType,
+      pipeline_type, // For backward compatibility
       parameters
     } = requestBody;
     
-    // Use snake_case params if available, otherwise use camelCase
+    // Debug: Log extracted parameters
+    console.log("Extracted parameters:", { operation, pipelineType, pipeline_type, parameters });
+    
+    // Use pipelineType if available, otherwise use pipeline_type (for backwards compatibility)
     const actualOperation = operation;
-    const actualPipelineType = pipeline_type || pipelineType;
+    const actualPipelineType = pipelineType || pipeline_type;
+    
+    // Debug: Log the actual parameters used
+    console.log("Using parameters:", { actualOperation, actualPipelineType });
     
     if (!actualOperation) {
       return NextResponse.json({ error: 'Operation is required' }, { status: 400 });

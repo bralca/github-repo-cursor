@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { parseRepositorySlug } from '@/lib/url-utils';
-import { getRepositorySEODataByGithubId } from '@/lib/database/repositories';
+import { getRepositoryByGithubId } from '@/lib/server-api/repositories';
 import RepositoryContent from '../../components/repository/RepositoryContent';
 
 // Define types for the page props
@@ -27,8 +27,8 @@ export async function generateMetadata({ params }: RepositoryPageProps): Promise
     };
   }
   
-  // Fetch the repository data using our SEO-specific function
-  const repository = await getRepositorySEODataByGithubId(slugInfo.githubId);
+  // Fetch the repository data using our function
+  const repository = await getRepositoryByGithubId(slugInfo.githubId);
   
   if (!repository) {
     return {
@@ -117,9 +117,8 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
     notFound();
   }
   
-  // Fetch the repository data using our SEO-specific function 
-  // which includes enough info for the initial render
-  const repository = await getRepositorySEODataByGithubId(slugInfo.githubId);
+  // Fetch the repository data using our function
+  const repository = await getRepositoryByGithubId(slugInfo.githubId);
   
   if (!repository) {
     notFound();

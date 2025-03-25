@@ -1,7 +1,8 @@
-import { getMergeRequestBySlug, getMergeRequestSEODataBySlug } from '@/lib/database/merge-requests';
+import { getMergeRequestBySlug, getMergeRequestSEODataBySlug } from '@/lib/server-api/merge-requests';
 import { notFound } from 'next/navigation';
 import { ReactNode } from 'react';
-import { MergeRequestSEOData, RepositorySEOData } from '@/lib/metadata-utils';
+import { MergeRequestSEOData } from '@/lib/server-api/merge-requests';
+import { RepositorySEOData } from '@/lib/server-api/repositories';
 
 interface MergeRequestDataWrapperProps {
   repositorySlug: string;
@@ -22,7 +23,9 @@ export async function MergeRequestDataWrapper({
   children,
   showNotFound = true,
 }: MergeRequestDataWrapperProps) {
-  const mergeRequest = await getMergeRequestBySlug(repositorySlug, mergeRequestSlug);
+  // Combine the repository slug and merge request slug
+  const combinedSlug = `${repositorySlug}/${mergeRequestSlug}`;
+  const mergeRequest = await getMergeRequestBySlug(combinedSlug);
   
   if (!mergeRequest) {
     if (showNotFound) {
@@ -60,7 +63,9 @@ export async function MergeRequestSEODataWrapper({
   children,
   showNotFound = true,
 }: MergeRequestSEODataWrapperProps) {
-  const result = await getMergeRequestSEODataBySlug(repositorySlug, mergeRequestSlug) as MergeRequestSEOResult | null;
+  // Combine the repository slug and merge request slug
+  const combinedSlug = `${repositorySlug}/${mergeRequestSlug}`;
+  const result = await getMergeRequestSEODataBySlug(combinedSlug) as MergeRequestSEOResult | null;
   
   if (!result) {
     if (showNotFound) {

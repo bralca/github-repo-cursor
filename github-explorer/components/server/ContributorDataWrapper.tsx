@@ -1,4 +1,4 @@
-import { getContributorBySlug, getContributorSEODataBySlug } from '@/lib/database/contributors';
+import { getContributorBySlug, getContributorSEODataBySlug } from '@/lib/server-api/contributors';
 import { notFound } from 'next/navigation';
 import { ReactNode } from 'react';
 

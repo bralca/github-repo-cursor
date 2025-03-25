@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withDb } from '@/lib/database/connection';
+import { fetchFromServerApi } from '@/lib/server-api/server-fetch';
 
 // Track when the server was started
 const SERVER_START_TIME = new Date();
@@ -56,46 +56,25 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Check database connection
+ * Check database connection via API
  */
 async function checkDatabaseConnection() {
   try {
-    // Check if we can query the database
-    const result = await withDb(async (db) => {
-      // Get SQLite version
-      const version = await db.get('SELECT sqlite_version() as version');
-      
-      // Get all tables
-      const tables = await db.all(`
-        SELECT name FROM sqlite_master
-        WHERE type='table'
-        ORDER BY name
-      `);
-      
-      // Count rows in key tables
-      const counts = await Promise.all([
-        db.get('SELECT COUNT(*) as count FROM repositories').catch(() => ({ count: 0 })),
-        db.get('SELECT COUNT(*) as count FROM contributors').catch(() => ({ count: 0 })),
-        db.get('SELECT COUNT(*) as count FROM merge_requests').catch(() => ({ count: 0 })),
-        db.get('SELECT COUNT(*) as count FROM commits').catch(() => ({ count: 0 })),
-        db.get('SELECT COUNT(*) as count FROM contributor_rankings').catch(() => ({ count: 0 })),
-      ]);
-      
-      return {
-        connected: true,
-        version: version?.version,
-        tables: tables.map(t => t.name),
-        counts: {
-          repositories: counts[0]?.count || 0,
-          contributors: counts[1]?.count || 0,
-          mergeRequests: counts[2]?.count || 0,
-          commits: counts[3]?.count || 0,
-          contributorRankings: counts[4]?.count || 0,
-        }
-      };
-    });
+    // Fetch database status from the API
+    const result = await fetchFromServerApi<{
+      connected: boolean;
+      version: string;
+      tables: string[];
+      counts: {
+        repositories: number;
+        contributors: number;
+        mergeRequests: number;
+        commits: number;
+        contributorRankings: number;
+      }
+    }>('health/database');
     
-    return result;
+    return result || { connected: false, error: 'No data returned from API' };
   } catch (error: any) {
     console.error('Database connection check failed:', error);
     return {

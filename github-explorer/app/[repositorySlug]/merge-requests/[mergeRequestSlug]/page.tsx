@@ -1,9 +1,9 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { parseRepositorySlug, parseMergeRequestSlug } from '@/lib/url-utils';
-import { getMergeRequestSEODataByGithubId } from '@/lib/database/merge-requests';
-import { getRepositorySEODataByGithubId } from '@/lib/database/repositories';
-import { getContributorBaseDataByGithubId } from '@/lib/database/contributors';
+import { getMergeRequestByGithubId } from '@/lib/server-api/merge-requests';
+import { getRepositoryByGithubId } from '@/lib/server-api/repositories';
+import { getContributorByGithubId } from '@/lib/server-api/contributors';
 import { generateMergeRequestMetadata } from '@/lib/metadata-utils';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
@@ -19,12 +19,14 @@ interface MergeRequestPageProps {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-// Define metadata generation function
+// Define metadata generation function for SEO
 export async function generateMetadata({ params }: MergeRequestPageProps): Promise<Metadata> {
+  // Await params before accessing properties
+  const { repositorySlug, mergeRequestSlug } = await params;
+  
   // Extract the GitHub IDs from the slugs
-  const paramsObj = await params;
-  const repositorySlugInfo = parseRepositorySlug(paramsObj.repositorySlug);
-  const mergeRequestSlugInfo = parseMergeRequestSlug(paramsObj.mergeRequestSlug);
+  const repositorySlugInfo = parseRepositorySlug(repositorySlug);
+  const mergeRequestSlugInfo = parseMergeRequestSlug(mergeRequestSlug);
   
   if (!repositorySlugInfo || !mergeRequestSlugInfo) {
     return {
@@ -34,36 +36,21 @@ export async function generateMetadata({ params }: MergeRequestPageProps): Promi
   }
   
   // Fetch repository and merge request data for SEO
-  const repository = await getRepositorySEODataByGithubId(repositorySlugInfo.githubId);
-  const mergeRequest = await getMergeRequestSEODataByGithubId(
-    mergeRequestSlugInfo.githubId,
-    repositorySlugInfo.githubId
+  const repository = await getRepositoryByGithubId(repositorySlugInfo.githubId);
+  const mergeRequest = await getMergeRequestByGithubId(
+    repositorySlugInfo.githubId,
+    parseInt(mergeRequestSlugInfo.githubId, 10) // Convert string to number
   );
   
-  // Use the metadata generation utility
-  const metadata = generateMergeRequestMetadata(
-    mergeRequest ? {
-      title: mergeRequest.title,
-      description: mergeRequest.description || undefined,
-      state: mergeRequest.state,
-      repository_name: repository?.name,
-      repository_id: repository?.github_id,
-      created_at: mergeRequest.created_at,
-      github_id: mergeRequest.github_id
-    } : null,
-    repository ? {
-      name: repository.name,
-      full_name: repository.full_name || undefined,
-      description: repository.description || undefined,
-      stars: repository.stars || undefined,
-      forks: repository.forks || undefined,
-      primary_language: repository.primary_language || undefined,
-      github_id: repository.github_id,
-      url: `/repository/${repository.name}-${repository.github_id}`
-    } : undefined
-  );
+  if (!repository || !mergeRequest) {
+    return {
+      title: 'Merge Request Not Found',
+      description: 'The requested merge request could not be found.',
+    };
+  }
   
-  return metadata;
+  // Generate metadata using our utility function
+  return generateMergeRequestMetadata(mergeRequest, repository);
 }
 
 /**
@@ -80,34 +67,35 @@ function formatDate(dateString: string | null) {
 
 /**
  * Merge Request Page Component
- * This server component renders the merge request page with SEO metadata
+ * This server component fetches merge request data and renders the merge request page
  */
 export default async function MergeRequestPage({ params }: MergeRequestPageProps) {
+  // Await params before accessing properties
+  const { repositorySlug, mergeRequestSlug } = await params;
+  
   // Extract the GitHub IDs from the slugs
-  const paramsObj = await params;
-  const repositorySlugInfo = parseRepositorySlug(paramsObj.repositorySlug);
-  const mergeRequestSlugInfo = parseMergeRequestSlug(paramsObj.mergeRequestSlug);
+  const repositorySlugInfo = parseRepositorySlug(repositorySlug);
+  const mergeRequestSlugInfo = parseMergeRequestSlug(mergeRequestSlug);
   
   if (!repositorySlugInfo || !mergeRequestSlugInfo) {
     notFound();
   }
   
   // Fetch repository and merge request data
-  const repository = await getRepositorySEODataByGithubId(repositorySlugInfo.githubId);
-  const mergeRequest = await getMergeRequestSEODataByGithubId(
-    mergeRequestSlugInfo.githubId,
-    repositorySlugInfo.githubId
+  const repository = await getRepositoryByGithubId(repositorySlugInfo.githubId);
+  const mergeRequest = await getMergeRequestByGithubId(
+    repositorySlugInfo.githubId,
+    parseInt(mergeRequestSlugInfo.githubId, 10) // Convert string to number
   );
   
-  // Handle case where data is not found
   if (!repository || !mergeRequest) {
     notFound();
   }
   
-  // Fetch author data if available
+  // Fetch the author data if available
   let author = null;
   if (mergeRequest.author_github_id) {
-    author = await getContributorBaseDataByGithubId(mergeRequest.author_github_id.toString());
+    author = await getContributorByGithubId(mergeRequest.author_github_id.toString());
   }
   
   // Get status display text and color
@@ -129,11 +117,11 @@ export default async function MergeRequestPage({ params }: MergeRequestPageProps
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <div className="mb-2">
-          <Link href={`/${paramsObj.repositorySlug}`} className="text-blue-600 hover:underline">
+          <Link href={`/${repositorySlug}`} className="text-blue-600 hover:underline">
             {repository.name}
           </Link>
           <span className="mx-2 text-gray-400">/</span>
-          <Link href={`/${paramsObj.repositorySlug}/merge-requests`} className="text-blue-600 hover:underline">
+          <Link href={`/${repositorySlug}/merge-requests`} className="text-blue-600 hover:underline">
             merge requests
           </Link>
           <span className="mx-2 text-gray-400">/</span>

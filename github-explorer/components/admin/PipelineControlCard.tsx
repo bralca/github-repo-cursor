@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { sqliteClient } from '@/lib/database/sqlite';
+import { apiClient } from '@/lib/client/api-client';
 
 type PipelineType = 'github_sync' | 'data_processing' | 'data_enrichment' | 'ai_analysis';
 
@@ -295,8 +295,11 @@ export function PipelineControlCard({
       // Set loading state for this pipeline type
       setLocalIsStarting(prev => ({...prev, [pipelineType]: true}));
       
-      // Use the sqliteClient directly as in the original implementation
-      const result = await sqliteClient.pipeline.start(pipelineType);
+      // Debugging: Log pipeline type being passed to API
+      console.log("Starting pipeline with type:", pipelineType);
+      
+      // Use the API client
+      const result = await apiClient.pipeline.start(pipelineType);
       
       // Show success toast
       toast({
@@ -328,8 +331,8 @@ export function PipelineControlCard({
       // Set loading state for this pipeline type
       setLocalIsStopping(prev => ({...prev, [pipelineType]: true}));
       
-      // Use the sqliteClient directly as in the original implementation
-      const result = await sqliteClient.pipeline.stop(pipelineType);
+      // Use the API client
+      const result = await apiClient.pipeline.stop(pipelineType);
       
       // Show success toast
       toast({

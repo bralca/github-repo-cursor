@@ -27,8 +27,8 @@ The GitHub Explorer project is organized with distinct separation between fronte
 │   ├── providers/               # React context providers
 │   ├── types/                   # TypeScript type definitions
 │   ├── public/                  # Static assets
-│   ├── .env.local               # Local environment variables
-│   ├── .env.production          # Production environment variables
+│   ├── .env.local               # Frontend local development environment variables
+│   ├── .env.production          # Frontend production environment variables
 │   └── ...                      # Configuration files
 ├── github-explorer/server/      # Backend Node.js Application
 │   ├── db/                      # Database directory
@@ -47,7 +47,8 @@ The GitHub Explorer project is organized with distinct separation between fronte
 │   │   └── index.js             # Main server entry point
 │   ├── scripts/                 # Server maintenance scripts
 │   │   └── migrate-db.js        # Database migration script
-│   ├── .env                     # Server environment variables
+│   ├── .env                     # Backend local development environment variables
+│   ├── .env.production          # Backend production environment variables
 │   └── ...                      # Configuration files
 ├── DOCS/                        # Documentation files
 │   └── data-systems/            # Database documentation
@@ -124,4 +125,7 @@ The GitHub Explorer project is organized with distinct separation between fronte
 2. The database file is stored in the `/github-explorer/server/db/` directory
 3. Use the `DB_PATH` environment variable to override the default database location
 4. Frontend code must only interact with the database through HTTP calls to the backend API
-5. All API endpoints should have appropriate error handling 
+5. All API endpoints should have appropriate error handling
+6. Environment variables are split between frontend and backend:
+   - Frontend: `.env.local` (development) and `.env.production` (production)
+   - Backend: `server/.env` (development) and `server/.env.production` (production) 

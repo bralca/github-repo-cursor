@@ -37,22 +37,68 @@ async function getRecentMergedPullRequests(githubClient) {
     // Fetch recent public events to identify merged PRs
     // Use pagination to get a good sample
     try {
-      // This is different from the legacy implementation - we'll use the
-      // current API client to fetch events, limited to recent ones
-      const events = await githubClient.octokit.activity.listPublicEvents({
+      // Use the githubClient method instead of direct octokit access
+      logger.info("Making GitHub API request for public events");
+      const events = await githubClient.listPublicEvents({
         per_page: 100
+      });
+      
+      // Log API response details including rate limit information
+      logger.info("GitHub API response received", {
+        status: events.status,
+        headers: {
+          rateLimit: events.headers?.['x-ratelimit-remaining'],
+          rateLimitReset: events.headers?.['x-ratelimit-reset'],
+          etag: events.headers?.etag
+        },
+        dataLength: events.data?.length || 0
       });
       
       if (events.data) {
         allEvents.push(...events.data);
         logger.info(`Fetched ${events.data.length} public events`);
+        
+        // Log first few events for debugging
+        const sampleEvents = events.data.slice(0, 3).map(e => ({
+          type: e.type,
+          repo: e.repo?.name,
+          action: e.payload?.action,
+          created_at: e.created_at
+        }));
+        logger.info("Sample of public events:", { sampleEvents });
       }
     } catch (eventsError) {
-      logger.error('Error fetching public events:', { error: eventsError });
+      logger.error('Error fetching public events:', { 
+        error: eventsError,
+        message: eventsError.message,
+        status: eventsError.status,
+        headers: eventsError.headers
+      });
       // Continue with any events we've already fetched
     }
     
     // Filter for merged pull requests
+    logger.info(`Filtering ${allEvents.length} events for merged pull requests`);
+    
+    // Log some stats about event types before filtering
+    const eventTypeCounts = allEvents.reduce((counts, event) => {
+      counts[event.type] = (counts[event.type] || 0) + 1;
+      return counts;
+    }, {});
+    logger.info("Event type distribution:", { eventTypeCounts });
+    
+    // Log how many PullRequestEvents we have before filtering
+    const pullRequestEvents = allEvents.filter(event => event.type === 'PullRequestEvent');
+    logger.info(`Found ${pullRequestEvents.length} PullRequestEvents before filtering for merged status`);
+    
+    // Log PR event actions
+    const prActionCounts = pullRequestEvents.reduce((counts, event) => {
+      const action = event.payload?.action || 'unknown';
+      counts[action] = (counts[action] || 0) + 1;
+      return counts;
+    }, {});
+    logger.info("Pull request action distribution:", { prActionCounts });
+    
     const mergedPRs = allEvents.filter(event => 
       event.type === 'PullRequestEvent' &&
       event.payload?.action === 'closed' &&
@@ -60,6 +106,20 @@ async function getRecentMergedPullRequests(githubClient) {
     );
     
     logger.info(`Filtered to ${mergedPRs.length} merged pull requests`);
+    
+    // If we found merged PRs, log details about the first few
+    if (mergedPRs.length > 0) {
+      const samplePRs = mergedPRs.slice(0, 3).map(pr => ({
+        repo: pr.repo?.name,
+        pr_number: pr.payload?.pull_request?.number,
+        title: pr.payload?.pull_request?.title,
+        merged_at: pr.payload?.pull_request?.merged_at
+      }));
+      logger.info("Sample of merged pull requests:", { samplePRs });
+    } else {
+      logger.warn("No merged pull requests found in recent events");
+    }
+    
     return mergedPRs;
   } catch (error) {
     logger.error('Error in getRecentMergedPullRequests:', { error });
@@ -76,7 +136,11 @@ async function getRecentMergedPullRequests(githubClient) {
 async function storeMergedPullRequest(prEvent, db) {
   try {
     if (!prEvent.payload?.pull_request) {
-      logger.warn('Invalid PR event data - missing payload or pull_request');
+      logger.warn('Invalid PR event data - missing payload or pull_request', {
+        event_id: prEvent.id,
+        event_type: prEvent.type,
+        payload_keys: prEvent.payload ? Object.keys(prEvent.payload) : 'null'
+      });
       return;
     }
     
@@ -84,15 +148,29 @@ async function storeMergedPullRequest(prEvent, db) {
     const repoName = prEvent.repo?.name;
     
     if (!repoName) {
-      logger.warn('Invalid PR event data - missing repository name');
+      logger.warn('Invalid PR event data - missing repository name', {
+        event_id: prEvent.id,
+        pr_id: pr.id,
+        pr_number: pr.number
+      });
       return;
     }
     
-    logger.info(`Processing PR #${pr.number} from ${repoName}`);
+    logger.info(`Processing PR #${pr.number} from ${repoName}`, {
+      pr_id: pr.id,
+      pr_title: pr.title,
+      created_at: pr.created_at,
+      merged_at: pr.merged_at
+    });
     
     // The commits should be directly accessible in the payload
     // Check if they are available at various possible locations
     const commits = pr.commits_url ? pr._links?.commits?.href : [];
+    logger.debug('Commit data availability', {
+      has_commits_url: Boolean(pr.commits_url),
+      has_commits_href: Boolean(pr._links?.commits?.href),
+      commit_count: pr.commits || 0
+    });
     
     // Extract the needed data in a format similar to the legacy implementation
     const data = {
@@ -131,9 +209,23 @@ async function storeMergedPullRequest(prEvent, db) {
       commits: Array.isArray(pr.commits) ? pr.commits : []
     };
     
+    // Log the extracted data structure
+    logger.debug('Extracted PR data structure', {
+      pr_id: pr.id,
+      repository_id: data.repository.id,
+      user_login: data.pull_request.user?.login,
+      merged_by: data.pull_request.merged_by?.login,
+      commit_data_included: Boolean(data.commits && data.commits.length > 0)
+    });
+    
     // Convert the data to JSON string
     const jsonData = JSON.stringify(data);
     const prId = pr.id.toString();
+    
+    logger.info(`Checking if PR #${pr.number} already exists in database`, {
+      pr_id: prId,
+      repo: repoName
+    });
     
     // Check if this PR already exists in the database
     const existingPR = await db.get(
@@ -144,28 +236,75 @@ async function storeMergedPullRequest(prEvent, db) {
     
     if (existingPR) {
       // PR already exists, update it
-      logger.info(`PR #${pr.number} already exists (id: ${existingPR.id}), updating...`);
-      await db.run(
-        `UPDATE closed_merge_requests_raw 
-         SET data = ? 
-         WHERE id = ?`,
-        [jsonData, existingPR.id]
-      );
+      logger.info(`PR #${pr.number} already exists (id: ${existingPR.id}), updating...`, {
+        pr_id: prId,
+        db_id: existingPR.id,
+        repo: repoName
+      });
+      
+      try {
+        await db.run(
+          `UPDATE closed_merge_requests_raw 
+           SET data = ? 
+           WHERE id = ?`,
+          [jsonData, existingPR.id]
+        );
+        logger.info(`Successfully updated PR #${pr.number} in database`, {
+          pr_id: prId,
+          db_id: existingPR.id
+        });
+      } catch (dbError) {
+        logger.error(`Database error updating PR #${pr.number}`, {
+          error: dbError,
+          message: dbError.message,
+          pr_id: prId,
+          db_id: existingPR.id
+        });
+        throw dbError;
+      }
     } else {
       // PR is new, insert it
-      logger.info(`Storing new PR #${pr.number} from ${repoName}`);
-      await db.run(
-        'INSERT INTO closed_merge_requests_raw (data, is_processed) VALUES (?, ?)',
-        [jsonData, 0]  // 0 means not processed yet
-      );
+      logger.info(`Storing new PR #${pr.number} from ${repoName}`, {
+        pr_id: prId,
+        repo: repoName
+      });
+      
+      try {
+        const result = await db.run(
+          'INSERT INTO closed_merge_requests_raw (data, is_processed) VALUES (?, ?)',
+          [jsonData, 0]  // 0 means not processed yet
+        );
+        logger.info(`Successfully inserted new PR #${pr.number} in database`, {
+          pr_id: prId,
+          db_id: result.lastID,
+          changes: result.changes
+        });
+      } catch (dbError) {
+        logger.error(`Database error inserting PR #${pr.number}`, {
+          error: dbError,
+          message: dbError.message,
+          pr_id: prId
+        });
+        throw dbError;
+      }
     }
     
     // Log information about commits (if any were found)
     const commitCount = Array.isArray(data.commits) ? data.commits.length : 0;
     const commitMsg = commitCount > 0 ? `with ${commitCount} commits` : 'without commit details';
-    logger.info(`Successfully stored data for PR #${pr.number} from ${repoName} ${commitMsg}`);
+    logger.info(`Successfully stored data for PR #${pr.number} from ${repoName} ${commitMsg}`, {
+      pr_id: prId,
+      repo: repoName,
+      commit_count: commitCount
+    });
   } catch (error) {
-    logger.error('Error storing pull request data:', { error });
+    logger.error('Error storing pull request data:', { 
+      error,
+      message: error.message,
+      stack: error.stack,
+      pr_id: prEvent.payload?.pull_request?.id,
+      repo: prEvent.repo?.name
+    });
     throw error;
   }
 }
@@ -340,6 +479,7 @@ class PipelineOperationsController extends BaseController {
    * @private
    */
   async executeGitHubSync() {
+    logger.info('------------- GITHUB SYNC PIPELINE STARTED -------------');
     logger.info('Executing GitHub sync function directly');
     
     // Initialize stats to track processing metrics
@@ -350,84 +490,174 @@ class PipelineOperationsController extends BaseController {
       skipped: 0
     };
     
+    // Track the execution time
+    const startTime = Date.now();
+    
     try {
       // Step 1: Import required modules
+      logger.info('Step 1: Importing required modules');
       const { GitHubApiClient } = await import('../services/github/github-api-client.js');
       
       // Step 2: Create a GitHub API client
+      logger.info('Step 2: Creating GitHub API client');
       const githubClient = new GitHubApiClient({
         clientId: 'github-sync-direct',
         token: process.env.GITHUB_TOKEN
       });
       
+      // Log GitHub token availability (redacted for security)
+      logger.info('GitHub API client created', {
+        has_token: Boolean(process.env.GITHUB_TOKEN),
+        token_length: process.env.GITHUB_TOKEN ? `${process.env.GITHUB_TOKEN.length} chars` : 'none'
+      });
+      
       // Step 3: Set up database connection
+      logger.info('Step 3: Setting up database connection');
       const db = await openSQLiteConnection();
+      logger.info('Database connection established');
+      
+      // Check if we can read from the database
+      try {
+        const dbTest = await db.get('SELECT sqlite_version() as version');
+        logger.info('Database connectivity verified', {
+          sqlite_version: dbTest?.version || 'unknown'
+        });
+      } catch (dbTestError) {
+        logger.error('Database connectivity test failed', {
+          error: dbTestError,
+          message: dbTestError.message
+        });
+      }
       
       // Step 4: Ensure all required tables exist
-      logger.info('Checking database tables...');
+      logger.info('Step 4: Checking database tables');
       
       // Check closed_merge_requests_raw table
       const rawTableExists = await db.get(
         `SELECT name FROM sqlite_master WHERE type='table' AND name='closed_merge_requests_raw'`
       );
       
+      logger.info('Database table check result', {
+        closed_merge_requests_raw_exists: Boolean(rawTableExists)
+      });
+      
       if (!rawTableExists) {
-        logger.info('Creating closed_merge_requests_raw table...');
-        await db.exec(`
-          CREATE TABLE closed_merge_requests_raw (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            data TEXT NOT NULL,
-            is_processed INTEGER NOT NULL DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          );
-          
-          CREATE INDEX IF NOT EXISTS idx_closed_mr_is_processed 
-          ON closed_merge_requests_raw(is_processed);
-        `);
+        logger.info('Creating closed_merge_requests_raw table');
+        try {
+          await db.exec(`
+            CREATE TABLE closed_merge_requests_raw (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              data TEXT NOT NULL,
+              is_processed INTEGER NOT NULL DEFAULT 0,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            
+            CREATE INDEX IF NOT EXISTS idx_closed_mr_is_processed 
+            ON closed_merge_requests_raw(is_processed);
+          `);
+          logger.info('Successfully created closed_merge_requests_raw table');
+        } catch (createTableError) {
+          logger.error('Error creating database table', {
+            error: createTableError,
+            message: createTableError.message
+          });
+          throw createTableError;
+        }
       }
       
       // Ensure all entity tables exist for data processing
+      logger.info('Ensuring contributor_repository table exists');
       await this.ensureContributorRepositoryTable(db);
       
       // Step 5: Fetch and store GitHub data
-      logger.info('Fetching merged pull requests from GitHub...');
-      const mergedPRs = await getRecentMergedPullRequests(githubClient);
-      logger.info(`Found ${mergedPRs.length} recently merged pull requests`);
-      stats.processed = mergedPRs.length;
+      logger.info('Step 5: Fetching merged pull requests from GitHub');
+      let mergedPRs = [];
+      try {
+        mergedPRs = await getRecentMergedPullRequests(githubClient);
+        logger.info(`Found ${mergedPRs.length} recently merged pull requests`);
+        stats.processed = mergedPRs.length;
+      } catch (fetchError) {
+        logger.error('Error fetching merged pull requests', {
+          error: fetchError,
+          message: fetchError.message
+        });
+        stats.errors++;
+      }
       
       // Step 6: Process each PR
-      // Important: We now fetch commit data for each PR and store it with the PR data
-      // This ensures we can process all commits, not just their count
-      logger.info('Processing pull requests with complete commit data');
+      logger.info(`Step 6: Processing ${mergedPRs.length} pull requests`);
       
-      for (const pr of mergedPRs) {
+      // Store the IDs of successfully processed PRs for reporting
+      const processedPRIds = [];
+      const errorPRIds = [];
+      
+      for (let i = 0; i < mergedPRs.length; i++) {
+        const pr = mergedPRs[i];
+        logger.info(`Processing PR ${i+1}/${mergedPRs.length}`);
+        
         try {
           // Pass the githubClient to storeMergedPullRequest to fetch commit data
           await storeMergedPullRequest(pr, db);
           stats.saved++;
+          
+          // Store the PR ID for reporting
+          const prId = pr.payload?.pull_request?.id;
+          if (prId) {
+            processedPRIds.push(prId);
+          }
         } catch (prError) {
-          logger.error(`Error processing PR (${pr.payload?.pull_request?.html_url || 'unknown PR'})`, { 
-            error: prError 
+          const prUrl = pr.payload?.pull_request?.html_url || 'unknown PR';
+          logger.error(`Error processing PR (${prUrl})`, { 
+            error: prError,
+            message: prError.message,
+            index: i
           });
           stats.errors++;
-          // Continue processing other PRs even if one fails
+          
+          // Store the PR ID for reporting
+          const prId = pr.payload?.pull_request?.id;
+          if (prId) {
+            errorPRIds.push(prId);
+          }
         }
       }
       
-      logger.info(`GitHub sync completed. Processed ${stats.processed} pull requests.`);
+      logger.info(`GitHub sync completed. Processed ${stats.processed} pull requests, saved ${stats.saved}, errors ${stats.errors}`, {
+        processedPRIds: processedPRIds.slice(0, 5), // Show first 5 only
+        errorPRIds,
+        total_processed: stats.processed,
+        total_saved: stats.saved,
+        total_errors: stats.errors
+      });
       
       // Step 7: Close the database connection
+      logger.info('Step 7: Closing database connection');
       await db.close();
+      logger.info('Database connection closed');
       
       // Step 8: Get stats for unprocessed items
+      logger.info('Step 8: Getting stats for unprocessed items');
       const statsDb = await openSQLiteConnection();
-      const statsQuery = "SELECT COUNT(*) as count FROM closed_merge_requests_raw WHERE is_processed = 0";
-      const statsResult = await statsDb.get(statsQuery);
-      const unprocessedCount = statsResult?.count || 0;
-      await statsDb.close();
+      
+      let unprocessedCount = 0;
+      try {
+        const statsQuery = "SELECT COUNT(*) as count FROM closed_merge_requests_raw WHERE is_processed = 0";
+        const statsResult = await statsDb.get(statsQuery);
+        unprocessedCount = statsResult?.count || 0;
+        logger.info(`Found ${unprocessedCount} unprocessed items in database`);
+      } catch (statsError) {
+        logger.error('Error getting unprocessed item count', {
+          error: statsError,
+          message: statsError.message
+        });
+      } finally {
+        await statsDb.close();
+        logger.info('Stats database connection closed');
+      }
       
       // Emit pipeline progress event
+      logger.info('Emitting pipeline progress event');
       pipelineEvents.emit('pipeline_progress', {
         pipelineType: 'github_sync',
         progress: {
@@ -437,22 +667,36 @@ class PipelineOperationsController extends BaseController {
         stats
       });
       
-      // Step 9: Document the changes
-      logger.info('GitHub sync process complete. Documentation update recommended to reflect changes.');
+      // Calculate execution time
+      const executionTime = (Date.now() - startTime) / 1000;
+      logger.info(`GitHub sync process completed in ${executionTime.toFixed(2)} seconds`);
+      logger.info('------------- GITHUB SYNC PIPELINE COMPLETED -------------');
       
       return { 
         success: true,
         itemsProcessed: stats.processed,
         stats,
         unprocessedCount,
+        executionTime: executionTime.toFixed(2),
         message: `Successfully processed ${stats.processed} pull requests. ${unprocessedCount} ready for data extraction.`
       };
     } catch (error) {
-      logger.error('Error in direct GitHub sync function:', { error });
+      // Calculate execution time even for errors
+      const executionTime = (Date.now() - startTime) / 1000;
+      
+      logger.error('Error in direct GitHub sync function:', { 
+        error,
+        message: error.message,
+        stack: error.stack,
+        executionTime: executionTime.toFixed(2)
+      });
+      
+      logger.info('------------- GITHUB SYNC PIPELINE FAILED -------------');
       
       return {
         success: false,
         stats,
+        executionTime: executionTime.toFixed(2),
         error: error.message,
         message: `Failed to sync GitHub data: ${error.message}` 
       };

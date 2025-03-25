@@ -1,4 +1,4 @@
-import { getRepositoryBySlug, getRepositorySEODataBySlug } from '@/lib/database/repositories';
+import { getRepositoryBySlug, getRepositorySEODataBySlug } from '@/lib/server-api/repositories';
 import { notFound } from 'next/navigation';
 import { ReactNode } from 'react';
 

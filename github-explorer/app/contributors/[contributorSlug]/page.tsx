@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { parseContributorSlug } from '@/lib/url-utils';
-import { getContributorSEODataByGithubId, ContributorSEOData } from '@/lib/database/contributors';
+import { getContributorByGithubId } from '@/lib/server-api/contributors';
 import ContributorContent from '@/components/contributor/ContributorContent';
 import { ContributorDetailData } from '@/lib/client/fetchContributorData';
 
@@ -13,11 +13,21 @@ interface ContributorPageProps {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-// Convert the SEO data to the format expected by the client component
-function mapToContributorDetailData(contributor: ContributorSEOData): ContributorDetailData {
+// Convert the API data to the format expected by the client component
+function mapToContributorDetailData(contributor: any): ContributorDetailData {
   return {
-    ...contributor,
-    github_id: contributor.github_id.toString(), // Convert number to string
+    id: contributor.id,
+    github_id: contributor.github_id.toString(),
+    name: contributor.name || null,
+    username: contributor.username || null,
+    avatar: contributor.avatar || null,
+    bio: contributor.bio || null,
+    // Add missing fields required by ContributorDetailData
+    company: null,
+    location: null,
+    repositories: contributor.repositories || null,
+    impact_score: null,
+    role_classification: null
   };
 }
 
@@ -38,7 +48,7 @@ export async function generateMetadata({ params }: ContributorPageProps): Promis
   
   // Fetch the contributor data using our SEO-specific function
   try {
-    const contributor = await getContributorSEODataByGithubId(slugInfo.githubId);
+    const contributor = await getContributorByGithubId(slugInfo.githubId);
     
     if (!contributor) {
       return {
@@ -81,7 +91,7 @@ export default async function ContributorPage({ params }: ContributorPageProps) 
   
   // Fetch initial data server-side
   try {
-    const seoData = await getContributorSEODataByGithubId(slugInfo.githubId);
+    const seoData = await getContributorByGithubId(slugInfo.githubId);
     
     if (!seoData) {
       notFound();
