@@ -28,7 +28,9 @@ export function useContributorRankings(): UseContributorRankingsReturn {
     try {
       const data = await apiClient.rankings.calculate();
       
-      setStats(data.stats);
+      if (data.stats) {
+        setStats(data.stats);
+      }
       
       toast({
         title: 'Success',
