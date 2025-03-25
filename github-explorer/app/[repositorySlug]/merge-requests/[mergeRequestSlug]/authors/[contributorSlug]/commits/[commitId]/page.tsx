@@ -5,21 +5,14 @@ import {
   parseMergeRequestSlug, 
   parseContributorSlug
 } from '@/lib/url-utils';
-import { 
-  getRepositorySEODataByGithubId 
-} from '@/lib/database/repositories';
-import {
-  getMergeRequestSEODataByGithubId
-} from '@/lib/database/merge-requests';
-import {
-  getContributorBaseDataByGithubId
-} from '@/lib/database/contributors';
-import {
-  getCommitSEODataBySha,
-  getCommitFiles
-} from '@/lib/database/commits';
+
+// Import from server API modules instead of database
+import { getRepositorySEODataByGithubId } from '@/lib/server-api/repositories';
+import { getMergeRequestSEODataByGithubId } from '@/lib/server-api/merge-requests';
+import { getContributorSEODataByGithubId } from '@/lib/server-api/contributors';
+import { getCommitSEODataBySha } from '@/lib/server-api/commits';
+
 import { generateCommitMetadata } from '@/lib/metadata-utils';
-import CommitContent from '@/components/commit/CommitContent';
 
 // Define types for the page props
 interface CommitPageProps {
@@ -50,20 +43,14 @@ export async function generateMetadata({ params }: CommitPageProps): Promise<Met
   
   // Fetch repository, merge request, contributor, and commit data for SEO
   const repository = await getRepositorySEODataByGithubId(repositorySlugInfo.githubId);
-  const mergeRequest = await getMergeRequestSEODataByGithubId(
-    mergeRequestSlugInfo.githubId,
-    repositorySlugInfo.githubId
-  );
-  const contributor = await getContributorBaseDataByGithubId(contributorSlugInfo.githubId);
-  const commit = await getCommitSEODataBySha(
-    commitId, // The commitId is the commit SHA
-    repositorySlugInfo.githubId
-  );
+  const mergeRequest = await getMergeRequestSEODataByGithubId(repositorySlugInfo.githubId, parseInt(mergeRequestSlugInfo.githubId));
+  const contributor = await getContributorSEODataByGithubId(contributorSlugInfo.githubId);
+  const commit = await getCommitSEODataBySha(commitId);
   
   // Use the metadata generation utility
   const metadata = generateCommitMetadata(
     commit ? {
-      sha: commit.sha,
+      sha: commit.github_id,
       message: commit.message,
       file_name: undefined, // We're no longer dealing with a single file
       author_name: contributor?.name || contributor?.username || undefined,
@@ -90,115 +77,39 @@ export async function generateMetadata({ params }: CommitPageProps): Promise<Met
  * This server component renders the commit page with SEO metadata
  */
 export default async function CommitPage({ params }: CommitPageProps) {
-  console.log('Commit Page - Starting to render with params:', params);
-  
   // Extract the GitHub IDs from the slugs
   const paramsObj = await params;
-  console.log('Commit Page - Params after await:', paramsObj);
   
   const repositorySlugInfo = parseRepositorySlug(paramsObj.repositorySlug);
-  console.log('Commit Page - Repository slug info:', repositorySlugInfo);
-  
   const mergeRequestSlugInfo = parseMergeRequestSlug(paramsObj.mergeRequestSlug);
-  console.log('Commit Page - Merge request slug info:', mergeRequestSlugInfo);
-  
   const contributorSlugInfo = parseContributorSlug(paramsObj.contributorSlug);
-  console.log('Commit Page - Contributor slug info:', contributorSlugInfo);
-  
   const commitId = paramsObj.commitId;
-  console.log('Commit Page - Commit ID:', commitId);
   
   if (!repositorySlugInfo || !mergeRequestSlugInfo || !contributorSlugInfo || !commitId) {
-    console.log('Commit Page - Some slug info is missing, returning 404');
     notFound();
   }
   
   try {
-    // Fetch repository, merge request, contributor, and commit data
-    console.log('Commit Page - Starting database queries');
-    
-    console.log('Commit Page - Fetching repository with ID:', repositorySlugInfo.githubId);
-    const repository = await getRepositorySEODataByGithubId(repositorySlugInfo.githubId);
-    console.log('Commit Page - Repository result:', repository ? 'Found' : 'Not found');
-    
-    console.log('Commit Page - Fetching merge request with ID:', mergeRequestSlugInfo.githubId);
-    const mergeRequest = await getMergeRequestSEODataByGithubId(
-      mergeRequestSlugInfo.githubId,
-      repositorySlugInfo.githubId
-    );
-    console.log('Commit Page - Merge request result:', mergeRequest ? 'Found' : 'Not found');
-    
-    console.log('Commit Page - Fetching contributor with ID:', contributorSlugInfo.githubId);
-    const contributor = await getContributorBaseDataByGithubId(contributorSlugInfo.githubId);
-    console.log('Commit Page - Contributor result:', contributor ? 'Found' : 'Not found');
-    
-    console.log('Commit Page - Fetching commit with SHA:', commitId);
-    const commit = await getCommitSEODataBySha(
-      commitId,
-      repositorySlugInfo.githubId
-    );
-    console.log('Commit Page - Commit result:', commit ? 'Found' : 'Not found');
-    
-    // Get all files for this commit
-    console.log('Commit Page - Fetching files for commit:', commitId);
-    const files = await getCommitFiles(commitId, repositorySlugInfo.githubId);
-    console.log('Commit Page - Found', files?.length || 0, 'files for this commit');
-    
-    // Handle case where data is not found
-    if (!repository || !mergeRequest || !contributor || !commit) {
-      console.log('Commit Page - Some data is missing, returning 404');
-      notFound();
-    }
-    
-    // Continue with the rest of the page rendering
-    console.log('Commit Page - All data found, continuing with rendering');
-    
-    // Find the first file to use as default
-    const defaultFilename = files && files.length > 0 ? files[0].filename : "No files available";
-    
-    // Prepare initial data for the client component
-    const initialData = {
-      commit: {
-        id: commit.id,
-        github_id: commit.github_id,
-        sha: commit.sha,
-        message: commit.message,
-        committed_at: commit.committed_at,
-        additions: commit.additions,
-        deletions: commit.deletions,
-        changed_files: commit.changed_files || (files?.length || 1),
-        complexity_score: commit.complexity_score
-      },
-      repository: {
-        id: repository.id,
-        github_id: repository.github_id.toString(),
-        name: repository.name,
-        full_name: repository.full_name || repository.name
-      },
-      contributor: {
-        id: contributor.id,
-        github_id: contributor.github_id.toString(),
-        name: contributor.name || undefined,
-        username: contributor.username || undefined,
-        avatar: contributor.avatar || undefined
-      },
-      mergeRequest: {
-        id: mergeRequest.id,
-        github_id: mergeRequest.github_id.toString(),
-        title: mergeRequest.title
-      },
-      filename: defaultFilename // Setting a default filename
-    };
-    
+    // Simplified version - just show the parameters
     return (
-      <main>
-        <CommitContent 
-          initialData={initialData}
-          repositorySlug={paramsObj.repositorySlug}
-          mergeRequestSlug={paramsObj.mergeRequestSlug}
-          contributorSlug={paramsObj.contributorSlug}
-          commitId={commitId}
-        />
+      <main className="p-8">
+        <h1 className="text-3xl font-bold mb-6">Commit Details</h1>
+        
+        <div className="bg-white shadow rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Request Parameters</h2>
+          <div className="space-y-2">
+            <p><span className="font-medium">Repository:</span> {repositorySlugInfo.name} (ID: {repositorySlugInfo.githubId})</p>
+            <p><span className="font-medium">Merge Request:</span> {mergeRequestSlugInfo.title} (ID: {mergeRequestSlugInfo.githubId})</p>
+            <p><span className="font-medium">Contributor:</span> {contributorSlugInfo.name || contributorSlugInfo.username} (ID: {contributorSlugInfo.githubId})</p>
+            <p><span className="font-medium">Commit ID:</span> {commitId}</p>
+          </div>
+        </div>
+        
+        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-md">
+          <p className="text-yellow-800">
+            This is a simplified placeholder page. The actual commit content will be implemented in a future update.
+          </p>
+        </div>
       </main>
     );
   } catch (error) {

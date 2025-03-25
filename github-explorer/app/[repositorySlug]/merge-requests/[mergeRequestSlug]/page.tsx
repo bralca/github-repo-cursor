@@ -176,7 +176,7 @@ export default async function MergeRequestPage({ params }: MergeRequestPageProps
             id: `author-${author.github_id}`,
             github_id: parseInt(author.github_id.toString()),
             username: author.username || '',
-            name: author.name,
+            name: author.name || null,
             avatar: author.avatar || 'https://avatars.githubusercontent.com/u/0?v=4'
           } : undefined
         }}

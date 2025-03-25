@@ -20,10 +20,11 @@ console.log(`[SERVER] Initializing Next.js application at ${SERVER_START_TIME.to
 console.log(`[SERVER] Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`[SERVER] Node version: ${process.version}`);
 console.log(`[SERVER] Working directory: ${process.cwd()}`);
-console.log(`[SERVER] Database path: ${process.env.DB_PATH}`);
-if (!process.env.DB_PATH) {
-  console.error(`[SERVER] ERROR: DB_PATH environment variable is not set. This will cause database connection issues.`);
-}
+// The frontend should not need to access the database directly, it should use the API
+// console.log(`[SERVER] Database path: ${process.env.DB_PATH}`);
+// if (!process.env.DB_PATH) {
+//   console.error(`[SERVER] ERROR: DB_PATH environment variable is not set. This will cause database connection issues.`);
+// }
 
 export const metadata: Metadata = {
   title: "GitHub Explorer",

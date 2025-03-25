@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -19,6 +20,14 @@ const nextConfig: NextConfig = {
   // Ignore ESLint errors during builds
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  // Add webpack config to ensure proper path alias resolution
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname),
+    };
+    return config;
   },
 };
 

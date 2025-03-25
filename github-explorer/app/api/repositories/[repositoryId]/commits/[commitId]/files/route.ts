@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { withDb } from '@/lib/database/connection';
+import { getCommitFiles } from '@/lib/server-api/commits';
 
 export async function GET(
   request: Request,
@@ -17,23 +17,8 @@ export async function GET(
       );
     }
 
-    // Get all files changed in the commit
-    const files = await withDb(async (db) => {
-      return await db.all(`
-        SELECT 
-          id, 
-          filename, 
-          status, 
-          additions, 
-          deletions, 
-          patch
-        FROM 
-          commits
-        WHERE 
-          repository_github_id = ? 
-          AND github_id = ?
-      `, [repositoryId, commitId]);
-    });
+    // Get all files changed in the commit using the server API
+    const files = await getCommitFiles(repositoryId, commitId);
 
     if (!files || files.length === 0) {
       return NextResponse.json(

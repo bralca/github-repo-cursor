@@ -28,8 +28,15 @@ interface SitemapControlCardProps {
 
 export function SitemapControlCard({}: SitemapControlCardProps) {
   const { generateSitemap, isGenerating, status, isError, lastUpdated, refreshStatus } = useSitemapGeneration();
-  const { validateSitemap, isValidating, validationResults, validationError } = useSitemapValidation();
+  const { validateUrls, isValidating, totalUrls, validUrls, errorUrls, validationComplete, error: validationError } = useSitemapValidation();
   const [activeTab, setActiveTab] = useState<string>('generation');
+  
+  // Derived validationResults object from the individual values for backward compatibility
+  const validationResults = validationComplete ? {
+    totalCount: totalUrls,
+    validCount: validUrls,
+    errorCount: errorUrls
+  } : null;
   
   const handleGenerateSitemap = async () => {
     await generateSitemap();
@@ -39,7 +46,7 @@ export function SitemapControlCard({}: SitemapControlCardProps) {
   };
   
   const handleValidateSitemap = async () => {
-    await validateSitemap();
+    await validateUrls();
   };
   
   return (
@@ -225,91 +232,42 @@ export function SitemapControlCard({}: SitemapControlCardProps) {
                 <div className="border rounded-md p-3 col-span-1">
                   <div className="text-xs text-muted-foreground mb-1">Total URLs</div>
                   <div className="text-lg font-semibold">
-                    {validationResults.total.toLocaleString()}
+                    {validationResults.totalCount.toLocaleString()}
                   </div>
                 </div>
                 <div className="border rounded-md p-3 col-span-1">
                   <div className="text-xs text-muted-foreground mb-1">Success Rate</div>
                   <div className="text-lg font-semibold">
-                    {((validationResults.successful / validationResults.total) * 100).toFixed(1)}%
+                    {((validationResults.validCount / validationResults.totalCount) * 100).toFixed(1)}%
                   </div>
                 </div>
                 <div className="border rounded-md p-3 bg-emerald-50/50 col-span-2">
                   <div className="text-xs text-emerald-700 mb-1">Successful</div>
                   <div className="text-lg font-semibold text-emerald-700">
-                    {validationResults.successful.toLocaleString()}
+                    {validationResults.validCount.toLocaleString()}
                   </div>
                 </div>
-                <div className={validationResults.failed > 0 ? "border rounded-md p-3 bg-amber-50/50 col-span-2" : "border rounded-md p-3 bg-emerald-50/50 col-span-2"}>
-                  <div className={validationResults.failed > 0 ? "text-xs text-amber-700 mb-1" : "text-xs text-emerald-700 mb-1"}>Failed</div>
-                  <div className={validationResults.failed > 0 ? "text-lg font-semibold text-amber-700" : "text-lg font-semibold text-emerald-700"}>
-                    {validationResults.failed.toLocaleString()}
+                <div className={validationResults.errorCount > 0 ? "border rounded-md p-3 bg-amber-50/50 col-span-2" : "border rounded-md p-3 bg-emerald-50/50 col-span-2"}>
+                  <div className={validationResults.errorCount > 0 ? "text-xs text-amber-700 mb-1" : "text-xs text-emerald-700 mb-1"}>Failed</div>
+                  <div className={validationResults.errorCount > 0 ? "text-lg font-semibold text-amber-700" : "text-lg font-semibold text-emerald-700"}>
+                    {validationResults.errorCount.toLocaleString()}
                   </div>
                 </div>
               </div>
               
-              {Object.keys(validationResults.byStatusCode).length > 0 && (
-                <div className="mb-5">
-                  <h4 className="text-xs font-medium mb-3">Status Code Breakdown</h4>
-                  <div className="grid grid-cols-12 gap-2">
-                    {Object.entries(validationResults.byStatusCode).map(([code, count]) => (
-                      <div key={code} className="border rounded-md p-2 flex flex-col items-center col-span-1">
-                        <span className={code.startsWith('2') ? 'text-xs text-emerald-600 font-medium mb-1' : 'text-xs text-red-600 font-medium mb-1'}>
-                          {code === '0' ? 'Error' : `${code}`}
-                        </span>
-                        <Badge variant={code.startsWith('2') ? "success" : "destructive"} className="px-1.5 text-xs">
-                          {count.toLocaleString()}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {validationResults.failedUrls.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-medium mb-3">Failed URLs ({validationResults.failedUrls.length})</h4>
-                  <div className="max-h-40 overflow-auto border rounded-md divide-y">
-                    {validationResults.failedUrls.slice(0, 5).map((result, index) => (
-                      <div key={index} className="p-3 flex items-center">
-                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 mr-2 shrink-0">
-                          {result.statusCode === 0 ? 'Error' : result.statusCode}
-                        </Badge>
-                        <a 
-                          href={result.url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-xs text-primary truncate hover:underline flex-1" 
-                          title={result.url}
-                        >
-                          {result.url}
-                        </a>
-                      </div>
-                    ))}
-                    {validationResults.failedUrls.length > 5 && (
-                      <div className="p-2 text-center">
-                        <Button variant="ghost" className="w-full text-xs h-8 hover:bg-muted/30">
-                          See all {validationResults.failedUrls.length} failed URLs
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              <div className="text-xs text-muted-foreground px-3 py-2 border rounded-md bg-muted/5 mb-2">
+                <span className="font-medium">Note:</span> Using simplified validation. For detailed validation, please use an external tool.
+              </div>
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center h-32 border rounded-md bg-muted/10">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50 mb-2">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-              </svg>
-              <p className="text-sm text-muted-foreground">No validation data available yet</p>
-              <p className="text-xs text-muted-foreground mt-1">Run a validation to see results</p>
+            <div className="flex items-center justify-center h-32 border rounded-md bg-muted/10 mb-4">
+              <p className="text-sm text-muted-foreground">No validation results yet</p>
             </div>
           )}
           
           {validationError && (
             <div className="text-xs text-red-600 p-2 bg-red-50 border border-red-200 rounded-md mt-4">
-              Error: {validationError}
+              {validationError}
             </div>
           )}
         </TabsContent>

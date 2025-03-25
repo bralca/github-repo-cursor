@@ -44,3 +44,6 @@ next-env.d.ts
 /public/sitemap.xml
 /public/sitemaps/
 public/sitemaps/*.xml
+
+# Test files directory (excluded from build)
+/test-files
