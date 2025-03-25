@@ -12,11 +12,12 @@ export async function getSupabaseClient() {
 }
 
 // Type for the handler function passed to withDb
-type DbHandler<T> = (db: Database, ...args: any[]) => Promise<T>;
+type DbHandler<T> = (db: Database, req: NextRequest, params: Record<string, string>) => Promise<T>;
 
 export function withDb<T>(handler: DbHandler<T>) {
-  return async function(req: NextRequest, params: any) {
+  return async function(req: NextRequest, params: Record<string, string>) {
     // This is a placeholder function to make the build pass
-    return handler(null as any, req, params);
+    // In production, this would connect to the database
+    return handler(null as unknown as Database, req, params);
   };
 }
