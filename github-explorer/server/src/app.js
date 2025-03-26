@@ -13,6 +13,8 @@ import { registerDatabaseWriterPipeline } from './pipeline/stages/database-write
 import { processWebhookPayload } from './pipeline/stages/webhook-processor-pipeline.js';
 import { processRepository } from './pipeline/stages/repository-processor-pipeline.js';
 import { createSitemapPipeline } from './pipeline/index.js';
+import { initializeRequiredPipelines } from './pipeline/initialize-pipelines.js';
+import runCronJobs from './scripts/run-cron-jobs.js';
 
 // Import routes
 import healthRoutes from './routes/health.js';
@@ -103,6 +105,17 @@ function initializePipelines() {
   // Add the pipeline to the pipeline server's available pipelines
   global.pipelines = global.pipelines || {};
   global.pipelines['sitemap_generation'] = sitemapPipeline;
+  
+  // Initialize the required pipelines for cron jobs
+  initializeRequiredPipelines({
+    // Configure pipeline options if needed
+    dataProcessingBatchSize: 50,
+    entityExtractionBatchSize: 100,
+    dataEnrichmentBatchSize: 20,
+    sitemapOutputDir: './public/sitemaps',
+    sitemapBaseUrl: process.env.BASE_URL || 'https://github-explorer.example.com',
+    contributorRankingsBatchSize: 500
+  });
   
   logger.info('Data processing pipelines initialized successfully');
 }
@@ -206,6 +219,14 @@ function startServer(port) {
     
     // Start listening on the specified port
     const server = app.listen(port);
+    
+    // Initialize and run cron jobs
+    logger.info('Starting scheduled cron jobs...');
+    // We don't await this as it keeps running forever
+    runCronJobs().catch(error => {
+      logger.error('Failed to start cron jobs', { error });
+      // Don't exit process - allow server to continue running even if cron jobs fail
+    });
     
     // Handle specific errors like port in use
     server.on('error', (error) => {

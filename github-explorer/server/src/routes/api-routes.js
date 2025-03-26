@@ -1,6 +1,6 @@
 import express from 'express';
 import { getEntityCounts } from '../controllers/api/entity-counts.js';
-import { getPipelineStatus } from '../controllers/api/pipeline-status.js';
+import { getPipelineStatus, getPipelineStats } from '../controllers/api/pipeline-status.js';
 import { handlePipelineOperations } from '../controllers/api/pipeline-operations.js';
 import { getPipelineHistory, clearPipelineHistory } from '../controllers/api/pipeline-history.js';
 import { getPipelineSchedules } from '../controllers/api/pipeline-schedules.js';
@@ -19,6 +19,7 @@ router.get('/entity-counts', getEntityCounts);
 
 // Pipeline endpoints
 router.get('/pipeline-status', getPipelineStatus);
+router.get('/pipeline-stats', getPipelineStats);
 router.get('/pipeline-history', getPipelineHistory);
 router.get('/pipeline-schedules', getPipelineSchedules);
 router.get('/pipeline-item-count', getPipelineItemCount);

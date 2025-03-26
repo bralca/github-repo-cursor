@@ -32,6 +32,37 @@ export interface PipelineHistoryEntry {
   duration: number | null;
 }
 
+// Add new pipeline stats response interface
+export interface PipelineStatsResponse {
+  repositories: number;
+  contributors: number;
+  mergeRequests: number;
+  commits: number;
+  closedMergeRequestsRaw: number;
+  unprocessedMergeRequests: number;
+  unenrichedRepositories: number;
+  unenrichedContributors: number;
+  unenrichedMergeRequests: number;
+  totalUnenriched: number;
+  pipelineStatus: {
+    github_sync: {
+      status: string;
+      isRunning: boolean;
+      lastRun: string | null;
+    };
+    data_processing: {
+      status: string;
+      isRunning: boolean;
+      lastRun: string | null;
+    };
+    data_enrichment: {
+      status: string;
+      isRunning: boolean;
+      lastRun: string | null;
+    };
+  };
+}
+
 /**
  * Pipeline API client for interacting with pipeline-related endpoints
  */
@@ -141,5 +172,18 @@ export const pipelineApi = {
       'POST',
       params
     );
-  }
+  },
+
+  /**
+   * Get statistics for all pipelines and their processing counts
+   * @returns Pipeline statistics including counts for each stage
+   */
+  async getStats(): Promise<PipelineStatsResponse> {
+    const response = await fetchFromApi<PipelineStatsResponse>(
+      'pipeline-stats',
+      'GET'
+    );
+    console.log("Pipeline stats API response:", response);
+    return response;
+  },
 }; 

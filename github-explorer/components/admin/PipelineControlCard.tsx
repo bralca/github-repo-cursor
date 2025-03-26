@@ -5,13 +5,13 @@ import { StatsCard } from '@/components/ui/stats-card';
 import { formatDistanceToNow } from 'date-fns';
 import { usePipelineStatus } from '@/hooks/admin/use-pipeline-status';
 import { usePipelineOperations } from '@/hooks/admin/use-pipeline-operations';
+import { usePipelineStats } from '@/hooks/admin/use-pipeline-stats';
 import { useAdminEvents } from './AdminEventContext';
 import { useEntityCounts } from '@/hooks/admin/use-entity-counts';
 import { 
   GitBranch, 
   Database, 
   UserPlus, 
-  Brain, 
   Loader2, 
   AlertCircle,
   PlayCircle,
@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { apiClient } from '@/lib/client/api-client';
 
-type PipelineType = 'github_sync' | 'data_processing' | 'data_enrichment' | 'ai_analysis';
+type PipelineType = 'github_sync' | 'data_processing' | 'data_enrichment';
 
 export interface PipelineControlCardProps {
   pipelineType: PipelineType;
@@ -35,13 +35,16 @@ export function PipelineControlCard({
   title,
   description,
 }: PipelineControlCardProps) {
-  // Use only the new API hooks
+  // Use the pipeline status hook
   const { 
     status, 
     isLoading, 
     error, 
     refetch 
   } = usePipelineStatus(pipelineType);
+  
+  // Use the pipeline stats hook
+  const { stats, isLoading: statsLoading } = usePipelineStats();
   
   // We don't need these from the hook anymore as we're going back to direct API calls
   const { 
@@ -55,15 +58,13 @@ export function PipelineControlCard({
   const [localIsStarting, setLocalIsStarting] = useState<Record<PipelineType, boolean>>({
     github_sync: false,
     data_processing: false,
-    data_enrichment: false,
-    ai_analysis: false
+    data_enrichment: false
   });
   
   const [localIsStopping, setLocalIsStopping] = useState<Record<PipelineType, boolean>>({
     github_sync: false,
     data_processing: false,
-    data_enrichment: false,
-    ai_analysis: false
+    data_enrichment: false
   });
   
   // Get entity counts for displaying numbers
@@ -154,8 +155,6 @@ export function PipelineControlCard({
         return "Pending Entity Extraction";
       case 'data_enrichment':
         return "Pending Entity Enrichment";
-      case 'ai_analysis':
-        return "Pending AI Analysis";
       default:
         return title;
     }
@@ -170,8 +169,6 @@ export function PipelineControlCard({
         return "Process raw GitHub data into entities";
       case 'data_enrichment':
         return "Enrich extracted entities with details";
-      case 'ai_analysis':
-        return "Analyze data with AI for insights";
       default:
         return description;
     }
@@ -186,8 +183,6 @@ export function PipelineControlCard({
         return <Database className="h-5 w-5" />;
       case 'data_enrichment':
         return <UserPlus className="h-5 w-5" />;
-      case 'ai_analysis':
-        return <Brain className="h-5 w-5" />;
       default:
         return <Database className="h-5 w-5" />;
     }
@@ -217,60 +212,18 @@ export function PipelineControlCard({
   
   // Get the count of relevant items for this pipeline
   const getItemCount = () => {
-    if (!counts) return 0;
-    
-    console.log(`Getting count for pipeline type: ${pipelineType}`, counts);
-    
-    // For data_enrichment, log the entire counts object to debug
-    if (pipelineType === 'data_enrichment') {
-      console.log('DETAILED COUNTS FOR ENRICHMENT:', {
-        totalUnenriched: counts.totalUnenriched,
-        unenrichedRepositories: counts.unenrichedRepositories,
-        unenrichedContributors: counts.unenrichedContributors,
-        unenrichedMergeRequests: counts.unenrichedMergeRequests,
-        // Log snake_case versions too
-        total_unenriched_entities: counts.total_unenriched_entities,
-        unenriched_repositories: counts.unenriched_repositories,
-        unenriched_contributors: counts.unenriched_contributors,
-        unenriched_merge_requests: counts.unenriched_merge_requests,
-        // Full counts object
-        fullCounts: JSON.stringify(counts)
-      });
-    }
+    if (!stats) return 0;
     
     switch (pipelineType) {
       case 'github_sync':
         // Show total count of all closed raw merge requests
-        console.log('Total raw merge requests:', counts.closedMergeRequestsRaw);
-        return counts.closedMergeRequestsRaw || 0;
+        return stats.closedMergeRequestsRaw || 0;
       case 'data_processing':
         // Show count of unprocessed raw merge requests
-        console.log('Unprocessed merge requests:', counts.unprocessedMergeRequests);
-        return counts.unprocessedMergeRequests || 0;
+        return stats.unprocessedMergeRequests || 0;
       case 'data_enrichment':
-        // Calculate directly from individual counts to avoid any issues with property names
-        const unenrichedRepos = counts.unenrichedRepositories || counts.unenriched_repositories || 0;
-        const unenrichedContribs = counts.unenrichedContributors || counts.unenriched_contributors || 0;
-        const unenrichedMRs = counts.unenrichedMergeRequests || counts.unenriched_merge_requests || 0;
-        
-        // Sum them up
-        const directSum = unenrichedRepos + unenrichedContribs + unenrichedMRs;
-        
-        console.log('Direct calculation of unenriched entities:', {
-          repos: unenrichedRepos,
-          contribs: unenrichedContribs,
-          mrs: unenrichedMRs,
-          sum: directSum
-        });
-        
-        return directSum;
-      case 'ai_analysis':
-        // For AI analysis, calculate directly too
-        return (
-          (counts.unenrichedRepositories || counts.unenriched_repositories || 0) +
-          (counts.unenrichedContributors || counts.unenriched_contributors || 0) +
-          (counts.unenrichedMergeRequests || counts.unenriched_merge_requests || 0)
-        );
+        // Use totalUnenriched directly instead of calculating
+        return stats.totalUnenriched || 0;
       default:
         return 0;
     }
@@ -280,13 +233,14 @@ export function PipelineControlCard({
   const getStatusText = () => {
     if (!status) return 'Unknown';
     
+    const count = getItemCount();
+    
     if (status.isActive && status.isRunning) {
-      return 'Running';
+      return `Running (${count})`;
     }
     
-    // Show only the count number
-    const count = getItemCount();
-    return count > 0 ? `${count}` : '0';
+    // Show items remaining count
+    return count > 0 ? `${count} pending` : 'No items pending';
   };
   
   // Handle start button click

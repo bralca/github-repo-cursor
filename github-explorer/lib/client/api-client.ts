@@ -8,7 +8,7 @@
 
 import { fetchFromApi } from './api';
 import { entitiesApi } from './entities-api';
-import { pipelineApi } from './pipeline-api';
+import { pipelineApi, PipelineStatusResponse, PipelineStatsResponse } from './pipeline-api';
 import { sitemapApi } from './sitemap-api';
 import { rankingsApi } from './rankings-api';
 import * as commitsApi from './commits-api';
@@ -19,17 +19,20 @@ import * as contributorsApi from './contributors-api';
 // Export the core API function
 export { fetchFromApi };
 
-// Export all API clients
+// Export the API client
 export const apiClient = {
   entities: entitiesApi,
   pipeline: pipelineApi,
+  repositories: repositoriesApi,
+  contributors: contributorsApi,
+  mergeRequests: mergeRequestsApi,
+  commits: commitsApi,
   sitemap: sitemapApi,
   rankings: rankingsApi,
-  commits: commitsApi,
-  mergeRequests: mergeRequestsApi,
-  repositories: repositoriesApi,
-  contributors: contributorsApi
 };
+
+// Re-export the types we need
+export type { PipelineStatusResponse, PipelineStatsResponse };
 
 // Export individual API clients and their types
 export * from './entities-api';
