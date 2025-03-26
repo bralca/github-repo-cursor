@@ -113,4 +113,4 @@ fi
 
 # Start the server
 log "Starting server..."
-node src/index.js 
+node src/server.js 
