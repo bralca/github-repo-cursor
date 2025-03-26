@@ -1,0 +1,10 @@
+## Code Consistency Rule
+
+- When modifying existing functionality, FIRST study how the current working code is implemented.
+- NEVER change working implementation patterns without explicit user request.
+- Preserve the exact same approach, imports, function signatures, and data flow as the original code.
+- For any feature that already exists in some form, find the most similar implementation and follow its patterns exactly.
+- If you have concerns about the current pattern, voice them BEFORE making changes and get explicit approval.
+- Remember that consistent code is more valuable than "perfect" code - a working application with consistent patterns is easier to maintain.
+- When functions in a component are structured one way, maintain that exact structure for new functions being added.
+- When fixing bugs, prefer minimal changes that preserve the existing implementation pattern. 

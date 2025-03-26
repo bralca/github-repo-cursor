@@ -425,19 +425,19 @@ async function calculateRankings(req, res) {
           cm.name,
           cm.avatar,
           -- Code Volume Score: normalized total lines (5% weight)
-          (cm.total_lines * 100.0 / NULLIF(mm.max_lines, 1)) AS code_volume_score,
+          COALESCE((cm.total_lines * 100.0 / NULLIF(mm.max_lines, 1)), 0) AS code_volume_score,
           -- Code Efficiency Score: how closely PR changes match commit changes (15% weight)
-          cm.code_efficiency_score,
+          COALESCE(cm.code_efficiency_score, 0) AS code_efficiency_score,
           -- Commit Impact Score: normalized commit count (10% weight)
-          (cm.commit_count * 100.0 / NULLIF(mm.max_commits, 1)) AS commit_impact_score,
+          COALESCE((cm.commit_count * 100.0 / NULLIF(mm.max_commits, 1)), 0) AS commit_impact_score,
           -- Team Collaboration Score: based on avg collaborators per PR (20% weight)
           COALESCE(cm.collaboration_score, 0) AS collaboration_score,
           -- Repository Popularity Score: based on stars/popularity (20% weight) 
           COALESCE(cm.repo_popularity_score, 0) AS repo_popularity_score,
           -- Repository Influence Score: normalized repos contributed (10% weight)
-          (cm.repos_contributed * 100.0 / NULLIF(mm.max_repos, 1)) AS repo_influence_score,
+          COALESCE((cm.repos_contributed * 100.0 / NULLIF(mm.max_repos, 1)), 0) AS repo_influence_score,
           -- Followers Score: normalized followers count (15% weight)
-          (cm.followers * 100.0 / NULLIF(mm.max_followers, 1)) AS followers_score,
+          COALESCE((cm.followers * 100.0 / NULLIF(mm.max_followers, 1)), 0) AS followers_score,
           -- Profile Completeness Score: profile completeness points (5% weight)
           cm.profile_completeness_score,
           -- Raw metrics for reference
@@ -448,25 +448,25 @@ async function calculateRankings(req, res) {
           cm.repos_contributed AS repositories_contributed,
           -- Calculate total score using weighted average of all metrics
           (
-            (cm.total_lines * 100.0 / NULLIF(mm.max_lines, 1)) * 0.05 + -- Code Volume (5%)
-            cm.code_efficiency_score * 0.15 + -- Code Efficiency (15%)
-            (cm.commit_count * 100.0 / NULLIF(mm.max_commits, 1)) * 0.10 + -- Commit Impact (10%)
+            COALESCE((cm.total_lines * 100.0 / NULLIF(mm.max_lines, 1)), 0) * 0.05 + -- Code Volume (5%)
+            COALESCE(cm.code_efficiency_score, 0) * 0.15 + -- Code Efficiency (15%)
+            COALESCE((cm.commit_count * 100.0 / NULLIF(mm.max_commits, 1)), 0) * 0.10 + -- Commit Impact (10%)
             COALESCE(cm.collaboration_score, 0) * 0.20 + -- Team Collaboration (20%)
             COALESCE(cm.repo_popularity_score, 0) * 0.20 + -- Repository Popularity (20%)
-            (cm.repos_contributed * 100.0 / NULLIF(mm.max_repos, 1)) * 0.10 + -- Repository Influence (10%)
-            (cm.followers * 100.0 / NULLIF(mm.max_followers, 1)) * 0.15 + -- Followers (15%)
-            cm.profile_completeness_score * 0.05 -- Profile (5%)
+            COALESCE((cm.repos_contributed * 100.0 / NULLIF(mm.max_repos, 1)), 0) * 0.10 + -- Repository Influence (10%)
+            COALESCE((cm.followers * 100.0 / NULLIF(mm.max_followers, 1)), 0) * 0.15 + -- Followers (15%)
+            COALESCE(cm.profile_completeness_score, 0) * 0.05 -- Profile (5%)
           ) AS total_score,
           -- Calculate rank position based on total score (descending)
           RANK() OVER (ORDER BY (
-            (cm.total_lines * 100.0 / NULLIF(mm.max_lines, 1)) * 0.05 +
-            cm.code_efficiency_score * 0.15 +
-            (cm.commit_count * 100.0 / NULLIF(mm.max_commits, 1)) * 0.10 +
+            COALESCE((cm.total_lines * 100.0 / NULLIF(mm.max_lines, 1)), 0) * 0.05 +
+            COALESCE(cm.code_efficiency_score, 0) * 0.15 +
+            COALESCE((cm.commit_count * 100.0 / NULLIF(mm.max_commits, 1)), 0) * 0.10 +
             COALESCE(cm.collaboration_score, 0) * 0.20 +
             COALESCE(cm.repo_popularity_score, 0) * 0.20 +
-            (cm.repos_contributed * 100.0 / NULLIF(mm.max_repos, 1)) * 0.10 +
-            (cm.followers * 100.0 / NULLIF(mm.max_followers, 1)) * 0.15 +
-            cm.profile_completeness_score * 0.05
+            COALESCE((cm.repos_contributed * 100.0 / NULLIF(mm.max_repos, 1)), 0) * 0.10 +
+            COALESCE((cm.followers * 100.0 / NULLIF(mm.max_followers, 1)), 0) * 0.15 +
+            COALESCE(cm.profile_completeness_score, 0) * 0.05
           ) DESC) AS rank_position
         FROM contributor_metrics cm, max_metrics mm
         -- Filter out bots

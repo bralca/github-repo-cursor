@@ -1,0 +1,20 @@
+# Server directory (backend code)
+server/
+
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
+
+# Backend-specific files
+render-startup.sh
+test-db-path.js
+test-entity-counts.js
+
+# Dev scripts (not needed in production)
+scripts/cleanup-root.js
+scripts/init-db.js
+scripts/validate-db.js
+
+# Test files
+tests/
