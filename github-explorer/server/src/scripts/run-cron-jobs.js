@@ -13,7 +13,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import fetch from 'node-fetch';
 
-// Set the base URL for API calls (default to localhost if not specified)
+// Add a configurable API URL instead of hardcoded localhost:3001
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001';
 
 // Pipeline types to run with their correct names from server logs and admin UI code
@@ -32,11 +32,11 @@ const PIPELINE_NAME_CACHE = {};
  * Map of pipeline types to their descriptions
  */
 const PIPELINE_DESCRIPTIONS = {
-  'github_sync': 'Pull Closed Merge Requests',
-  'data_processing': 'Process Raw GitHub Data into Entities',
-  'data_enrichment': 'Enrich Extracted Entities with Details',
-  'sitemap_generation': 'Generate XML Sitemaps',
-  'contributor-ranking': 'Generate Developer Rankings'
+  'github_sync': 'GitHub data sync',
+  'data_processing': 'Data processing',
+  'data_enrichment': 'Data enrichment',
+  'sitemap_generation': 'Sitemap generation',
+  'contributor-ranking': 'Contributor ranking calculation'
 };
 
 /**
@@ -54,9 +54,9 @@ const PIPELINE_SCHEDULES = {
  * Map of pipeline types to their specific API endpoints
  */
 const PIPELINE_ENDPOINTS = {
-  'github_sync': '/api/pipeline/start',
+  'github_sync': '/api/pipeline-operations',
   'data_processing': '/api/pipeline/start',
-  'data_enrichment': '/api/pipeline/start',
+  'data_enrichment': '/api/pipeline-operations',
   'sitemap_generation': '/api/generate-sitemap',
   'contributor-ranking': '/api/contributor-rankings'
 };
@@ -73,69 +73,68 @@ async function executePipelineViaApi(pipelineType) {
     logger.info(`Triggered at: ${new Date().toISOString()}`);
     logger.info('===========================================================');
     
+    // Get the endpoint for this pipeline type
     const endpoint = PIPELINE_ENDPOINTS[pipelineType];
     const description = PIPELINE_DESCRIPTIONS[pipelineType];
     
     if (!endpoint) {
-      throw new Error(`Unknown pipeline type: ${pipelineType}`);
+      logger.error(`Unknown pipeline type: ${pipelineType}`);
+      return;
     }
     
-    let url = `${API_BASE_URL}${endpoint}`;
-    let requestBody;
-    let requestOptions;
+    // Construct the API URL with the configurable base
+    const apiUrl = `${API_BASE_URL}${endpoint}`;
+    logger.info(`Making API call to: ${apiUrl}`);
     
-    // Customize request based on pipeline type
-    if (pipelineType === 'sitemap_generation') {
-      // Special case for sitemap generation - empty body
+    // Prepare request body based on pipeline type
+    let requestBody = {};
+    
+    if (endpoint === '/api/pipeline/start') {
+      requestBody = {
+        operation: 'start',
+        pipeline_type: pipelineType,
+        direct_execution: true
+      };
+    } else if (pipelineType === 'sitemap_generation') {
+      // No specific body needed for sitemap generation
       requestBody = {};
     } else if (pipelineType === 'contributor-ranking') {
-      // Special case for contributor rankings - use operation: 'calculate'
       requestBody = {
         operation: 'calculate'
       };
     } else {
-      // For all pipeline endpoints, use consistent format
+      // Default request body for other pipelines
       requestBody = {
         operation: 'start',
-        pipeline_type: pipelineType,   // Always use snake_case for API
-        direct_execution: true
+        pipelineType: pipelineType
       };
     }
     
-    // Configure request options
-    requestOptions = {
+    logger.info(`Request body: ${JSON.stringify(requestBody)}`);
+    
+    // Make the API call
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(requestBody)
-    };
+    });
     
-    logger.info(`Making API call to: ${url}`);
-    logger.info(`Request body: ${JSON.stringify(requestBody, null, 2)}`);
-    
-    try {
-      const response = await fetch(url, requestOptions);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API call failed with status ${response.status}: ${errorText}`);
-      }
-      
-      const result = await response.json();
-      logger.info(`API call successful. Response: ${JSON.stringify(result, null, 2)}`);
-      logger.info(`Pipeline ${pipelineType} execution triggered successfully via API`);
-    } catch (fetchError) {
-      // Handle connection errors specifically
-      if (fetchError.code === 'ECONNREFUSED' || fetchError.message.includes('failed, reason:')) {
-        logger.error(`Server connection failed. Is the server running at ${API_BASE_URL}?`, { error: fetchError });
-      } else {
-        // Re-throw other errors
-        throw fetchError;
-      }
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`API returned ${response.status}: ${errorData}`);
     }
+    
+    const data = await response.json();
+    logger.info(`API call successful. Response: ${JSON.stringify(data)}`);
+    logger.info(`Pipeline ${pipelineType} execution triggered successfully via API`);
+    
   } catch (error) {
-    logger.error(`Failed to execute pipeline ${pipelineType} via API: ${error.message}`);
+    logger.error(`Server connection failed. Is the server running at ${API_BASE_URL}?`, {
+      errorMessage: error.message,
+      errorStack: error.stack
+    });
   }
 }
 
