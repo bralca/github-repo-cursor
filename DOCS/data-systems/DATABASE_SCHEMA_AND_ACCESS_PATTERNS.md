@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document serves as the **single source of truth** for the GitHub Explorer database schema and access patterns. It consolidates information from the database standardization plan and reflects the current state where SQLite is the primary database instead of Supabase.
+This document serves as the **single source of truth** for the GitHub Explorer database schema and access patterns. It provides a comprehensive reference for all database tables, fields, and access patterns used throughout the application.
 
 ## Database Configuration
 
@@ -43,6 +43,10 @@ Stores raw GitHub API data for closed merge requests before processing.
 **Indices:**
 - `idx_closed_mr_is_processed` on the `is_processed` column - used for efficiently querying unprocessed items
 
+**Triggers:**
+- `update_closed_merge_requests_raw_created_at` - Sets created_at and updated_at on insert
+- `update_closed_merge_requests_raw_updated_at` - Updates updated_at on update
+
 ### Core Entity Tables
 
 #### `repositories`
@@ -70,12 +74,24 @@ Stores information about GitHub repositories.
 | `license` | TEXT | Repository license |
 | `is_fork` | BOOLEAN | Whether the repository is a fork |
 | `is_archived` | BOOLEAN | Whether the repository is archived |
-| `default_branch` | TEXT | Default branch name |
-| `source` | TEXT | Source of the repository data |
+| `default_branch` | TEXT | Default branch name (default: 'main') |
+| `source` | TEXT | Source of the repository data (default: 'github_api') |
 | `owner_id` | TEXT | Reference to the contributor ID who owns the repository |
 | `owner_github_id` | BIGINT | GitHub ID of the repository owner |
+| `enrichment_attempts` | INTEGER | Number of times enrichment has been attempted |
 | `created_at` | TIMESTAMP | When this record was created |
 | `updated_at` | TIMESTAMP | When this record was last updated |
+
+**Indices:**
+- `idx_repositories_github_id` on the `github_id` column
+- `idx_repositories_full_name` on the `full_name` column
+- `idx_repositories_owner_github_id` on the `owner_github_id` column
+- `idx_repositories_owner_id` on the `owner_id` column
+
+**Constraints:**
+- Foreign key `owner_id` references `contributors(id)` with ON DELETE SET NULL
+- Unique constraint on `github_id`
+- Unique constraint on `full_name`
 
 #### `contributors`
 
@@ -107,9 +123,17 @@ Stores information about GitHub users who contribute to repositories.
 | `pull_requests_rejected` | INTEGER | Number of PRs rejected |
 | `code_reviews` | INTEGER | Number of code reviews |
 | `is_placeholder` | BOOLEAN | Whether this is a placeholder for an unknown contributor |
-| `is_bot` | BOOLEAN | Whether this contributor is a bot (based on name/bio containing "bot") |
+| `is_bot` | BOOLEAN | Whether this contributor is a bot |
+| `enrichment_attempts` | INTEGER | Number of times enrichment has been attempted |
 | `created_at` | TIMESTAMP | When this record was created |
 | `updated_at` | TIMESTAMP | When this record was last updated |
+
+**Indices:**
+- `idx_contributors_github_id` on the `github_id` column
+- `idx_contributors_username` on the `username` column
+
+**Constraints:**
+- Unique constraint on `github_id`
 
 #### `merge_requests`
 
@@ -146,6 +170,23 @@ Stores information about pull/merge requests.
 | `is_enriched` | BOOLEAN | Whether additional data has been fetched |
 | `review_count` | INTEGER | Number of reviews |
 | `comment_count` | INTEGER | Number of comments |
+| `enrichment_attempts` | INTEGER | Number of times enrichment has been attempted |
+
+**Indices:**
+- `idx_merge_requests_github_id` on the `github_id` column
+- `idx_merge_requests_repository_id` on the `repository_id` column
+- `idx_merge_requests_repository_github_id` on the `repository_github_id` column
+- `idx_merge_requests_author_id` on the `author_id` column
+- `idx_merge_requests_author_github_id` on the `author_github_id` column
+- `idx_merge_requests_merged_by_github_id` on the `merged_by_github_id` column
+- `idx_merge_requests_state` on the `state` column
+- Unique index `idx_merge_requests_repo_pr` on `(repository_github_id, github_id)`
+
+**Constraints:**
+- Foreign key `repository_id` references `repositories(id)` with ON DELETE CASCADE
+- Foreign key `author_id` references `contributors(id)` with ON DELETE CASCADE
+- Foreign key `merged_by_id` references `contributors(id)` with ON DELETE SET NULL
+- Unique constraint on `(repository_id, github_id)`
 
 #### `commits`
 
@@ -154,7 +195,7 @@ Stores information about repository commits and their file changes.
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | TEXT | Primary key (UUID) |
-| `github_id` | TEXT | GitHub's SHA for the commit |
+| `github_id` | TEXT | Commit SHA (shared across files in same commit) |
 | `repository_id` | TEXT | Reference to the repository ID |
 | `repository_github_id` | BIGINT | GitHub ID of the repository |
 | `contributor_id` | TEXT | Reference to the contributor who authored the commit |
@@ -172,10 +213,11 @@ Stores information about repository commits and their file changes.
 | `complexity_score` | INTEGER | AI-generated complexity score |
 | `is_merge_commit` | BOOLEAN | Whether this is a merge commit |
 | `is_enriched` | BOOLEAN | Whether additional data has been fetched |
+| `enrichment_attempts` | INTEGER | Number of times enrichment has been attempted |
 | `created_at` | TIMESTAMP | When this record was created |
 | `updated_at` | TIMESTAMP | When this record was last updated |
 
-**Note**: Many code references may include a `files_changed` field, but this is calculated at runtime rather than stored directly in the database. Each commit record represents a single file change, and the total number of files changed must be counted across records with the same commit SHA.
+**Note**: Each commit record represents a single file change, and the total number of files changed must be counted across records with the same commit SHA.
 
 **Indices:**
 - `idx_commits_github_id` on the `github_id` column
@@ -185,6 +227,12 @@ Stores information about repository commits and their file changes.
 - `idx_commits_filename` on the `filename` column
 - `idx_commits_committed_at` on the `committed_at` column
 - `idx_commits_is_enriched` on the `is_enriched` column
+- Unique index `idx_commits_unique` on `(github_id, repository_id, filename)`
+
+**Constraints:**
+- Foreign key `repository_id` references `repositories(id)` with ON DELETE CASCADE
+- Foreign key `contributor_id` references `contributors(id)` with ON DELETE SET NULL
+- Foreign key `pull_request_id` references `merge_requests(id)` with ON DELETE SET NULL
 
 #### `contributor_repository`
 
@@ -208,6 +256,18 @@ Junction table to track contributor involvement in repositories.
 | `created_at` | TIMESTAMP | When this record was created |
 | `updated_at` | TIMESTAMP | When this record was last updated |
 
+**Indices:**
+- `idx_contrib_repo_contributor_id` on the `contributor_id` column
+- `idx_contrib_repo_contributor_github_id` on the `contributor_github_id` column
+- `idx_contrib_repo_repository_id` on the `repository_id` column
+- `idx_contrib_repo_repository_github_id` on the `repository_github_id` column
+- Unique index `idx_contrib_repo_unique` on `(contributor_id, repository_id)`
+
+**Constraints:**
+- Foreign key `contributor_id` references `contributors(id)` with ON DELETE CASCADE
+- Foreign key `repository_id` references `repositories(id)` with ON DELETE CASCADE
+- Unique constraint on `(contributor_id, repository_id)`
+
 ### Pipeline Management Tables
 
 The following tables manage pipeline operations and execution tracking:
@@ -227,6 +287,13 @@ Schema for scheduled pipeline operations:
 | `created_at` | TIMESTAMP | When this record was created |
 | `updated_at` | TIMESTAMP | When this record was last updated |
 
+**Indices:**
+- `idx_pipeline_schedules_type` on the `pipeline_type` column
+- `idx_pipeline_schedules_active` on the `is_active` column
+
+**Constraints:**
+- Unique constraint on `pipeline_type`
+
 #### `pipeline_history`
 
 Schema for tracking pipeline execution history:
@@ -242,6 +309,11 @@ Schema for tracking pipeline execution history:
 | `error_message` | TEXT | Error message if the pipeline failed |
 | `created_at` | TIMESTAMP | When this record was created |
 
+**Indices:**
+- `idx_pipeline_history_type` on the `pipeline_type` column
+- `idx_pipeline_history_status` on the `status` column
+- `idx_pipeline_history_started_at` on the `started_at` column
+
 #### `pipeline_status`
 
 Schema for storing the current status of each pipeline type:
@@ -256,7 +328,7 @@ Schema for storing the current status of each pipeline type:
 
 ### SEO Management Tables
 
-The following table manages sitemap generation for SEO purposes:
+The following tables manage sitemap generation for SEO purposes:
 
 #### `sitemap_metadata`
 
@@ -268,6 +340,20 @@ Schema for tracking sitemap files and URL counts:
 | `current_page` | INTEGER | Current sitemap page number for this entity type |
 | `url_count` | INTEGER | Number of URLs in the current sitemap page |
 | `last_updated` | TIMESTAMP | When this record was last updated |
+
+#### `sitemap_status`
+
+Schema for tracking the status of sitemap generation:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `status` | TEXT | Status description |
+| `is_generating` | BOOLEAN | Whether a sitemap is currently being generated |
+| `last_generated` | TIMESTAMP | When the sitemap was last generated |
+| `item_count` | INTEGER | Total number of items in the sitemap |
+| `file_size` | INTEGER | Size of the generated sitemap files |
+| `error_message` | TEXT | Error message if generation failed |
+| `updated_at` | TIMESTAMP | When this record was last updated |
 
 ### Analytics Tables
 
@@ -290,6 +376,8 @@ Schema for storing calculated developer rankings and metrics:
 | `repo_influence_score` | REAL | Score based on repository influence (0-100) |
 | `followers_score` | REAL | Score based on follower count (0-100) |
 | `profile_completeness_score` | REAL | Score based on profile data completeness (0-100) |
+| `collaboration_score` | REAL | Score based on collaboration metrics (0-100) |
+| `repo_popularity_score` | REAL | Score based on repository popularity (0-100) |
 | `followers_count` | INTEGER | Raw count of GitHub followers |
 | `raw_lines_added` | INTEGER | Total lines of code added |
 | `raw_lines_removed` | INTEGER | Total lines of code removed |
@@ -301,6 +389,9 @@ Schema for storing calculated developer rankings and metrics:
 - `idx_contributor_rankings_contributor_id` on the `contributor_id` column
 - `idx_contributor_rankings_timestamp` on the `calculation_timestamp` column
 - `idx_contributor_rankings_rank` on the `rank_position` column
+
+**Constraints:**
+- Foreign key `contributor_id` references `contributors(id)`
 
 ## Common Access Patterns
 

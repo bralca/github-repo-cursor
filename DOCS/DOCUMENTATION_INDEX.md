@@ -1,128 +1,117 @@
-# GitHub Explorer Documentation
+# Documentation Index
 
-This directory contains comprehensive documentation for the GitHub Explorer application. These documents provide detailed information about the application's architecture, components, data flow, and design guidelines.
+This file serves as the central entry point to all project documentation.
 
-## Documentation Structure
+---
 
-The documentation is organized into the following categories:
+## Getting Started
 
-- **Core Architecture** - Fundamental application architecture
-- **Page Architecture** - Implementation details for specific pages
-- **Data Systems** - Database and data pipeline documentation
-- **Server Architecture** - Backend services and serverless functions
-- **Implementation Guidelines** - Design principles, roadmap, and security
-- **Data Samples** - Reference data and GitHub API examples
-- **Epics** - Detailed implementation plans for each project phase
-- **Prompts** - Implementation guidance for specific tasks
-- **AI Collaboration** - AI-assisted development approach and patterns
+- [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md) - High-level overview of the project
+- [QUICKSTART.md](./getting-started/QUICKSTART.md) - Quick guide to get up and running
+- [CONTRIBUTING.md](./getting-started/CONTRIBUTING.md) - Guidelines for contributors
+- [DEVELOPMENT_WORKFLOW.md](./getting-started/DEVELOPMENT_WORKFLOW.md) - Development process and flow
+- [DEPLOYMENT_GUIDE.md](./deployment/DEPLOYMENT_GUIDE.md) - Guide for deploying the application
+- [DEVELOPMENT_PRODUCTION_PARITY.md](./deployment/DEVELOPMENT_PRODUCTION_PARITY.md) - Ensuring dev/prod environments match
+- [TROUBLESHOOTING_GUIDE.md](./core-patterns/TROUBLESHOOTING_GUIDE.md) - Common issues and how to fix them
+- [API_REFERENCE.md](./core-patterns/API_REFERENCE.md) - Comprehensive API documentation
 
-## Documentation Files
+---
 
-### Core Architecture
+## Architecture & Design
 
-- [Next.js Architecture](core-architecture/NEXT_JS_ARCHITECTURE.md) - Frontend architecture using Next.js
-- [Supabase Integration](core-architecture/SUPABASE_INTEGRATION.md) - Database integration details
-- [AI Collaboration Architecture](AI_COLLABORATION_ARCHITECTURE.md) - AI-assisted development workflow and patterns
+- [ARCHITECTURE.md](./architecture/ARCHITECTURE.md) - Overall system architecture
+- [PROJECT_STRUCTURE.md](./architecture/PROJECT_STRUCTURE.md) - Organization of code and files
+- [DESIGN_PHILOSOPHY.md](./architecture/DESIGN_PHILOSOPHY.md) - Guiding design principles
+- [URL_ARCHITECTURE.md](./architecture/URL_ARCHITECTURE.md) - URL structure and routing conventions
+- [CODE_STYLE_GUIDE.md](./architecture/CODE_STYLE_GUIDE.md) - Coding standards and practices
+- [TESTING_STRATEGY.md](./testing/TESTING_STRATEGY.md) - Approach to testing
+- [COMPONENT_ARCHITECTURE.md](./architecture/COMPONENT_ARCHITECTURE.md) - Design of UI components
 
-### Data Systems
+---
 
-- [DATABASE_DOCUMENTATION.md](data-systems/DATABASE_DOCUMENTATION.md) - Comprehensive documentation for the SQLite database schema, including tables, fields, and relationships
-- [SQLITE_SETUP_GUIDE.md](data-systems/SQLITE_SETUP_GUIDE.md) - Guide for setting up and configuring SQLite for the GitHub Explorer project
-- [DATA_PIPELINE_ARCHITECTURE.md](data-systems/DATA_PIPELINE_ARCHITECTURE.md) - Overview of the data processing pipeline architecture
-- [Pipeline Architecture](data-systems/PIPELINE_ARCHITECTURE.md) - Pipeline implementation details
-- [Database Schema and Access Patterns](data-systems/DATABASE_SCHEMA_AND_ACCESS_PATTERNS.md) - Comprehensive database documentation
-- [SQLite SQL Cheatsheet](data-systems/SQLITE_SQL_CHEATSHEET.md) - Common SQL patterns used in the application
-- [Developer Archetypes](data-systems/DEVELOPER_ARCHETYPES.md) - Classification system for developer contribution patterns
+## Data Systems
 
-### Page Architecture
+- [DATA_PIPELINE_ARCHITECTURE.md](./data-systems/DATA_PIPELINE_ARCHITECTURE.md) - Data processing pipelines
+- [DATABASE_SCHEMA_AND_ACCESS_PATTERNS.md](./data-systems/DATABASE_SCHEMA_AND_ACCESS_PATTERNS.md) - Database structure and usage
 
-- [Repository Page Architecture](page-architecture/REPOSITORY_PAGE_ARCHITECTURE.md) - Repository page components and data flow
-- [Contributors Page Architecture](page-architecture/CONTRIBUTORS_PAGE_ARCHITECTURE.md) - Contributors page components and data flow
-- [Merge Requests Architecture](page-architecture/MERGE_REQUESTS_ARCHITECTURE.md) - Merge requests page components and data flow
-- [Commits Page Architecture](page-architecture/COMMITS_PAGE_ARCHITECTURE.md) - Commits page components and data flow
-- [Admin Page Architecture](page-architecture/ADMIN_PAGE_ARCHITECTURE.md) - Admin interface components and functionality
-- [Homepage Architecture](page-architecture/HOMEPAGE_ARCHITECTURE.md) - Homepage components and structure
-- [Top Bar Architecture](page-architecture/TOPBAR_ARCHITECTURE.md) - Navigation component implementation
+---
 
-### Server Architecture
+## Core Patterns
 
-- [Node.js Server Architecture](server-architecture/NODE_SERVER_ARCHITECTURE.md) - Backend architecture using Node.js
-- [Edge Functions Documentation](server-architecture/EDGE_FUNCTIONS_DOCUMENTATION.md) - Backend serverless functions
+- [ERROR_HANDLING.md](./core-patterns/ERROR_HANDLING.md) - Error handling approach
+- [AUTHENTICATION.md](./core-patterns/AUTHENTICATION.md) - Authentication and admin access system
+- [STATE_MANAGEMENT.md](./core-patterns/STATE_MANAGEMENT.md) - Managing application state
+- [DATA_FETCHING.md](./core-patterns/DATA_FETCHING.md) - Patterns for fetching data
+- [CACHING_STRATEGY.md](./core-patterns/CACHING_STRATEGY.md) - Caching implementations
+- [ANALYTICS_INTEGRATION.md](./core-patterns/ANALYTICS_INTEGRATION.md) - Usage tracking and analytics
+- [INTERNATIONALIZATION.md](./core-patterns/INTERNATIONALIZATION.md) - Multi-language support
+- [ACCESSIBILITY.md](./core-patterns/ACCESSIBILITY.md) - Accessibility features
 
-### Implementation Guidelines
+---
 
-- [Design Guidelines](implementation-guidelines/DESIGN_GUIDELINES.md) - UI styling patterns and visual language
-- [Implementation Plan](implementation-guidelines/IMPLEMENTATION_PLAN.md) - Development roadmap and priorities
-- [Roadmap](implementation-guidelines/ROADMAP.md) - Detailed project roadmap
-- [Rebuild Guide](implementation-guidelines/REBUILD_GUIDE.md) - Comprehensive roadmap for rebuilding the application
-- [Secrets](implementation-guidelines/SECRETS.md) - Secret management and access patterns
+## Page Architecture
 
-### Data Samples
+- [HOMEPAGE_ARCHITECTURE.md](./page-architecture/HOMEPAGE_ARCHITECTURE.md) - Home page design
+- [REPOSITORY_PAGE_ARCHITECTURE.md](./page-architecture/REPOSITORY_PAGE_ARCHITECTURE.md) - Repository page design
+- [CONTRIBUTORS_PAGE_ARCHITECTURE.md](./page-architecture/CONTRIBUTORS_PAGE_ARCHITECTURE.md) - Contributors page design
+- [COMMITS_PAGE_ARCHITECTURE.md](./page-architecture/COMMITS_PAGE_ARCHITECTURE.md) - Commits page design
+- [MERGE_REQUESTS_ARCHITECTURE.md](./page-architecture/MERGE_REQUESTS_ARCHITECTURE.md) - Merge requests page design
+- [ADMIN_PAGE_ARCHITECTURE.md](./page-architecture/ADMIN_PAGE_ARCHITECTURE.md) - Admin page design
+- [TOPBAR_ARCHITECTURE.md](./page-architecture/TOPBAR_ARCHITECTURE.md) - Top navigation bar design
 
-- [GitHub API Reference](data-samples/GITHUB_API_REFERENCE.md) - Reference documentation for GitHub API endpoints used
-- [Sample Repository Data](data-samples/sampleRepository.json) - Example repository data structure
-- [Raw Data Example](data-samples/rawData.json) - Raw GitHub API response example
+---
 
-### Epic Documents
+## APIs & Integration
 
-- [Epic Implementation Sequence](epics/EPIC_IMPLEMENTATION_SEQUENCE.md) - Order and dependencies of epics
-- [Epic 1: Foundation & Infrastructure](epics/EPIC_1_FOUNDATION.md) - Core project setup
-- [Epic 2: Homepage Integration](epics/EPIC_2_HOMEPAGE.md) - Homepage implementation
-- [Epic 3: Repository Page Integration](epics/EPIC_3_REPOSITORY.md) - Repository page implementation
-- [Epic 4: Contributors Page Integration](epics/EPIC_4_CONTRIBUTORS.md) - Contributors page implementation
-- [Epic 5: Merge Requests Page Integration](epics/EPIC_5_MERGE_REQUESTS.md) - Merge requests page implementation
-- [Epic 6: Commits Page Integration](epics/EPIC_6_COMMITS.md) - Commits page implementation
-- [Epic 7: Performance & Refinement](epics/EPIC_7_PERFORMANCE.md) - Optimization and testing
-- [Epic 8: Admin Dashboard](epics/EPIC_8_ADMIN_DASHBOARD.md) - Admin interface implementation
+- [GITHUB_API_INTEGRATION.md](./apis/GITHUB_API_INTEGRATION.md) - GitHub API integration details
+- [THIRD_PARTY_INTEGRATIONS.md](./apis/THIRD_PARTY_INTEGRATIONS.md) - Other external integrations
+- [INTERNAL_API_DESIGN.md](./apis/INTERNAL_API_DESIGN.md) - Design of internal APIs
+- [WEBHOOK_PROCESSING.md](./apis/WEBHOOK_PROCESSING.md) - Processing of incoming webhooks
 
-### Implementation Prompts
+---
 
-- [Epic 1: Foundation Prompts](prompts/EPIC_1_FOUNDATION_PROMPTS.md) - Foundation implementation guides
-- [Epic 2: Homepage Prompts](prompts/EPIC_2_HOMEPAGE_PROMPTS.md) - Homepage implementation guides
-- [Epic 3: Repository Prompts](prompts/EPIC_3_REPOSITORY_PROMPTS.md) - Repository page implementation guides
-- [Epic 4: Contributors Prompts](prompts/EPIC_4_CONTRIBUTORS_PROMPTS.md) - Contributors page implementation guides
-- [Epic 5: Merge Requests Prompts](prompts/EPIC_5_MERGE_REQUESTS_PROMPTS.md) - Merge requests page implementation guides
-- [Epic 6: Commits Prompts](prompts/EPIC_6_COMMITS_PROMPTS.md) - Commits page implementation guides
-- [Epic 7: Performance Prompts](prompts/EPIC_7_PERFORMANCE_PROMPTS.md) - Performance optimization guides
-- [Epic 8: Admin Dashboard Prompts](prompts/EPIC_8_ADMIN_DASHBOARD_PROMPTS.md) - Admin interface implementation guides
-- [Implementation Guidelines](prompts/IMPLEMENTATION_GUIDELINES.md) - General implementation guidance
+## Testing
 
-## Navigation and Pages
+- [UNIT_TESTING.md](./testing/UNIT_TESTING.md) - Unit testing approach
+- [INTEGRATION_TESTING.md](./testing/INTEGRATION_TESTING.md) - Integration testing approach
+- [E2E_TESTING.md](./testing/E2E_TESTING.md) - End-to-end testing approach
+- [TEST_DATA.md](./testing/TEST_DATA.md) - Managing test data
+- [PERFORMANCE_TESTING.md](./testing/PERFORMANCE_TESTING.md) - Testing performance
 
-### SEO and URL Architecture
-- [SEO-Optimized URL Architecture](./SEO/URL_ARCHITECTURE.md) - Guidelines for SEO-friendly URL structure
-- [SEO Implementation Plan](./SEO/SEO_IMPLEMENTATION_PLAN.md) - Detailed plan for implementing the SEO architecture
+---
 
-### Page Architecture
-- [Repository Page Architecture](./page-architecture/REPOSITORY_PAGE_ARCHITECTURE.md) - Architecture for the Repository page
+## Deployment & Operations
 
-## How To Use This Documentation
+- [HOSTING_ENVIRONMENT.md](./deployment/HOSTING_ENVIRONMENT.md) - Production environment details
+- [MONITORING.md](./deployment/MONITORING.md) - Monitoring and alerting
+- [CI_CD_PIPELINE.md](./deployment/CI_CD_PIPELINE.md) - Continuous integration and deployment
+- [BACKUP_STRATEGY.md](./deployment/BACKUP_STRATEGY.md) - Data backup procedures
+- [INCIDENT_RESPONSE.md](./deployment/INCIDENT_RESPONSE.md) - Handling production incidents
+- [SCALING_STRATEGY.md](./deployment/SCALING_STRATEGY.md) - Approaches to scaling
 
-### For New Developers
+---
 
-1. Start with the [Rebuild Guide](implementation-guidelines/REBUILD_GUIDE.md) for a complete overview of the project structure
-2. Review the [DATABASE_DOCUMENTATION.md](data-systems/DATABASE_DOCUMENTATION.md) and [DATA_PIPELINE_ARCHITECTURE.md](data-systems/DATA_PIPELINE_ARCHITECTURE.md) to understand the data flow
-3. Explore individual page architecture documents based on your area of focus
-4. Reference the [Design Guidelines](implementation-guidelines/DESIGN_GUIDELINES.md) for UI implementation
+## Data Samples
 
-### For Project Planning
+- [sampleRepository.json](./data-samples/sampleRepository.json) - Example repository data
+- [GITHUB_API_REFERENCE.md](./data-samples/GITHUB_API_REFERENCE.md) - GitHub API reference
+- [rawData.json](./data-samples/rawData.json) - Sample raw data
 
-1. Review the [Implementation Plan](implementation-guidelines/IMPLEMENTATION_PLAN.md) for high-level priorities
-2. Consult the [Epic Implementation Sequence](epics/EPIC_IMPLEMENTATION_SEQUENCE.md) for dependency management
-3. Use individual Epic documents for detailed implementation tasks
+---
 
-### For Maintenance and Extension
+## Utilities
 
-1. Use the [Secrets](implementation-guidelines/SECRETS.md) document for managing API keys and credentials
-2. Reference specific component architecture documents when extending functionality
-3. Follow patterns in the [Design Guidelines](implementation-guidelines/DESIGN_GUIDELINES.md) for UI consistency
-4. Use the [GitHub API Reference](data-samples/GITHUB_API_REFERENCE.md) when working with API integrations
+- [SCRIPTS.md](./utilities/SCRIPTS.md) - Utility scripts
+- [TOOLING.md](./utilities/TOOLING.md) - Development tools
+- [ENVIRONMENT_VARIABLES.md](./utilities/ENVIRONMENT_VARIABLES.md) - Environment variables
 
-## Documentation Maintenance
+---
 
-When making significant changes to the application:
+## Legacy & Migration
 
-1. Update the relevant documentation files to reflect the changes
-2. Ensure any new components or data flows are properly documented
-3. Maintain the same level of detail and structure in documentation updates
-4. Update this index file when adding new documentation
+- [LEGACY_CODE.md](./legacy/LEGACY_CODE.md) - Deprecated code that remains
+- [MIGRATION_GUIDES.md](./legacy/MIGRATION_GUIDES.md) - Guides for data migration
+
+---
+
+**Last Updated**: [Current Date]

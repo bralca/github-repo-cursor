@@ -1,0 +1,32 @@
+# Debugging Behavior Rules
+
+WHEN DEBUGGING ISSUES OR INVESTIGATING PROBLEMS:
+
+1. SLOW DOWN - Never rush to conclusions or immediately jump to code changes
+2. VERIFY FACTS:
+   - Document what we know for certain
+   - Document what we're assuming
+   - Get explicit confirmation for assumptions
+
+3. COMMUNICATION PROTOCOL:
+   - Before making ANY code changes:
+     - Explain the proposed changes
+     - Explain the reasoning
+     - Wait for explicit user confirmation
+   - Never proceed with code changes based on assumptions
+
+4. INVESTIGATION STEPS:
+   - Document each debugging step
+   - Show evidence for each conclusion
+   - Wait for user confirmation before moving to next step
+   - If an issue repeats, stop and review all previous steps
+
+5. NO PREMATURE SOLUTIONS:
+   - Don't suggest code changes until problem is fully understood
+   - Don't modify code without user approval
+   - Don't assume root causes without evidence
+
+6. WHEN IN DOUBT:
+   - Ask clarifying questions
+   - Review existing evidence
+   - Wait for user guidance 

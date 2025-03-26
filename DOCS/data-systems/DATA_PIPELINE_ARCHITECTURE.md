@@ -18,6 +18,7 @@ This document provides a comprehensive overview of the data pipeline architectur
 - [Performance Optimization](#performance-optimization)
 - [Integration with Database Schema](#integration-with-database-schema)
 - [Scheduled Jobs](#scheduled-jobs)
+- [Critical API Path Information](#critical-api-path-information)
 
 ## Overview
 
@@ -677,3 +678,111 @@ SELECT cron.schedule(
 ```
 
 This configuration ensures that all pipeline components run regularly, maintaining up-to-date data while respecting system resources and external API constraints.
+
+## Critical API Path Information
+
+### API Path Mismatch Issue
+
+**IMPORTANT: There is a critical mismatch between frontend and backend API paths that must be addressed.**
+
+The pipeline operation endpoints are inconsistently implemented across the application layers, which can lead to 404 errors in production if not handled correctly.
+
+#### Frontend API Client Implementation
+
+In `github-explorer/lib/client/pipeline-api.ts`, the frontend client makes requests using these paths:
+
+```typescript
+// To start a pipeline
+async start(pipelineType: string): Promise<PipelineOperationResponse> {
+  return await fetchFromApi<PipelineOperationResponse>(
+    'pipeline/start',   // This translates to /api/pipeline/start
+    'POST',
+    undefined,
+    {
+      pipeline_type: pipelineType,
+      direct_execution: true
+    }
+  );
+}
+```
+
+#### Backend API Routes Implementation
+
+However, in the Express server (`github-explorer/server/src/routes/api-routes.js`), the actual endpoint is:
+
+```javascript
+// POST /api/pipeline-operations
+router.post('/pipeline-operations', handlePipelineOperations);
+```
+
+This means the frontend client requests `/api/pipeline/start` but the backend expects `/api/pipeline-operations` with an operation parameter.
+
+#### Next.js API Route Forwarding
+
+The Next.js API route in `github-explorer/app/api/pipeline-operations/route.ts` attempts to bridge this gap by:
+
+```typescript
+const serverApiUrl = `${serverUrl}/api/pipeline/${actualOperation}`;
+// This creates URLs like /api/pipeline/start
+```
+
+But this will still fail because the backend doesn't have routes registered at those paths.
+
+### Recommended Fix
+
+To fix this architectural issue, choose one of these approaches:
+
+**Option 1: Update the frontend client** (Recommended)
+
+Modify `github-explorer/lib/client/pipeline-api.ts` to use the correct backend path:
+
+```typescript
+// To start a pipeline
+async start(pipelineType: string): Promise<PipelineOperationResponse> {
+  return await fetchFromApi<PipelineOperationResponse>(
+    'pipeline-operations',   // This is the correct path
+    'POST',
+    undefined,
+    {
+      pipeline_type: pipelineType,
+      operation: 'start',    // Add operation parameter
+      direct_execution: true
+    }
+  );
+}
+```
+
+**Option 2: Update the backend routes**
+
+Modify `github-explorer/server/src/routes/api-routes.js` to add specific endpoints for each operation:
+
+```javascript
+// Add specific routes for each operation
+router.post('/pipeline/start', (req, res) => {
+  req.body.operation = 'start';
+  handlePipelineOperations(req, res);
+});
+
+router.post('/pipeline/stop', (req, res) => {
+  req.body.operation = 'stop';
+  handlePipelineOperations(req, res);
+});
+```
+
+### API Endpoint Reference
+
+The complete pipeline API endpoints are:
+
+| Frontend Path | Next.js API Path | Backend Path | Purpose |
+|---------------|------------------|--------------|---------|
+| `/api/pipeline/start` | `/api/pipeline-operations` | `/api/pipeline-operations` | Start a pipeline |
+| `/api/pipeline/stop` | `/api/pipeline-operations` | `/api/pipeline-operations` | Stop a pipeline |
+| `/api/pipeline-status` | `/api/pipeline-status` | `/api/pipeline-status` | Get pipeline status |
+| `/api/pipeline-history` | `/api/pipeline-history` | `/api/pipeline-history` | Get execution history |
+| `/api/pipeline-item-count` | `/api/pipeline-item-count` | `/api/pipeline-item-count` | Get processed item count |
+| `/api/pipeline-schedules` | `/api/pipeline-schedules` | `/api/pipeline-schedules` | Get pipeline schedules |
+| `/api/pipeline-history-clear` | `/api/pipeline-history-clear` | `/api/pipeline-history-clear` | Clear execution history |
+
+For more details on API paths, request/response formats, and usage patterns, refer to the [API Reference Guide](../core-patterns/API_REFERENCE.md).
+
+**Note:** This issue is also documented in the [TROUBLESHOOTING_GUIDE.md](../core-patterns/TROUBLESHOOTING_GUIDE.md) with detailed steps to diagnose and resolve API path mismatches.
