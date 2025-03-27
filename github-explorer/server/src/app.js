@@ -15,6 +15,7 @@ import { processRepository } from './pipeline/stages/repository-processor-pipeli
 import { createSitemapPipeline } from './pipeline/index.js';
 import { initializeRequiredPipelines } from './pipeline/initialize-pipelines.js';
 import runCronJobs from './scripts/run-cron-jobs.js';
+import pipelineOperationsController from './controllers/pipeline-operations-controller.js';
 
 // Import routes
 import healthRoutes from './routes/health.js';
@@ -43,6 +44,14 @@ app.use(express.json({ limit: '5mb' })); // Parse JSON bodies with size limit
  */
 function initializeServer() {
   try {
+    // Reset any stale pipeline running statuses
+    logger.info('Resetting stale pipeline running statuses');
+    pipelineOperationsController.resetAllPipelineStatuses().then(() => {
+      logger.info('Pipeline statuses reset complete');
+    }).catch(error => {
+      logger.error('Error resetting pipeline statuses', { error });
+    });
+    
     // Initialize pipelines
     initializePipelines();
     

@@ -328,6 +328,26 @@ class PipelineOperationsController extends BaseController {
         return res.status(400).json({ error: 'Pipeline type is required' });
       }
       
+      // Check if the pipeline is already running
+      const db = await openSQLiteConnection();
+      try {
+        const pipelineStatus = await db.get(
+          'SELECT is_running FROM pipeline_status WHERE pipeline_type = ?',
+          [pipeline_type]
+        );
+        
+        if (pipelineStatus && pipelineStatus.is_running === 1) {
+          logger.info(`Pipeline ${pipeline_type} is already running, skipping execution`);
+          return res.json({
+            success: false,
+            message: `${pipeline_type} pipeline is already running`,
+            alreadyRunning: true
+          });
+        }
+      } finally {
+        await closeSQLiteConnection(db);
+      }
+      
       // Determine whether this is a direct execution or a scheduled pipeline
       const isDirectExecution = direct_execution === true;
       const shouldProcessAllItems = process_all_items === true;
@@ -346,38 +366,47 @@ class PipelineOperationsController extends BaseController {
         // Call the relevant pipeline function directly
         let result;
         
-        switch (pipeline_type) {
-          case 'github_sync':
-            result = await this.executeGitHubSync();
-            break;
+        try {
+          // Update pipeline status to running
+          await this.updatePipelineStatus(pipeline_type, 'running', true);
           
-          case 'data_processing':
-            result = await this.executeDataProcessing();
-            break;
+          switch (pipeline_type) {
+            case 'github_sync':
+              result = await this.executeGitHubSync();
+              break;
+            
+            case 'data_processing':
+              result = await this.executeDataProcessing();
+              break;
+            
+            case 'data_enrichment':
+              // Pass the shouldProcessAllItems flag to the executeDataEnrichment method
+              result = await this.executeDataEnrichment(shouldProcessAllItems);
+              break;
+            
+            default:
+              return res.status(400).json({ error: `Unknown pipeline type: ${pipeline_type}` });
+          }
           
-          case 'data_enrichment':
-            // Pass the shouldProcessAllItems flag to the executeDataEnrichment method
-            result = await this.executeDataEnrichment(shouldProcessAllItems);
-            break;
+          // Update the history entry with the result
+          await this.updatePipelineHistoryEntry(historyId, result.success ? 'completed' : 'failed', result.itemsProcessed || 0);
           
-          case 'ai_analysis':
-            result = await this.executeAIAnalysis();
-            break;
+          // Always ensure pipeline status is reset when done
+          await this.updatePipelineStatus(pipeline_type, result.success ? 'completed' : 'failed', false);
           
-          default:
-            return res.status(400).json({ error: `Unknown pipeline type: ${pipeline_type}` });
+          // Return the result as the API response
+          return res.json({
+            success: result.success,
+            message: result.message || `${pipeline_type} pipeline execution ${result.success ? 'completed' : 'failed'}`,
+            itemsProcessed: result.itemsProcessed || 0,
+            error: result.error || null
+          });
+        } catch (error) {
+          // Ensure pipeline status is reset even on unexpected errors
+          await this.updatePipelineStatus(pipeline_type, 'failed', false);
+          await this.updatePipelineHistoryEntry(historyId, 'failed', 0);
+          throw error;
         }
-        
-        // Update the history entry with the result
-        await this.updatePipelineHistoryEntry(historyId, result.success ? 'completed' : 'failed', result.itemsProcessed || 0);
-        
-        // Return the result as the API response
-        return res.json({
-          success: result.success,
-          message: result.message || `${pipeline_type} pipeline execution ${result.success ? 'completed' : 'failed'}`,
-          itemsProcessed: result.itemsProcessed || 0,
-          error: result.error || null
-        });
       }
       
       // For scheduled execution, update the status and let the scheduler handle it
@@ -386,6 +415,54 @@ class PipelineOperationsController extends BaseController {
     } catch (error) {
       logger.error('Error in startPipeline:', { error });
       return res.status(500).json({ error: error.message || 'Internal server error' });
+    }
+  }
+  
+  /**
+   * Helper method to update pipeline status consistently
+   * @param {string} pipelineType - The type of pipeline
+   * @param {string} status - The status to set (running, completed, failed, etc.)
+   * @param {boolean} isRunning - Whether the pipeline is running
+   * @private
+   */
+  async updatePipelineStatus(pipelineType, status, isRunning) {
+    let db = null;
+    try {
+      db = await openSQLiteConnection();
+      
+      // Check if there's an entry in the pipeline_status table
+      const existingStatus = await db.get(
+        'SELECT * FROM pipeline_status WHERE pipeline_type = ?',
+        [pipelineType]
+      );
+      
+      if (existingStatus) {
+        // Update existing status
+        await db.run(
+          'UPDATE pipeline_status SET status = ?, is_running = ?, updated_at = CURRENT_TIMESTAMP WHERE pipeline_type = ?',
+          [status, isRunning ? 1 : 0, pipelineType]
+        );
+        
+        // Also update last_run if the pipeline is being set to running
+        if (isRunning) {
+          await db.run(
+            'UPDATE pipeline_status SET last_run = CURRENT_TIMESTAMP WHERE pipeline_type = ?',
+            [pipelineType]
+          );
+        }
+      } else {
+        // Insert new status
+        await db.run(
+          'INSERT INTO pipeline_status (pipeline_type, status, is_running, last_run, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+          [pipelineType, status, isRunning ? 1 : 0]
+        );
+      }
+      
+      logger.info(`Updated pipeline status for ${pipelineType} to ${status}, is_running=${isRunning}`);
+    } catch (error) {
+      logger.error(`Error updating pipeline status for ${pipelineType}:`, { error });
+    } finally {
+      if (db) await closeSQLiteConnection(db);
     }
   }
   
@@ -409,67 +486,83 @@ class PipelineOperationsController extends BaseController {
         historyId
       });
       
+      // Update pipeline status to running
+      await this.updatePipelineStatus(pipelineType, 'running', true);
+      
       // Execute the appropriate function based on pipeline type
       let result;
-      switch (pipelineType) {
-        case 'github_sync':
-          result = await this.executeGitHubSync();
-          break;
-        case 'data_processing':
-          result = await this.executeDataProcessing();
-          break;
-        case 'data_enrichment':
-          result = await this.executeDataEnrichment();
-          break;
-        case 'contributor_enrichment':
-          result = await this.executeContributorEnrichment();
-          break;
-        case 'ai_analysis':
-          result = await this.executeAIAnalysis();
-          break;
-        case 'sitemap_generation':
-          result = await this.executeSitemapGeneration();
-          break;
-        default:
-          throw new Error(`Unknown pipeline type: ${pipelineType}`);
+      try {
+        switch (pipelineType) {
+          case 'github_sync':
+            result = await this.executeGitHubSync();
+            break;
+          case 'data_processing':
+            result = await this.executeDataProcessing();
+            break;
+          case 'data_enrichment':
+            result = await this.executeDataEnrichment();
+            break;
+          case 'contributor_enrichment':
+            result = await this.executeContributorEnrichment();
+            break;
+          case 'sitemap_generation':
+            result = await this.executeSitemapGeneration();
+            break;
+          default:
+            throw new Error(`Unknown pipeline type: ${pipelineType}`);
+        }
+        
+        // Update history with results
+        await this.updatePipelineHistory(historyId, {
+          status: result.success ? 'completed' : 'failed',
+          completed_at: new Date().toISOString(),
+          items_processed: result.itemsProcessed || 0,
+          error_message: result.error ? result.error.message : null
+        });
+        
+        // Always ensure pipeline status is reset when done
+        await this.updatePipelineStatus(pipelineType, result.success ? 'completed' : 'failed', false);
+        
+        const endTime = new Date();
+        const executionTime = (endTime - startTime) / 1000;
+        
+        logger.info(`Direct execution of ${pipelineType} completed in ${executionTime.toFixed(2)}s with status: ${result.success ? 'success' : 'failure'}`);
+        
+        // Emit pipeline execution completed event
+        pipelineEvents.emit('pipeline_execution_completed', {
+          pipelineType,
+          historyId,
+          itemsProcessed: result.itemsProcessed || 0,
+          stats: result.stats
+        });
+      } catch (error) {
+        logger.error(`Error in direct execution of ${pipelineType}:`, { error });
+        
+        // Update history entry with error
+        await this.updatePipelineHistory(historyId, {
+          status: 'failed',
+          completed_at: new Date().toISOString(),
+          error_message: error.message || 'Unknown error'
+        });
+        
+        // Ensure pipeline status is reset even on unexpected errors
+        await this.updatePipelineStatus(pipelineType, 'failed', false);
+        
+        // Emit pipeline execution error event
+        pipelineEvents.emit('pipeline_execution_error', {
+          pipelineType,
+          historyId,
+          error: error.message
+        });
       }
-      
-      // Update history with results
-      await this.updatePipelineHistory(historyId, {
-        status: result.success ? 'completed' : 'failed',
-        completed_at: new Date().toISOString(),
-        items_processed: result.itemsProcessed || 0,
-        error_message: result.error ? result.error.message : null
-      });
-      
-      const endTime = new Date();
-      const executionTime = (endTime - startTime) / 1000;
-      
-      logger.info(`Direct execution of ${pipelineType} completed in ${executionTime.toFixed(2)}s with status: ${result.success ? 'success' : 'failure'}`);
-      
-      // Emit pipeline execution completed event
-      pipelineEvents.emit('pipeline_execution_completed', {
-        pipelineType,
-        historyId,
-        itemsProcessed: result.itemsProcessed || 0,
-        stats: result.stats
-      });
-      
     } catch (error) {
-      logger.error(`Error in direct execution of ${pipelineType}:`, { error });
-      
-      // Update history entry with error
-      await this.updatePipelineHistory(historyId, {
-        status: 'failed',
-        completed_at: new Date().toISOString(),
-        error_message: error.message || 'Unknown error'
-      });
-      // Emit pipeline execution error event
-      pipelineEvents.emit('pipeline_execution_error', {
-        pipelineType,
-        historyId,
-        error: error.message
-      });
+      logger.error(`Error in executeDirectFunction for ${pipelineType}:`, { error });
+      // Try to reset pipeline status in case of unexpected errors
+      try {
+        await this.updatePipelineStatus(pipelineType, 'failed', false);
+      } catch (statusError) {
+        logger.error(`Failed to update pipeline status for ${pipelineType}:`, { error: statusError });
+      }
     }
   }
   
@@ -970,6 +1063,9 @@ class PipelineOperationsController extends BaseController {
     };
     
     try {
+      // Mark pipeline as running using the new helper
+      await this.updatePipelineStatus('data_enrichment', 'running', true);
+      
       // Emit pipeline start event
       pipelineEvents.emit('pipeline_start', {
         pipelineType: 'data_enrichment',
@@ -1144,30 +1240,65 @@ class PipelineOperationsController extends BaseController {
         logger.info('Repository enrichment phase complete', { stats: stats.repositories });
         
         // 2. Next, enrich contributors
-        return await this.executeContributorEnrichment(processAllItems, stats, historyId);
+        const contributorResult = await this.executeContributorEnrichment(processAllItems, stats, historyId);
+        
+        // Ensure pipeline status is updated to completed
+        const totalProcessed = 
+          stats.repositories.processed + 
+          stats.contributors.processed + 
+          stats.mergeRequests.processed + 
+          stats.commits.processed;
+        
+        // Mark the pipeline as completed
+        await this.updatePipelineStatus('data_enrichment', 'completed', false);
+        
+        // Update the history entry
+        await this.updatePipelineHistoryEntry(historyId, 'completed', totalProcessed);
+        
+        // Return success result with statistics
+        return {
+          success: true,
+          itemsProcessed: totalProcessed,
+          message: 'Data enrichment pipeline completed successfully',
+          stats: stats
+        };
       } catch (error) {
         logger.error('Error in data enrichment pipeline', { error });
         
         // Update history entry and emit completion event
         await this.updatePipelineHistoryEntry(historyId, 'failed', 
           stats.repositories.processed + stats.contributors.processed + stats.mergeRequests.processed + stats.commits.processed);
-          
-        pipelineEvents.emit('pipeline_complete', {
-          pipelineType: 'data_enrichment',
-          historyId,
-          stats,
-          error: error.message
-        });
         
+        // Ensure pipeline status is updated to failed  
+        await this.updatePipelineStatus('data_enrichment', 'failed', false);
+        
+        // Return failure result
         return {
           success: false,
-          message: `Data enrichment failed: ${error.message}`,
-          stats
+          error: error,
+          message: `Data enrichment pipeline failed: ${error.message}`,
+          itemsProcessed: stats.repositories.processed + stats.contributors.processed + stats.mergeRequests.processed + stats.commits.processed,
+          stats: stats
         };
       }
     } catch (error) {
-      logger.error('Error in data enrichment pipeline', { error });
-      return { success: false, message: `Data enrichment failed: ${error.message}` };
+      logger.error('Unhandled error in data enrichment pipeline', { error });
+      
+      // Ensure pipeline status is reset even on unexpected errors
+      await this.updatePipelineStatus('data_enrichment', 'failed', false);
+      
+      // Update history entry if possible
+      if (historyId) {
+        await this.updatePipelineHistoryEntry(historyId, 'failed', 0);
+      }
+      
+      // Return failure result
+      return {
+        success: false,
+        error: error,
+        message: `Unhandled error in data enrichment pipeline: ${error.message}`,
+        itemsProcessed: 0
+      };
     }
   }
   
@@ -3867,6 +3998,36 @@ class PipelineOperationsController extends BaseController {
     }
     
     logger.info(`========== COMPLETED ITEM ${index+1}/${totalItems} (ID: ${item.id}) ==========`);
+  }
+
+  /**
+   * Reset all pipeline statuses to not running
+   * This is helpful on server restart to ensure no pipelines are incorrectly marked as running
+   * @returns {Promise<void>}
+   */
+  async resetAllPipelineStatuses() {
+    let db = null;
+    try {
+      logger.info('Resetting all pipeline running statuses to prevent stale states');
+      db = await openSQLiteConnection();
+      
+      // Update all pipelines to not running
+      await db.run('UPDATE pipeline_status SET is_running = 0 WHERE is_running = 1');
+      
+      // Count how many were updated
+      const result = await db.get('SELECT changes() as count');
+      const resetCount = result?.count || 0;
+      
+      if (resetCount > 0) {
+        logger.info(`Reset running status for ${resetCount} pipelines`);
+      } else {
+        logger.info('No pipelines needed status reset');
+      }
+    } catch (error) {
+      logger.error('Error resetting pipeline statuses:', { error });
+    } finally {
+      if (db) await closeSQLiteConnection(db);
+    }
   }
 }
 

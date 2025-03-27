@@ -1,6 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>http://localhost:3000/configuration-361697984/merge-requests/adding-compactor-delete-delay-flag-817</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/vips-613719050/merge-requests/ven-3138-update-xvs-emissions-and-bridge-xvs-from--525</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/voxtrix-be-919920735/merge-requests/fix-token-expiration-time-server-create-upload-ima-26</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/ecflow-light-614302771/merge-requests/remove-unnecessary-quiet-flag-11</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/clausewise-955846960/merge-requests/refined-version-3</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/picongpu-11764461/merge-requests/add-json-formatter-and-replace-ascii-enforcement-i-5332</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/openhab-addons-918615105/merge-requests/miio-add-a-few-new-vacuum-robots-and-station-chann-1303</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/interop-outbound-models-827209922/merge-requests/fix-missing-optional-in-templateinstanceinterfacem-34</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>http://localhost:3000/office-docs-powershell-95035788/merge-requests/372-12632</loc>
     <lastmod>2025-03-27</lastmod>
     <changefreq>monthly</changefreq>
