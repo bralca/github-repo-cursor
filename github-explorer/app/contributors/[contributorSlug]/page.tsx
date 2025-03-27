@@ -13,6 +13,14 @@ interface ContributorPageProps {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
+// This function helps Next.js understand our dynamic route structure in production
+export function generateStaticParams() {
+  // We don't need to pre-generate specific paths, but this function
+  // signals to Next.js that this is a dynamic route that should be handled
+  // Return an empty array since we don't want to statically generate any paths
+  return [];
+}
+
 // Convert the API data to the format expected by the client component
 function mapToContributorDetailData(contributor: any): ContributorDetailData {
   return {

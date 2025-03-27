@@ -205,4 +205,12 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
       }} />
     </div>
   );
+}
+
+// This function helps Next.js understand our dynamic route structure in production
+export function generateStaticParams() {
+  // We don't need to pre-generate specific paths, but this function
+  // signals to Next.js that this is a dynamic route that should be handled
+  // Return an empty array since we don't want to statically generate any paths
+  return [];
 } 

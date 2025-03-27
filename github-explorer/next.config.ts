@@ -3,6 +3,9 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Explicitly set trailingSlash to false to ensure consistent URL handling in all environments
+  trailingSlash: false,
+  
   images: {
     remotePatterns: [
       {
