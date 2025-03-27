@@ -65,8 +65,17 @@ export async function getContributorSEODataBySlug(slug: string): Promise<Contrib
  * @returns The contributor data or null if not found
  */
 export async function getContributorByGithubId(githubId: string): Promise<ContributorDetail | null> {
+  if (!githubId) {
+    console.error('getContributorByGithubId called with empty ID');
+    return null;
+  }
+  
+  console.log(`[DEBUG API] Fetching contributor by GitHub ID: ${githubId}`);
+  
   try {
-    return await fetchFromServerApi<ContributorDetail>(`contributors/id/${githubId}`);
+    // Use the standard endpoint from API Reference Guide
+    console.log(`[DEBUG API] Using standard login endpoint for GitHub ID: ${githubId}`);
+    return await fetchFromServerApi<ContributorDetail>(`contributors/${githubId}`);
   } catch (error) {
     console.error(`Error fetching contributor by GitHub ID ${githubId}:`, error);
     return null;
@@ -79,8 +88,14 @@ export async function getContributorByGithubId(githubId: string): Promise<Contri
  * @returns The contributor SEO data or null if not found
  */
 export async function getContributorSEODataByGithubId(githubId: string): Promise<ContributorSEOData | null> {
+  if (!githubId) {
+    console.error('getContributorSEODataByGithubId called with empty ID');
+    return null;
+  }
+  
   try {
-    return await fetchFromServerApi<ContributorSEOData>(`contributors/id/${githubId}/seo`);
+    // Use the standard endpoint from API Reference Guide
+    return await fetchFromServerApi<ContributorSEOData>(`contributors/${githubId}/seo`);
   } catch (error) {
     console.error(`Error fetching contributor SEO data by GitHub ID ${githubId}:`, error);
     return null;

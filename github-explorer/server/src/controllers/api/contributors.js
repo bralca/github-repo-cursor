@@ -155,17 +155,20 @@ export async function getContributorById(req, res) {
 }
 
 /**
- * Get contributor by GitHub ID
+ * Get contributor by GitHub ID or username
  */
 export async function getContributorByLogin(req, res) {
-  const { login } = req.params;
+  // Get parameter from either login or id parameter
+  const login = req.params.login || req.params.id;
   
   if (!login) {
-    return res.status(400).json({ error: 'Contributor GitHub ID is required' });
+    return res.status(400).json({ error: 'Contributor identifier is required' });
   }
   
   try {
-    // Get contributor details
+    console.log(`[Server] Looking up contributor with identifier: ${login}`);
+    
+    // Get contributor details - use proper SQLite syntax for type conversion
     const contributorQuery = `
       SELECT 
         c.*,
@@ -178,12 +181,12 @@ export async function getContributorByLogin(req, res) {
       LEFT JOIN 
         merge_requests mr ON c.id = mr.author_id
       WHERE 
-        c.github_id = $1
+        c.github_id = ? OR c.username = ?
       GROUP BY 
         c.id
     `;
     
-    const contributorResult = await pool.query(contributorQuery, [login]);
+    const contributorResult = await pool.query(contributorQuery, [login, login]);
     
     if (contributorResult.rows.length === 0) {
       return res.status(404).json({ error: 'Contributor not found' });

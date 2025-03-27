@@ -194,31 +194,51 @@ export function generateContributorSlug(name: string | undefined, username: stri
  * @returns Object containing name, username and githubId, or null if parsing fails
  */
 export function parseContributorSlug(slug: string): { name: string, username: string, githubId: string } | null {
-  if (!slug) return null;
+  if (!slug) {
+    console.log('[Debug] parseContributorSlug: Empty slug provided');
+    return null;
+  }
   
-  // Extract GitHub ID
-  const githubId = extractGithubId(slug);
-  if (!githubId) return null;
+  console.log(`[Debug] parseContributorSlug: Processing slug: "${slug}"`);
+  
+  // Extract GitHub ID - we expect it at the end after the last hyphen
+  const parts = slug.split('-');
+  if (parts.length < 2) {
+    console.log('[Debug] parseContributorSlug: Slug has less than 2 parts');
+    return null;
+  }
+  
+  // The last part should be the GitHub ID
+  const githubId = parts[parts.length - 1];
+  
+  // Check if it's a valid numeric ID
+  if (!/^\d+$/.test(githubId)) {
+    console.log(`[Debug] parseContributorSlug: Invalid GitHub ID: "${githubId}" (not numeric)`);
+    return null;
+  }
+  
+  console.log(`[Debug] parseContributorSlug: Found valid GitHub ID: "${githubId}"`);
   
   // Remove the GitHub ID from the slug
-  const slugWithoutId = slug.replace(new RegExp(`-${githubId}$`), '');
+  const slugWithoutId = parts.slice(0, -1).join('-');
   
-  // Split the remaining slug into potential name and username
-  const parts = slugWithoutId.split('-');
-  
-  // Default values
-  let name = 'contributor';
-  let username = '';
-  
-  // If we have at least one part, it's the name
-  if (parts.length >= 1) {
-    name = parts[0];
+  // If the remaining slug has only one part, it's the name
+  if (slugWithoutId.indexOf('-') === -1) {
+    console.log(`[Debug] parseContributorSlug: Simple slug with name: "${slugWithoutId}"`);
+    return { 
+      name: slugWithoutId,
+      username: '',
+      githubId 
+    };
   }
   
-  // If we have multiple parts, the rest could be the username
-  if (parts.length >= 2) {
-    username = parts.slice(1).join('-');
-  }
+  // Otherwise, split the rest into name and username parts
+  // Convention: if there are 3+ parts, first part is name, rest is username
+  const nameAndUsername = slugWithoutId.split('-');
+  const name = nameAndUsername[0];
+  const username = nameAndUsername.slice(1).join('-');
+  
+  console.log(`[Debug] parseContributorSlug: Complex slug with name: "${name}", username: "${username}"`);
   
   return { name, username, githubId };
 }

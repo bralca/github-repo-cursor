@@ -6,11 +6,13 @@ import ContributorContent from '@/components/contributor/ContributorContent';
 import { ContributorDetailData } from '@/lib/client/fetchContributorData';
 
 // Define types for the page props
+type Params = {
+  contributorSlug: string;
+};
+
 interface ContributorPageProps {
-  params: Promise<{
-    contributorSlug: string;
-  }>;
-  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+  params: Params;
+  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
 // Convert the API data to the format expected by the client component
@@ -23,18 +25,17 @@ function mapToContributorDetailData(contributor: any): ContributorDetailData {
     avatar: contributor.avatar || null,
     bio: contributor.bio || null,
     // Add missing fields required by ContributorDetailData
-    company: null,
-    location: null,
+    company: contributor.company || null,
+    location: contributor.location || null,
     repositories: contributor.repositories || null,
-    impact_score: null,
-    role_classification: null
+    impact_score: contributor.impact_score || null,
+    role_classification: contributor.role_classification || null
   };
 }
 
 // Define metadata generation function for SEO
 export async function generateMetadata({ params }: ContributorPageProps): Promise<Metadata> {
-  // Await params before accessing properties
-  const { contributorSlug } = await params;
+  const contributorSlug = params.contributorSlug;
   
   // Extract the GitHub ID from the slug
   const slugInfo = parseContributorSlug(contributorSlug);
@@ -79,8 +80,7 @@ export async function generateMetadata({ params }: ContributorPageProps): Promis
 
 // Default export for the page component
 export default async function ContributorPage({ params }: ContributorPageProps) {
-  // Await params before accessing properties
-  const { contributorSlug } = await params;
+  const contributorSlug = params.contributorSlug;
   
   // Extract the GitHub ID from the slug
   const slugInfo = parseContributorSlug(contributorSlug);
@@ -89,11 +89,16 @@ export default async function ContributorPage({ params }: ContributorPageProps) 
     notFound();
   }
   
+  // Debug logging for troubleshooting
+  console.log(`[DEBUG] Processing contributor slug: ${contributorSlug}`);
+  console.log(`[DEBUG] Extracted GitHub ID: ${slugInfo.githubId}`);
+  
   // Fetch initial data server-side
   try {
     const seoData = await getContributorByGithubId(slugInfo.githubId);
     
     if (!seoData) {
+      console.log(`[DEBUG] No contributor data found for GitHub ID: ${slugInfo.githubId}`);
       notFound();
     }
     

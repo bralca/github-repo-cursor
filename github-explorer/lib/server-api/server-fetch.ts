@@ -20,6 +20,9 @@ export async function fetchFromServerApi<T>(
   // Base URL for the backend server - in server components, we use the direct URL
   const baseUrl = process.env.BACKEND_API_URL || 'http://localhost:3001/api';
   
+  console.log(`[Server] Environment check: NODE_ENV=${process.env.NODE_ENV}`);
+  console.log(`[Server] Using API base URL: ${baseUrl}`);
+  
   // Build URL with query parameters
   let url = `${baseUrl}/${endpoint}`;
   if (params) {
@@ -52,14 +55,31 @@ export async function fetchFromServerApi<T>(
   
   // Make the request
   console.log(`[Server] Making API request to: ${url}`);
-  const response = await fetch(url, options);
   
-  // Handle errors
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(errorData.error || `API request failed with status ${response.status}`);
+  try {
+    const response = await fetch(url, options);
+    
+    // Handle errors
+    if (!response.ok) {
+      const statusCode = response.status;
+      let errorText = `API request failed with status ${statusCode}`;
+      
+      try {
+        const errorData = await response.json();
+        console.error(`[API Error] ${statusCode} response:`, errorData);
+        errorText = errorData.error || errorText;
+      } catch (parseError) {
+        console.error(`[API Error] Failed to parse error response: ${response.statusText}`);
+      }
+      
+      throw new Error(errorText);
+    }
+    
+    // Parse and return the response
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error(`[API Error] Request to ${url} failed:`, error);
+    throw error;
   }
-  
-  // Parse and return the response
-  return await response.json();
 } 
