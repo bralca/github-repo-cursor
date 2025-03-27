@@ -1,637 +1,715 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://github-explorer.onrender.com/eslint-config-823163260</loc>
+    <loc>http://localhost:3000/autoquizactions-953600332</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/helm-charts-873622169</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/a12n-server-147352393</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/roslyncodedomprovider-75989414</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/ocr-benchmark-939494731</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/ioscfwguide-925005573</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/openhands-923978074</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/pose_blur-871674239</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/autopush-manager-839032719</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/winget-pkgs-803695342</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/comoyajuncolorcode-783393196</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/sunflower-land-365367120</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/dockerfiles-290966268</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/eslint-config-823163260</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/git-prueba-955611700</loc>
+    <loc>http://localhost:3000/git-prueba-955611700</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/atividade-02-955607243</loc>
+    <loc>http://localhost:3000/atividade-02-955607243</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/unitylargedata-954394767</loc>
+    <loc>http://localhost:3000/unitylargedata-954394767</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/eventbride-929753918</loc>
+    <loc>http://localhost:3000/authsignal-keycloak-provider-890613579</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/authsignal-keycloak-provider-890613579</loc>
+    <loc>http://localhost:3000/philosophers-946298765</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/philosophers-946298765</loc>
+    <loc>http://localhost:3000/xips-459710239</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/xips-459710239</loc>
+    <loc>http://localhost:3000/opensource-286470227</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/opensource-286470227</loc>
+    <loc>http://localhost:3000/stack-auth-764642350</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/stack-auth-764642350</loc>
+    <loc>http://localhost:3000/doo-t03n-2025-935098624</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/doo-t03n-2025-935098624</loc>
+    <loc>http://localhost:3000/dailypaper-920148014</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/dailypaper-920148014</loc>
+    <loc>http://localhost:3000/talos-895300679</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/talos-895300679</loc>
+    <loc>http://localhost:3000/portal-tectrack-874432378</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/portal-tectrack-874432378</loc>
+    <loc>http://localhost:3000/telegroq-791236070</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/telegroq-791236070</loc>
+    <loc>http://localhost:3000/data-analysis-and-visualisation-of-global-dataset--955548987</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/data-analysis-and-visualisation-of-global-dataset--955548987</loc>
+    <loc>http://localhost:3000/sillok_be-883637006</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/sillok_be-883637006</loc>
+    <loc>http://localhost:3000/umbrel-apps-483803924</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/umbrel-apps-483803924</loc>
+    <loc>http://localhost:3000/nowinkmp-950860451</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/nowinkmp-950860451</loc>
+    <loc>http://localhost:3000/zeno-wallet-pwa-938782696</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/zeno-wallet-pwa-938782696</loc>
+    <loc>http://localhost:3000/miragewyrm-906473067</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/miragewyrm-906473067</loc>
+    <loc>http://localhost:3000/nr-dap-ods-753774329</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/nr-dap-ods-753774329</loc>
+    <loc>http://localhost:3000/generative-ai-use-cases-jp-679504479</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/generative-ai-use-cases-jp-679504479</loc>
+    <loc>http://localhost:3000/cdk-632726428</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/cdk-632726428</loc>
+    <loc>http://localhost:3000/socnet-502114608</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/socnet-502114608</loc>
+    <loc>http://localhost:3000/cloudflare-dynamic-dns-398911074</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/cloudflare-dynamic-dns-398911074</loc>
+    <loc>http://localhost:3000/highlight-289073337</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/highlight-289073337</loc>
+    <loc>http://localhost:3000/kubernetes-236276135</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/kubernetes-236276135</loc>
+    <loc>http://localhost:3000/qbay-955602240</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/qbay-955602240</loc>
+    <loc>http://localhost:3000/iotbay-ver-0-939925422</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/iotbay-ver-0-939925422</loc>
+    <loc>http://localhost:3000/vbtech-monorepo-934500125</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/vbtech-monorepo-934500125</loc>
+    <loc>http://localhost:3000/mundo-dolphinsgithubio-902574675</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/mundo-dolphinsgithubio-902574675</loc>
+    <loc>http://localhost:3000/cwv-880490029</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/cwv-880490029</loc>
+    <loc>http://localhost:3000/amazon-q-developer-cli-861937484</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/amazon-q-developer-cli-861937484</loc>
+    <loc>http://localhost:3000/nomad-events-logger-645364720</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/nomad-events-logger-645364720</loc>
+    <loc>http://localhost:3000/qjs-ext-lib-347135445</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/qjs-ext-lib-347135445</loc>
+    <loc>http://localhost:3000/fj-doc-219955762</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/fj-doc-219955762</loc>
+    <loc>http://localhost:3000/opendigitaltwins-dtdl-184346096</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/opendigitaltwins-dtdl-184346096</loc>
+    <loc>http://localhost:3000/donation-tracker-44652980</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/donation-tracker-44652980</loc>
+    <loc>http://localhost:3000/skillsync-954057682</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/skillsync-954057682</loc>
+    <loc>http://localhost:3000/bilanplus-940214586</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/bilanplus-940214586</loc>
+    <loc>http://localhost:3000/linux-sqw-878226577</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/linux-sqw-878226577</loc>
+    <loc>http://localhost:3000/oneup-front-angular-794305242</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/oneup-front-angular-794305242</loc>
+    <loc>http://localhost:3000/aspen-discovery-167109821</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/aspen-discovery-167109821</loc>
+    <loc>http://localhost:3000/software_components_engineering-954920197</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/software_components_engineering-954920197</loc>
+    <loc>http://localhost:3000/support-ai-945904980</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/support-ai-945904980</loc>
+    <loc>http://localhost:3000/sivrceai-admin-915527482</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/sivrceai-admin-915527482</loc>
+    <loc>http://localhost:3000/home-infra-628465105</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/home-infra-628465105</loc>
+    <loc>http://localhost:3000/winget-pkgs-197275551</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/winget-pkgs-197275551</loc>
+    <loc>http://localhost:3000/lear-168396249</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/lear-168396249</loc>
+    <loc>http://localhost:3000/homebrew-core-52855516</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/homebrew-core-52855516</loc>
+    <loc>http://localhost:3000/metabase-30203935</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/metabase-30203935</loc>
+    <loc>http://localhost:3000/nimbus-940784007</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/nimbus-940784007</loc>
+    <loc>http://localhost:3000/gsalvi-toolkit-929093841</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/gsalvi-toolkit-929093841</loc>
+    <loc>http://localhost:3000/browser-use-881458615</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/browser-use-881458615</loc>
+    <loc>http://localhost:3000/home-ops-230999826</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/home-ops-230999826</loc>
+    <loc>http://localhost:3000/laboratory-work-3-954920171</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/laboratory-work-3-954920171</loc>
+    <loc>http://localhost:3000/age-of-psydon-947233131</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/age-of-psydon-947233131</loc>
+    <loc>http://localhost:3000/cse341a2-moviedb-ts-945629528</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/cse341a2-moviedb-ts-945629528</loc>
+    <loc>http://localhost:3000/readeckapp-935528079</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/readeckapp-935528079</loc>
+    <loc>http://localhost:3000/netwk-progithubio-791036431</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/netwk-progithubio-791036431</loc>
+    <loc>http://localhost:3000/dkcutter-nextjs-727814927</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/dkcutter-nextjs-727814927</loc>
+    <loc>http://localhost:3000/imd-ccal-665781800</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/imd-ccal-665781800</loc>
+    <loc>http://localhost:3000/click-to-deploy-solutions-579128710</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/click-to-deploy-solutions-579128710</loc>
+    <loc>http://localhost:3000/realm-856556486</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/realm-856556486</loc>
+    <loc>http://localhost:3000/deployment-config-953570006</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/deployment-config-953570006</loc>
+    <loc>http://localhost:3000/gerenciador-de-contatos-946949982</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/gerenciador-de-contatos-946949982</loc>
+    <loc>http://localhost:3000/5030-deep-exploration-927391482</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/5030-deep-exploration-927391482</loc>
+    <loc>http://localhost:3000/kit-902639929</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/kit-902639929</loc>
+    <loc>http://localhost:3000/gpu-driver-container-588277066</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/gpu-driver-container-588277066</loc>
+    <loc>http://localhost:3000/mlflow-480539099</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/mlflow-480539099</loc>
+    <loc>http://localhost:3000/factcast-193146567</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/factcast-193146567</loc>
+    <loc>http://localhost:3000/camunda-bpm-platform-7420937</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/camunda-bpm-platform-7420937</loc>
+    <loc>http://localhost:3000/dropwizard-1272129</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/dropwizard-1272129</loc>
+    <loc>http://localhost:3000/studyforest-951137051</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/studyforest-951137051</loc>
+    <loc>http://localhost:3000/monopolyprojectsprint2-950585083</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/monopolyprojectsprint2-950585083</loc>
+    <loc>http://localhost:3000/application_form-950300027</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/application_form-950300027</loc>
+    <loc>http://localhost:3000/reflective-jwelery-948907402</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/reflective-jwelery-948907402</loc>
+    <loc>http://localhost:3000/inscribed-929276276</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/inscribed-929276276</loc>
+    <loc>http://localhost:3000/github-auto-project-903373337</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/github-auto-project-903373337</loc>
+    <loc>http://localhost:3000/toddle-880797897</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/toddle-880797897</loc>
+    <loc>http://localhost:3000/gmhleasr-853918839</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/gmhleasr-853918839</loc>
+    <loc>http://localhost:3000/github-850452680</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/github-850452680</loc>
+    <loc>http://localhost:3000/images-821932095</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/images-821932095</loc>
+    <loc>http://localhost:3000/stc-751274749</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/stc-751274749</loc>
+    <loc>http://localhost:3000/winget-pkgs-683747062</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/winget-pkgs-683747062</loc>
+    <loc>http://localhost:3000/entigo-infralib-651512110</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/entigo-infralib-651512110</loc>
+    <loc>http://localhost:3000/kima-transaction-widget-615259499</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/kima-transaction-widget-615259499</loc>
+    <loc>http://localhost:3000/axios-515397004</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/axios-515397004</loc>
+    <loc>http://localhost:3000/freqtrade-341655049</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/freqtrade-341655049</loc>
+    <loc>http://localhost:3000/blender-329761855</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/blender-329761855</loc>
+    <loc>http://localhost:3000/rcutils-81483797</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/rcutils-81483797</loc>
+    <loc>http://localhost:3000/qfield-27185284</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/qfield-27185284</loc>
+    <loc>http://localhost:3000/sdc-workflow-23393979</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/sdc-workflow-23393979</loc>
+    <loc>http://localhost:3000/eventbride-929753918</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/projetosite1-954962435</loc>
+    <loc>http://localhost:3000/projetosite1-954962435</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/projeto-faculdade-chat-js-954962071</loc>
+    <loc>http://localhost:3000/projeto-faculdade-chat-js-954962071</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/w-trivia-950770371</loc>
+    <loc>http://localhost:3000/w-trivia-950770371</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/api-jet-manager-948175398</loc>
+    <loc>http://localhost:3000/api-jet-manager-948175398</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/cipp-api-930239709</loc>
+    <loc>http://localhost:3000/cipp-api-930239709</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/mycalendar-911166186</loc>
+    <loc>http://localhost:3000/mycalendar-911166186</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/ecommerce-ui-897329095</loc>
+    <loc>http://localhost:3000/ecommerce-ui-897329095</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/urdf2mjcf-873317745</loc>
+    <loc>http://localhost:3000/urdf2mjcf-873317745</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/c3c-836066673</loc>
+    <loc>http://localhost:3000/c3c-836066673</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/rayhunter-716335769</loc>
+    <loc>http://localhost:3000/rayhunter-716335769</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/sui-426075845</loc>
+    <loc>http://localhost:3000/sui-426075845</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/handyman-319328863</loc>
+    <loc>http://localhost:3000/handyman-319328863</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

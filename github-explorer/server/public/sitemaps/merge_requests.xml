@@ -1,637 +1,715 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://github-explorer.onrender.com/authsignal-keycloak-provider-890613579/merge-requests/handle-email-sign-in-16</loc>
+    <loc>http://localhost:3000/helm-charts-873622169/merge-requests/choredeps-update-ghcrioopenmfphelm-chartsopenmfp-d-598</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/roslyncodedomprovider-75989414/merge-requests/dispose-the-disposable-things-174</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/autoquizactions-953600332/merge-requests/develop-13</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/winget-pkgs-803695342/merge-requests/pull-master-from-microsoftmaster-469</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/eventbride-929753918/merge-requests/modificar-readmemd-doc-298</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/openhands-923978074/merge-requests/pull-main-from-all-hands-aimain-135</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/eslint-config-823163260/merge-requests/choredeps-update-dependency-eslintcss-to-060-123</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/ioscfwguide-925005573/merge-requests/pull-main-from-cfw-guidemain-109</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/ocr-benchmark-939494731/merge-requests/pull-main-from-getomni-aimain-5</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/sunflower-land-365367120/merge-requests/feat-streamer-hat-5441</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/umbrel-apps-483803924/merge-requests/update-portainer-to-version-2273-2427</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/dockerfiles-290966268/merge-requests/fix-pydantic-dep-group-568</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/autopush-manager-839032719/merge-requests/add-examples-21</loc>
+    <lastmod>2025-03-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/pose_blur-871674239/merge-requests/added-more-pix2pix-modifications-for-fft-and-chang-5</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/git-prueba-955611700/merge-requests/4-cambios-realizados-en-rama3-3</loc>
+    <loc>http://localhost:3000/comoyajuncolorcode-783393196/merge-requests/v015-5</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/unitylargedata-954394767/merge-requests/refactorunity-croutine-1</loc>
+    <loc>http://localhost:3000/a12n-server-147352393/merge-requests/releasing-0301-656</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/atividade-02-955607243/merge-requests/alterei-o-nome-da-branch-1</loc>
+    <loc>http://localhost:3000/authsignal-keycloak-provider-890613579/merge-requests/handle-email-sign-in-16</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/telegroq-791236070/merge-requests/choredeps-update-dependency-wrangler-to-450-350</loc>
+    <loc>http://localhost:3000/git-prueba-955611700/merge-requests/4-cambios-realizados-en-rama3-3</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/cloudflare-dynamic-dns-398911074/merge-requests/fixdeps-update-module-githubcomspf13viper-to-v1201-210</loc>
+    <loc>http://localhost:3000/unitylargedata-954394767/merge-requests/refactorunity-croutine-1</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/philosophers-946298765/merge-requests/featureroutine-2</loc>
+    <loc>http://localhost:3000/atividade-02-955607243/merge-requests/alterei-o-nome-da-branch-1</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/kubernetes-236276135/merge-requests/pull-master-from-kubernetesmaster-3913</loc>
+    <loc>http://localhost:3000/telegroq-791236070/merge-requests/choredeps-update-dependency-wrangler-to-450-350</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/socnet-502114608/merge-requests/fixdeps-update-dependency-django-ninja-to-v140-2547</loc>
+    <loc>http://localhost:3000/cloudflare-dynamic-dns-398911074/merge-requests/fixdeps-update-module-githubcomspf13viper-to-v1201-210</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/doo-t03n-2025-935098624/merge-requests/entrega-aula04-119</loc>
+    <loc>http://localhost:3000/philosophers-946298765/merge-requests/featureroutine-2</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/xips-459710239/merge-requests/xip-62-more-control-over-push-notifications-for-re-105</loc>
+    <loc>http://localhost:3000/kubernetes-236276135/merge-requests/pull-master-from-kubernetesmaster-3913</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/opensource-286470227/merge-requests/fixing-dependencies-paths-9</loc>
+    <loc>http://localhost:3000/socnet-502114608/merge-requests/fixdeps-update-dependency-django-ninja-to-v140-2547</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/talos-895300679/merge-requests/choreflux-update-image-stirling-pdf-1309-1330-1128</loc>
+    <loc>http://localhost:3000/doo-t03n-2025-935098624/merge-requests/entrega-aula04-119</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/cdk-632726428/merge-requests/split-mintdatabase-into-separate-narrower-scoped-t-593</loc>
+    <loc>http://localhost:3000/xips-459710239/merge-requests/xip-62-more-control-over-push-notifications-for-re-105</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/stack-auth-764642350/merge-requests/fix-oauth-shared-keys-switch-587</loc>
+    <loc>http://localhost:3000/opensource-286470227/merge-requests/fixing-dependencies-paths-9</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/vbtech-monorepo-934500125/merge-requests/update-dependency-sst-to-v31014-114</loc>
+    <loc>http://localhost:3000/talos-895300679/merge-requests/choreflux-update-image-stirling-pdf-1309-1330-1128</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/dailypaper-920148014/merge-requests/daily-updates-81</loc>
+    <loc>http://localhost:3000/cdk-632726428/merge-requests/split-mintdatabase-into-separate-narrower-scoped-t-593</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/portal-tectrack-874432378/merge-requests/20-agregar-un-nuevo-usuario-en-seleccin-de-tecnico-32</loc>
+    <loc>http://localhost:3000/stack-auth-764642350/merge-requests/fix-oauth-shared-keys-switch-587</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/eventbride-929753918/merge-requests/modificar-readmemd-doc-298</loc>
+    <loc>http://localhost:3000/vbtech-monorepo-934500125/merge-requests/update-dependency-sst-to-v31014-114</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/data-analysis-and-visualisation-of-global-dataset--955548987/merge-requests/comit-2</loc>
+    <loc>http://localhost:3000/dailypaper-920148014/merge-requests/daily-updates-81</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/highlight-289073337/merge-requests/improve-funnel-option-dropdown-10115</loc>
+    <loc>http://localhost:3000/portal-tectrack-874432378/merge-requests/20-agregar-un-nuevo-usuario-en-seleccin-de-tecnico-32</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/home-infra-628465105/merge-requests/revert-update-helm-release-external-dns-to-v1160-1361</loc>
+    <loc>http://localhost:3000/data-analysis-and-visualisation-of-global-dataset--955548987/merge-requests/comit-2</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/generative-ai-use-cases-jp-679504479/merge-requests/add-workflow-to-automate-versioning-962</loc>
+    <loc>http://localhost:3000/highlight-289073337/merge-requests/improve-funnel-option-dropdown-10115</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/amazon-q-developer-cli-861937484/merge-requests/refactorchat-add-command-suggestions-for-common-si-953</loc>
+    <loc>http://localhost:3000/home-infra-628465105/merge-requests/revert-update-helm-release-external-dns-to-v1160-1361</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/mundo-dolphinsgithubio-902574675/merge-requests/added-new-social-posts-101</loc>
+    <loc>http://localhost:3000/generative-ai-use-cases-jp-679504479/merge-requests/add-workflow-to-automate-versioning-962</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/miragewyrm-906473067/merge-requests/update-module-githubcomspf13viper-to-v1201-47</loc>
+    <loc>http://localhost:3000/amazon-q-developer-cli-861937484/merge-requests/refactorchat-add-command-suggestions-for-common-si-953</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/sillok_be-883637006/merge-requests/8-merge-swagger-9</loc>
+    <loc>http://localhost:3000/mundo-dolphinsgithubio-902574675/merge-requests/added-new-social-posts-101</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/nr-dap-ods-753774329/merge-requests/add-error-logging-to-audit_batch_status-for-easier-15</loc>
+    <loc>http://localhost:3000/miragewyrm-906473067/merge-requests/update-module-githubcomspf13viper-to-v1201-47</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/zeno-wallet-pwa-938782696/merge-requests/update-15</loc>
+    <loc>http://localhost:3000/sillok_be-883637006/merge-requests/8-merge-swagger-9</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/nowinkmp-950860451/merge-requests/feat-coredata-test-module-hilt-to-koin-di-migratio-11</loc>
+    <loc>http://localhost:3000/nr-dap-ods-753774329/merge-requests/add-error-logging-to-audit_batch_status-for-easier-15</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/eslint-config-823163260/merge-requests/choredeps-update-dependency-eslintcss-to-060-123</loc>
+    <loc>http://localhost:3000/zeno-wallet-pwa-938782696/merge-requests/update-15</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/nomad-events-logger-645364720/merge-requests/fixdeps-update-rust-crate-clap-to-v4533-208</loc>
+    <loc>http://localhost:3000/nowinkmp-950860451/merge-requests/feat-coredata-test-module-hilt-to-koin-di-migratio-11</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/opendigitaltwins-dtdl-184346096/merge-requests/add-mqtt-extension-version-3-192</loc>
+    <loc>http://localhost:3000/nomad-events-logger-645364720/merge-requests/fixdeps-update-rust-crate-clap-to-v4533-208</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/linux-sqw-878226577/merge-requests/pull-master-from-torvaldsmaster-191</loc>
+    <loc>http://localhost:3000/opendigitaltwins-dtdl-184346096/merge-requests/add-mqtt-extension-version-3-192</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/donation-tracker-44652980/merge-requests/bump-lxml-from-494-to-531-816</loc>
+    <loc>http://localhost:3000/linux-sqw-878226577/merge-requests/pull-master-from-torvaldsmaster-191</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/fj-doc-219955762/merge-requests/fj-doc-mod-openpdf-ext-migrate-junit4-to-junit5-36-368</loc>
+    <loc>http://localhost:3000/donation-tracker-44652980/merge-requests/bump-lxml-from-494-to-531-816</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/oneup-front-angular-794305242/merge-requests/produccion-63</loc>
+    <loc>http://localhost:3000/fj-doc-219955762/merge-requests/fj-doc-mod-openpdf-ext-migrate-junit4-to-junit5-36-368</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/cwv-880490029/merge-requests/fix-redis-issues-58</loc>
+    <loc>http://localhost:3000/oneup-front-angular-794305242/merge-requests/produccion-63</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/qjs-ext-lib-347135445/merge-requests/refactor-add-checkcompletion-function-argjs-for-ba-9</loc>
+    <loc>http://localhost:3000/cwv-880490029/merge-requests/fix-redis-issues-58</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/qbay-955602240/merge-requests/buyq-bay-1</loc>
+    <loc>http://localhost:3000/qjs-ext-lib-347135445/merge-requests/refactor-add-checkcompletion-function-argjs-for-ba-9</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/iotbay-ver-0-939925422/merge-requests/add-files-via-upload-1</loc>
+    <loc>http://localhost:3000/qbay-955602240/merge-requests/buyq-bay-1</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/umbrel-apps-483803924/merge-requests/update-portainer-to-version-2273-2427</loc>
+    <loc>http://localhost:3000/iotbay-ver-0-939925422/merge-requests/add-files-via-upload-1</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/lear-168396249/merge-requests/26566-update-api-spec-to-sync-with-the-latest-post-3347</loc>
+    <loc>http://localhost:3000/lear-168396249/merge-requests/26566-update-api-spec-to-sync-with-the-latest-post-3347</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/aspen-discovery-167109821/merge-requests/250310-snap-pay-2338</loc>
+    <loc>http://localhost:3000/aspen-discovery-167109821/merge-requests/250310-snap-pay-2338</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/bilanplus-940214586/merge-requests/update-appjs-26</loc>
+    <loc>http://localhost:3000/bilanplus-940214586/merge-requests/update-appjs-26</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/skillsync-954057682/merge-requests/main-1</loc>
+    <loc>http://localhost:3000/skillsync-954057682/merge-requests/main-1</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/winget-pkgs-197275551/merge-requests/new-version-aziontechazion-version-270-242730</loc>
+    <loc>http://localhost:3000/winget-pkgs-197275551/merge-requests/new-version-aziontechazion-version-270-242730</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/homebrew-core-52855516/merge-requests/clangql-0100-216738</loc>
+    <loc>http://localhost:3000/homebrew-core-52855516/merge-requests/clangql-0100-216738</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/metabase-30203935/merge-requests/dont-load-gsheets-sync-status-for-non-admins-55724-55794</loc>
+    <loc>http://localhost:3000/metabase-30203935/merge-requests/dont-load-gsheets-sync-status-for-non-admins-55724-55794</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/sivrceai-admin-915527482/merge-requests/add-crud-for-spots-feature-29</loc>
+    <loc>http://localhost:3000/sivrceai-admin-915527482/merge-requests/add-crud-for-spots-feature-29</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/support-ai-945904980/merge-requests/chore-made-sure-chroma-uri-loads-21</loc>
+    <loc>http://localhost:3000/support-ai-945904980/merge-requests/chore-made-sure-chroma-uri-loads-21</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/software_components_engineering-954920197/merge-requests/lab2-2</loc>
+    <loc>http://localhost:3000/software_components_engineering-954920197/merge-requests/lab2-2</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/browser-use-881458615/merge-requests/fix-error-when-checking-cdp-url-for-firefoxness-1164</loc>
+    <loc>http://localhost:3000/browser-use-881458615/merge-requests/fix-error-when-checking-cdp-url-for-firefoxness-1164</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/netwk-progithubio-791036431/merge-requests/revamped-license-legal-page-incremented-version-42</loc>
+    <loc>http://localhost:3000/netwk-progithubio-791036431/merge-requests/revamped-license-legal-page-incremented-version-42</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/age-of-psydon-947233131/merge-requests/merchant-vault-and-keep-vault-revamp-39</loc>
+    <loc>http://localhost:3000/age-of-psydon-947233131/merge-requests/merchant-vault-and-keep-vault-revamp-39</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/home-ops-230999826/merge-requests/featcontainer-update-image-ghcriohome-operationsch-9064</loc>
+    <loc>http://localhost:3000/home-ops-230999826/merge-requests/featcontainer-update-image-ghcriohome-operationsch-9064</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/readeckapp-935528079/merge-requests/add-application-logs-37</loc>
+    <loc>http://localhost:3000/readeckapp-935528079/merge-requests/add-application-logs-37</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/gsalvi-toolkit-929093841/merge-requests/chore-github-actions-26</loc>
+    <loc>http://localhost:3000/gsalvi-toolkit-929093841/merge-requests/chore-github-actions-26</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/nimbus-940784007/merge-requests/new-frontend-tests-18</loc>
+    <loc>http://localhost:3000/nimbus-940784007/merge-requests/new-frontend-tests-18</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/dkcutter-nextjs-727814927/merge-requests/choredeps-update-dkshseslint-config-to-v460-741</loc>
+    <loc>http://localhost:3000/dkcutter-nextjs-727814927/merge-requests/choredeps-update-dkshseslint-config-to-v460-741</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/kit-902639929/merge-requests/document-the-isblockhashvalid-method-of-the-rpc-ap-294</loc>
+    <loc>http://localhost:3000/kit-902639929/merge-requests/document-the-isblockhashvalid-method-of-the-rpc-ap-294</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/click-to-deploy-solutions-579128710/merge-requests/bump-esbuild-and-angular-devkitbuild-angular-in-ge-226</loc>
+    <loc>http://localhost:3000/click-to-deploy-solutions-579128710/merge-requests/bump-esbuild-and-angular-devkitbuild-angular-in-ge-226</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/laboratory-work-3-954920171/merge-requests/alpha-branch-22</loc>
+    <loc>http://localhost:3000/laboratory-work-3-954920171/merge-requests/alpha-branch-22</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/imd-ccal-665781800/merge-requests/sarah-dev-8</loc>
+    <loc>http://localhost:3000/imd-ccal-665781800/merge-requests/sarah-dev-8</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/cse341a2-moviedb-ts-945629528/merge-requests/adding-route-to-remove-a-movie-from-a-wishlist-and-5</loc>
+    <loc>http://localhost:3000/cse341a2-moviedb-ts-945629528/merge-requests/adding-route-to-remove-a-movie-from-a-wishlist-and-5</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/gpu-driver-container-588277066/merge-requests/precompile-commitsha-gitlab-pipeline-fix-for-sched-282</loc>
+    <loc>http://localhost:3000/gpu-driver-container-588277066/merge-requests/precompile-commitsha-gitlab-pipeline-fix-for-sched-282</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/realm-856556486/merge-requests/rev-1-team-contribution-147</loc>
+    <loc>http://localhost:3000/realm-856556486/merge-requests/rev-1-team-contribution-147</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/mlflow-480539099/merge-requests/update-dependencies-for-update-20250326221923-cdf4-142</loc>
+    <loc>http://localhost:3000/mlflow-480539099/merge-requests/update-dependencies-for-update-20250326221923-cdf4-142</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/dropwizard-1272129/merge-requests/fixdeps-update-dependency-orgapachehttpcomponentsc-9993</loc>
+    <loc>http://localhost:3000/dropwizard-1272129/merge-requests/fixdeps-update-dependency-orgapachehttpcomponentsc-9993</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/camunda-bpm-platform-7420937/merge-requests/choredeps-bump-quarkus-to-3200-5034</loc>
+    <loc>http://localhost:3000/camunda-bpm-platform-7420937/merge-requests/choredeps-bump-quarkus-to-3200-5034</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/factcast-193146567/merge-requests/fixdeps-update-dependency-softwareamazonawssdkcrta-3566</loc>
+    <loc>http://localhost:3000/factcast-193146567/merge-requests/fixdeps-update-dependency-softwareamazonawssdkcrta-3566</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/5030-deep-exploration-927391482/merge-requests/initial-commit-5</loc>
+    <loc>http://localhost:3000/5030-deep-exploration-927391482/merge-requests/initial-commit-5</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/gerenciador-de-contatos-946949982/merge-requests/add-files-via-upload-3</loc>
+    <loc>http://localhost:3000/gerenciador-de-contatos-946949982/merge-requests/add-files-via-upload-3</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/deployment-config-953570006/merge-requests/adding-nginx-1</loc>
+    <loc>http://localhost:3000/deployment-config-953570006/merge-requests/adding-nginx-1</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/toddle-880797897/merge-requests/bump-typescript-eslinteslint-plugin-from-8270-to-8-199</loc>
+    <loc>http://localhost:3000/toddle-880797897/merge-requests/bump-typescript-eslinteslint-plugin-from-8270-to-8-199</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/kima-transaction-widget-615259499/merge-requests/dev-165</loc>
+    <loc>http://localhost:3000/kima-transaction-widget-615259499/merge-requests/dev-165</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/axios-515397004/merge-requests/pull-v1x-from-axiosv1x-32</loc>
+    <loc>http://localhost:3000/axios-515397004/merge-requests/pull-v1x-from-axiosv1x-32</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/blender-329761855/merge-requests/pull-main-from-blendermain-1824</loc>
+    <loc>http://localhost:3000/blender-329761855/merge-requests/pull-main-from-blendermain-1824</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/freqtrade-341655049/merge-requests/pull-develop-from-freqtradedevelop-1531</loc>
+    <loc>http://localhost:3000/freqtrade-341655049/merge-requests/pull-develop-from-freqtradedevelop-1531</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/entigo-infralib-651512110/merge-requests/cancel-argocd-sync-operation-when-wait-fails-908</loc>
+    <loc>http://localhost:3000/entigo-infralib-651512110/merge-requests/cancel-argocd-sync-operation-when-wait-fails-908</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/github-850452680/merge-requests/choredeps-update-pre-commit-hook-python-jsonschema-16</loc>
+    <loc>http://localhost:3000/github-850452680/merge-requests/choredeps-update-pre-commit-hook-python-jsonschema-16</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/monopolyprojectsprint2-950585083/merge-requests/refine-player-round-actions-12</loc>
+    <loc>http://localhost:3000/monopolyprojectsprint2-950585083/merge-requests/refine-player-round-actions-12</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/inscribed-929276276/merge-requests/v106-minor-ux-improvement-12</loc>
+    <loc>http://localhost:3000/inscribed-929276276/merge-requests/v106-minor-ux-improvement-12</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/qfield-27185284/merge-requests/bump-webfactoryssh-agent-from-090-to-091-in-the-al-6128</loc>
+    <loc>http://localhost:3000/qfield-27185284/merge-requests/bump-webfactoryssh-agent-from-090-to-091-in-the-al-6128</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/github-auto-project-903373337/merge-requests/add-min-function-3997</loc>
+    <loc>http://localhost:3000/github-auto-project-903373337/merge-requests/add-min-function-3997</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/winget-pkgs-683747062/merge-requests/pull-master-from-microsoftmaster-581</loc>
+    <loc>http://localhost:3000/winget-pkgs-683747062/merge-requests/pull-master-from-microsoftmaster-581</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/rcutils-81483797/merge-requests/add-rcutils_join-function-for-concatenating-string-490</loc>
+    <loc>http://localhost:3000/rcutils-81483797/merge-requests/add-rcutils_join-function-for-concatenating-string-490</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/images-821932095/merge-requests/feattools-update-cli-tools-238</loc>
+    <loc>http://localhost:3000/images-821932095/merge-requests/feattools-update-cli-tools-238</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/stc-751274749/merge-requests/pull-master-from-stclibmaster-29</loc>
+    <loc>http://localhost:3000/stc-751274749/merge-requests/pull-master-from-stclibmaster-29</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/sdc-workflow-23393979/merge-requests/tools-2582-slack-channels-need-renaming-or-not-spe-17</loc>
+    <loc>http://localhost:3000/sdc-workflow-23393979/merge-requests/tools-2582-slack-channels-need-renaming-or-not-spe-17</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/application_form-950300027/merge-requests/ukrycie-debug-log-16</loc>
+    <loc>http://localhost:3000/application_form-950300027/merge-requests/ukrycie-debug-log-16</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/gmhleasr-853918839/merge-requests/builddeps-bump-jamesivesgithub-pages-deploy-action-8</loc>
+    <loc>http://localhost:3000/gmhleasr-853918839/merge-requests/builddeps-bump-jamesivesgithub-pages-deploy-action-8</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/studyforest-951137051/merge-requests/featurehabit-5</loc>
+    <loc>http://localhost:3000/studyforest-951137051/merge-requests/featurehabit-5</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/reflective-jwelery-948907402/merge-requests/migrate-images-to-vercel-blob-storage-and-remove-l-1</loc>
+    <loc>http://localhost:3000/reflective-jwelery-948907402/merge-requests/migrate-images-to-vercel-blob-storage-and-remove-l-1</loc>
     <lastmod>2025-03-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/sui-426075845/merge-requests/fastpath-propose-blocks-with-transaction-votes-21564</loc>
+    <loc>http://localhost:3000/sui-426075845/merge-requests/fastpath-propose-blocks-with-transaction-votes-21564</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/c3c-836066673/merge-requests/pull-master-from-c3langmaster-280</loc>
+    <loc>http://localhost:3000/c3c-836066673/merge-requests/pull-master-from-c3langmaster-280</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/ecommerce-ui-897329095/merge-requests/changes-248</loc>
+    <loc>http://localhost:3000/ecommerce-ui-897329095/merge-requests/changes-248</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/projetosite1-954962435/merge-requests/envio-de-arquivo-atualizado-ilidio83-15</loc>
+    <loc>http://localhost:3000/projetosite1-954962435/merge-requests/envio-de-arquivo-atualizado-ilidio83-15</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/w-trivia-950770371/merge-requests/server-8</loc>
+    <loc>http://localhost:3000/w-trivia-950770371/merge-requests/server-8</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/cipp-api-930239709/merge-requests/pull-master-from-kelvintegelaarmaster-7</loc>
+    <loc>http://localhost:3000/cipp-api-930239709/merge-requests/pull-master-from-kelvintegelaarmaster-7</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/rayhunter-716335769/merge-requests/refactorserial-replace-rusb-with-nusb-180</loc>
+    <loc>http://localhost:3000/rayhunter-716335769/merge-requests/refactorserial-replace-rusb-with-nusb-180</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/handyman-319328863/merge-requests/enhancementprovider-container-mapper-148</loc>
+    <loc>http://localhost:3000/handyman-319328863/merge-requests/enhancementprovider-container-mapper-148</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/urdf2mjcf-873317745/merge-requests/replace-visual-mesh-with-box-as-well-37</loc>
+    <loc>http://localhost:3000/urdf2mjcf-873317745/merge-requests/replace-visual-mesh-with-box-as-well-37</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/mycalendar-911166186/merge-requests/db-context-4</loc>
+    <loc>http://localhost:3000/mycalendar-911166186/merge-requests/db-context-4</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/api-jet-manager-948175398/merge-requests/feat-adjustment-verification-filter-table-id-in-li-3</loc>
+    <loc>http://localhost:3000/api-jet-manager-948175398/merge-requests/feat-adjustment-verification-filter-table-id-in-li-3</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://github-explorer.onrender.com/projeto-faculdade-chat-js-954962071/merge-requests/mudando-a-estrutura-do-server-e-colocando-um-acopl-1</loc>
+    <loc>http://localhost:3000/projeto-faculdade-chat-js-954962071/merge-requests/mudando-a-estrutura-do-server-e-colocando-um-acopl-1</loc>
     <lastmod>2025-03-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
