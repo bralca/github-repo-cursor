@@ -1,6 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>http://localhost:3000/slumber-synthesizer-933410281</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/vortexstepmethodjl-933221065</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/confluence-778896419</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/coder-440752086</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/construct-hub-probe-419814574</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/first-contributions-68720867</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/tea-round-picker-955479036</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/vlang-docs-en-627666862</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/jj-322484700</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/sentry-873328</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>http://localhost:3000/social-fitness-app-frontend-react-native-redux-956151317</loc>
     <lastmod>2025-03-27</lastmod>
     <changefreq>weekly</changefreq>

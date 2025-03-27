@@ -1,6 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>http://localhost:3000/first-contributions-68720867/merge-requests/add-coolgamer-to-contributors-list-95929</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/coder-440752086/merge-requests/chore-fix-false-positives-in-codeql-17138</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/construct-hub-probe-419814574/merge-requests/feat-auto-commit-to-trigger-new-release-10422</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/vortexstepmethodjl-933221065/merge-requests/add-rotation-and-translation-from-cad-to-body-fram-149</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/slumber-synthesizer-933410281/merge-requests/removed-title-gen-and-fixed-editing-34</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/confluence-778896419/merge-requests/website-code-19</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/sentry-873328/merge-requests/fix-dont-put-complete-tag-into-the-querykey-88130</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/jj-322484700/merge-requests/github-bump-taiki-einstall-action-from-24935-to-24-6153</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/vlang-docs-en-627666862/merge-requests/changes-by-create-pull-request-action-282</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>http://localhost:3000/tea-round-picker-955479036/merge-requests/initial-creation-of-the-backend-webapi-1</loc>
+    <lastmod>2025-03-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>http://localhost:3000/wordpress-ios-8859285/merge-requests/remove-unused-prefix-headers-24340</loc>
     <lastmod>2025-03-27</lastmod>
     <changefreq>monthly</changefreq>

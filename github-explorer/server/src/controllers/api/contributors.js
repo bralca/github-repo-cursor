@@ -73,12 +73,12 @@ export async function getContributorById(req, res) {
       LEFT JOIN 
         merge_requests mr ON c.id = mr.author_id
       WHERE 
-        c.id = $1 OR c.github_id = $1
+        c.id = ? OR c.github_id = ?
       GROUP BY 
         c.id
     `;
     
-    const contributorResult = await pool.query(contributorQuery, [id]);
+    const contributorResult = await pool.query(contributorQuery, [id, id]);
     
     if (contributorResult.rows.length === 0) {
       return res.status(404).json({ error: 'Contributor not found' });
@@ -96,7 +96,7 @@ export async function getContributorById(req, res) {
       JOIN 
         commits cm ON r.id = cm.repository_id
       WHERE 
-        cm.contributor_id = $1
+        cm.contributor_id = ?
       GROUP BY 
         r.id
       ORDER BY 
@@ -116,7 +116,7 @@ export async function getContributorById(req, res) {
       JOIN 
         repositories r ON cm.repository_id = r.id
       WHERE 
-        cm.contributor_id = $1
+        cm.contributor_id = ?
       ORDER BY 
         cm.committed_at DESC
       LIMIT 10
@@ -134,7 +134,7 @@ export async function getContributorById(req, res) {
       JOIN 
         repositories r ON mr.repository_id = r.id
       WHERE 
-        mr.author_id = $1
+        mr.author_id = ?
       ORDER BY 
         mr.created_at DESC
       LIMIT 10
@@ -204,7 +204,7 @@ export async function getContributorByLogin(req, res) {
       JOIN 
         commits cm ON r.id = cm.repository_id
       WHERE 
-        cm.contributor_id = $1
+        cm.contributor_id = ?
       GROUP BY 
         r.id
       ORDER BY 
@@ -224,7 +224,7 @@ export async function getContributorByLogin(req, res) {
       JOIN 
         repositories r ON cm.repository_id = r.id
       WHERE 
-        cm.contributor_id = $1
+        cm.contributor_id = ?
       ORDER BY 
         cm.committed_at DESC
       LIMIT 10
@@ -242,7 +242,7 @@ export async function getContributorByLogin(req, res) {
       JOIN 
         repositories r ON mr.repository_id = r.id
       WHERE 
-        mr.author_id = $1
+        mr.author_id = ?
       ORDER BY 
         mr.created_at DESC
       LIMIT 10

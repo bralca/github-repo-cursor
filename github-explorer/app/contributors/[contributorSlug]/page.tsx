@@ -6,13 +6,11 @@ import ContributorContent from '@/components/contributor/ContributorContent';
 import { ContributorDetailData } from '@/lib/client/fetchContributorData';
 
 // Define types for the page props
-type Params = {
-  contributorSlug: string;
-};
-
 interface ContributorPageProps {
-  params: Params;
-  searchParams?: { [key: string]: string | string[] | undefined };
+  params: Promise<{
+    contributorSlug: string;
+  }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 // Convert the API data to the format expected by the client component
@@ -35,7 +33,8 @@ function mapToContributorDetailData(contributor: any): ContributorDetailData {
 
 // Define metadata generation function for SEO
 export async function generateMetadata({ params }: ContributorPageProps): Promise<Metadata> {
-  const contributorSlug = params.contributorSlug;
+  // Await params before accessing properties
+  const { contributorSlug } = await params;
   
   // Extract the GitHub ID from the slug
   const slugInfo = parseContributorSlug(contributorSlug);
@@ -80,7 +79,8 @@ export async function generateMetadata({ params }: ContributorPageProps): Promis
 
 // Default export for the page component
 export default async function ContributorPage({ params }: ContributorPageProps) {
-  const contributorSlug = params.contributorSlug;
+  // Await params before accessing properties
+  const { contributorSlug } = await params;
   
   // Extract the GitHub ID from the slug
   const slugInfo = parseContributorSlug(contributorSlug);
