@@ -92,11 +92,19 @@ async function executePipelineViaApi(pipelineType) {
       requestBody = {
         operation: 'calculate'
       };
-    } else {
-      // For all pipeline endpoints, use consistent format
+    } else if (pipelineType === 'data_enrichment') {
+      // Special case for data enrichment - process all items in one go
       requestBody = {
         operation: 'start',
-        pipeline_type: pipelineType,   // Always use snake_case for API
+        pipeline_type: pipelineType,
+        direct_execution: true,
+        process_all_items: true  // Enable full processing for data enrichment
+      };
+    } else {
+      // For all other pipeline endpoints, use consistent format
+      requestBody = {
+        operation: 'start',
+        pipeline_type: pipelineType,
         direct_execution: true
       };
     }
