@@ -43,7 +43,12 @@ next-env.d.ts
 # Sitemap files (generated locally for each environment)
 /public/sitemap.xml
 /public/sitemaps/
-public/sitemaps/*.xml
+/public/sitemaps/*.xml
+/server/public/sitemap.xml
+/server/public/sitemaps/
+/server/public/sitemaps/*.xml
+/server/public/api/sitemaps/
+/server/public/api/sitemaps/*.xml
 
 # Test files directory (excluded from build)
 /test-files

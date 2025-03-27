@@ -5,6 +5,12 @@ import { getContributorByGithubId } from '@/lib/server-api/contributors';
 import ContributorContent from '@/components/contributor/ContributorContent';
 import { ContributorDetailData } from '@/lib/client/fetchContributorData';
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+
+// Allow dynamic parameters
+export const dynamicParams = true;
+
 // Define types for the page props
 interface ContributorPageProps {
   params: Promise<{

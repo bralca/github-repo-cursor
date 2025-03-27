@@ -213,4 +213,10 @@ export function generateStaticParams() {
   // signals to Next.js that this is a dynamic route that should be handled
   // Return an empty array since we don't want to statically generate any paths
   return [];
-} 
+}
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+
+// Allow dynamic parameters
+export const dynamicParams = true; 
