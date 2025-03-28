@@ -90,11 +90,18 @@ export async function getMergeRequestByNumber(repositoryId: string, prNumber: nu
  */
 export async function getMergeRequestByGithubId(repositoryGithubId: string, prNumber: number): Promise<MergeRequestDetail | null> {
   try {
-    return await fetchFromServerApi<MergeRequestDetail>(
-      `merge-requests/repository/github/${repositoryGithubId}/number/${prNumber}`
-    );
+    console.log(`[MergeRequestAPI Debug] Fetching merge request with repo GitHub ID: ${repositoryGithubId} and PR number: ${prNumber}`);
+    
+    // Using the endpoint pattern specified in API_REFERENCE.md: /api/merge-requests/repository/:repository_id/number/:number
+    const endpoint = `merge-requests/repository/${repositoryGithubId}/number/${prNumber}`;
+    console.log(`[MergeRequestAPI Debug] Final API endpoint: ${endpoint}`);
+    
+    const result = await fetchFromServerApi<MergeRequestDetail>(endpoint);
+    console.log(`[MergeRequestAPI Debug] API call result:`, result ? 'Data found' : 'No data');
+    
+    return result;
   } catch (error) {
-    console.error(`Error fetching merge request by GitHub ID ${repositoryGithubId} and PR number ${prNumber}:`, error);
+    console.error(`[MergeRequestAPI Debug] Error fetching merge request by GitHub ID ${repositoryGithubId} and PR number ${prNumber}:`, error);
     return null;
   }
 }

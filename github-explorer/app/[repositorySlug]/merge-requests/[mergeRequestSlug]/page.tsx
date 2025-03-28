@@ -121,11 +121,7 @@ export default async function MergeRequestPage({ params }: MergeRequestPageProps
             {repository.name}
           </Link>
           <span className="mx-2 text-gray-400">/</span>
-          <Link href={`/${repositorySlug}/merge-requests`} className="text-blue-600 hover:underline">
-            merge requests
-          </Link>
-          <span className="mx-2 text-gray-400">/</span>
-          <span className="text-gray-600">#{mergeRequest.github_id}</span>
+          <span className="text-gray-600">PR #{mergeRequest.github_id}: {mergeRequest.title.substring(0, 30)}{mergeRequest.title.length > 30 ? '...' : ''}</span>
         </div>
         
         <h1 className="text-3xl font-bold mb-4">{mergeRequest.title}</h1>

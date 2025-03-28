@@ -193,6 +193,23 @@ export default function RepositoryContent({ repository: initialData }: Repositor
     return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
   };
 
+  // Generate a merge request slug based on the url-utils pattern
+  const generateMergeRequestSlug = (title: string, id: string) => {
+    // Convert title to URL-friendly slug
+    const titleSlug = title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+    return `${titleSlug}-${id}`;
+  };
+
+  // Function to build the full merge request URL
+  const buildMergeRequestUrl = (repository: RepositoryData, mrTitle: string, mrId: string) => {
+    // Generate repository slug
+    const repoSlug = `${repository.name.toLowerCase()}-${repository.github_id}`;
+    // Generate merge request slug
+    const mrSlug = generateMergeRequestSlug(mrTitle, mrId);
+    // Combine into full URL path
+    return `/${repoSlug}/merge-requests/${mrSlug}`;
+  };
+
   // Render detailed content
   return (
     <div className="space-y-10">
@@ -309,7 +326,10 @@ export default function RepositoryContent({ repository: initialData }: Repositor
                 {mergeRequests.map((mr) => (
                   <tr key={mr.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Link href="#" className="text-blue-600 hover:text-blue-800 font-medium">
+                      <Link 
+                        href={buildMergeRequestUrl(repository, mr.title, mr.id)}
+                        className="text-blue-600 hover:text-blue-800 font-medium"
+                      >
                         {mr.title}
                       </Link>
                     </td>
@@ -327,14 +347,21 @@ export default function RepositoryContent({ repository: initialData }: Repositor
             </table>
           </div>
         </div>
-        <div className="mt-6">
-          <Link href="#" className="inline-flex items-center text-blue-600 hover:text-blue-800">
-            <span>View all merge requests</span>
-            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-        </div>
+        {mergeRequests.length > 0 && (
+          <div className="mt-6 space-y-2">
+            <p className="text-sm text-gray-600">Direct links to recent merge requests:</p>
+            {mergeRequests.slice(0, 3).map((mr) => (
+              <div key={`link-${mr.id}`}>
+                <Link 
+                  href={buildMergeRequestUrl(repository, mr.title, mr.id)}
+                  className="inline-flex items-center text-blue-600 hover:text-blue-800"
+                >
+                  <span>#{mr.id}: {mr.title}</span>
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
