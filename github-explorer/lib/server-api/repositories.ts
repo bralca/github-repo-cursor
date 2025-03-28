@@ -64,10 +64,24 @@ export async function getRepositorySEODataBySlug(slug: string): Promise<Reposito
  * @returns The repository data or null if not found
  */
 export async function getRepositoryByGithubId(githubId: string): Promise<RepositoryDetail | null> {
+  if (!githubId) {
+    console.error('[RepositoryAPI Debug] getRepositoryByGithubId called with empty ID');
+    return null;
+  }
+  
+  console.log(`[RepositoryAPI Debug] Fetching repository by GitHub ID: ${githubId}`);
+  
   try {
-    return await fetchFromServerApi<RepositoryDetail>(`repositories/id/${githubId}`);
+    console.log(`[RepositoryAPI Debug] Building API endpoint for GitHub ID: ${githubId}`);
+    const endpoint = `repositories/id/${githubId}`;
+    console.log(`[RepositoryAPI Debug] Final API endpoint: ${endpoint}`);
+    
+    const result = await fetchFromServerApi<RepositoryDetail>(endpoint);
+    console.log(`[RepositoryAPI Debug] API call result for repository ${githubId}:`, result ? 'Data found' : 'No data');
+    
+    return result;
   } catch (error) {
-    console.error(`Error fetching repository by GitHub ID ${githubId}:`, error);
+    console.error(`[RepositoryAPI Debug] Error fetching repository by GitHub ID ${githubId}:`, error);
     return null;
   }
 }

@@ -76,9 +76,8 @@ export async function getContributorByGithubId(githubId: string): Promise<Contri
     // Use the standard endpoint from API Reference Guide
     console.log(`[ContributorAPI Debug] Building API endpoint for GitHub ID: ${githubId}`);
     
-    // According to the API Reference, we should use the GitHub ID as a URL segment
-    // Check URL pattern according to API_REFERENCE.md
-    const endpoint = `contributors/${githubId}`;
+    // According to the API Reference, we should use the endpoint pattern: /api/contributors/id/:id
+    const endpoint = `contributors/id/${githubId}`;
     console.log(`[ContributorAPI Debug] Final API endpoint: ${endpoint}`);
     
     const result = await fetchFromServerApi<ContributorDetail>(endpoint);

@@ -134,17 +134,33 @@ export function generateRepositorySlug(name: string, githubId: string): string {
  * @returns Object containing name and githubId, or null if parsing fails
  */
 export function parseRepositorySlug(slug: string): { name: string, githubId: string } | null {
-  if (!slug) return null;
+  if (!slug) {
+    console.log('[Debug] parseRepositorySlug: Empty slug provided');
+    return null;
+  }
+  
+  console.log(`[Debug] parseRepositorySlug: Processing slug: "${slug}"`);
   
   // Extract GitHub ID - match a numeric ID at the end of the slug
   const match = slug.match(/-(\d+)$/);
-  if (!match) return null;
+  console.log(`[Debug] parseRepositorySlug: Regex match result:`, match);
+  
+  if (!match) {
+    console.log('[Debug] parseRepositorySlug: No GitHub ID match found');
+    return null;
+  }
   
   const githubId = match[1];
+  console.log(`[Debug] parseRepositorySlug: Extracted GitHub ID: "${githubId}"`);
   
   // Remove the ID part to get the name portion
   const name = slug.replace(new RegExp(`-${githubId}$`), '');
-  return { name, githubId };
+  console.log(`[Debug] parseRepositorySlug: Extracted name: "${name}"`);
+  
+  const result = { name, githubId };
+  console.log(`[Debug] parseRepositorySlug: Final result:`, result);
+  
+  return result;
 }
 
 /**
