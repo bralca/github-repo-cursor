@@ -52,23 +52,27 @@ export async function getRepositoryById(req, res) {
   }
   
   try {
-    // Get repository details
+    console.log(`[Server] Looking up repository with GitHub ID: ${id}`);
+    
+    // Get repository details - modified to search by github_id instead of id
     const repoQuery = `
       SELECT 
         *
       FROM 
         repositories
       WHERE 
-        id = $1
+        github_id = $1
     `;
     
     const repoResult = await pool.query(repoQuery, [id]);
     
     if (repoResult.rows.length === 0) {
+      console.log(`[Server] Repository with GitHub ID ${id} not found`);
       return res.status(404).json({ error: 'Repository not found' });
     }
     
     const repository = repoResult.rows[0];
+    console.log(`[Server] Found repository: ${repository.full_name}`);
     
     // Get top contributors for this repository
     const contributorsQuery = `
@@ -88,7 +92,7 @@ export async function getRepositoryById(req, res) {
       LIMIT 10
     `;
     
-    const contributorsResult = await pool.query(contributorsQuery, [id]);
+    const contributorsResult = await pool.query(contributorsQuery, [repository.id]);
     
     // Get merge requests for this repository
     const mergeRequestsQuery = `
@@ -103,7 +107,7 @@ export async function getRepositoryById(req, res) {
       LIMIT 10
     `;
     
-    const mergeRequestsResult = await pool.query(mergeRequestsQuery, [id]);
+    const mergeRequestsResult = await pool.query(mergeRequestsQuery, [repository.id]);
     
     // Get commits for this repository
     const commitsQuery = `
@@ -118,7 +122,7 @@ export async function getRepositoryById(req, res) {
       LIMIT 10
     `;
     
-    const commitsResult = await pool.query(commitsQuery, [id]);
+    const commitsResult = await pool.query(commitsQuery, [repository.id]);
     
     // Return all data
     res.json({

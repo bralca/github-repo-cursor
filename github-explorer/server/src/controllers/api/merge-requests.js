@@ -92,6 +92,8 @@ export async function getMergeRequestById(req, res) {
   }
   
   try {
+    console.log(`[Server] Looking up merge request with ID: ${id}`);
+    
     // Get merge request details
     const mrQuery = `
       SELECT 
@@ -106,16 +108,18 @@ export async function getMergeRequestById(req, res) {
       JOIN 
         contributors c ON mr.author_id = c.id
       WHERE 
-        mr.id = $1 OR mr.github_id = $1
+        mr.github_id = $1 OR mr.id = $1
     `;
     
     const mrResult = await pool.query(mrQuery, [id]);
     
     if (mrResult.rows.length === 0) {
+      console.log(`[Server] Merge request with ID ${id} not found`);
       return res.status(404).json({ error: 'Merge request not found' });
     }
     
     const mergeRequest = mrResult.rows[0];
+    console.log(`[Server] Found merge request: ${mergeRequest.title}`);
     
     // Return all data
     res.json({

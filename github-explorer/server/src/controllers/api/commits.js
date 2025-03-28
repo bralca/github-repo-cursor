@@ -94,6 +94,8 @@ export async function getCommitById(req, res) {
   }
   
   try {
+    console.log(`[Server] Looking up commit with ID: ${id}`);
+    
     // Get commit details
     const commitQuery = `
       SELECT 
@@ -104,16 +106,18 @@ export async function getCommitById(req, res) {
       JOIN 
         repositories r ON c.repository_id = r.id
       WHERE 
-        c.id = $1 OR c.github_id = $1
+        c.github_id = $1 OR c.id = $1
     `;
     
     const commitResult = await pool.query(commitQuery, [id]);
     
     if (commitResult.rows.length === 0) {
+      console.log(`[Server] Commit with ID ${id} not found`);
       return res.status(404).json({ error: 'Commit not found' });
     }
     
     const commit = commitResult.rows[0];
+    console.log(`[Server] Found commit: ${commit.message && commit.message.substring(0, 30)}...`);
     
     // Return all data
     res.json({
