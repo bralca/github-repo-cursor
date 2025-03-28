@@ -20,16 +20,19 @@ export async function fetchFromServerApi<T>(
   // Base URL for the backend server - in server components, we use the direct URL
   const baseUrl = process.env.BACKEND_API_URL || 'http://localhost:3001/api';
   
-  console.log(`[Server] Environment check: NODE_ENV=${process.env.NODE_ENV}`);
-  console.log(`[Server] Using API base URL: ${baseUrl}`);
+  console.log(`[Server Debug] fetchFromServerApi called for endpoint: ${endpoint}`);
+  console.log(`[Server Debug] Environment check: NODE_ENV=${process.env.NODE_ENV}`);
+  console.log(`[Server Debug] Using API base URL: ${baseUrl}`);
   
   // Build URL with query parameters
   let url = `${baseUrl}/${endpoint}`;
   if (params) {
+    console.log(`[Server Debug] Request params:`, params);
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         searchParams.append(key, value);
+        console.log(`[Server Debug] Added param: ${key}=${value}`);
       }
     });
     
@@ -38,6 +41,8 @@ export async function fetchFromServerApi<T>(
       url += `?${queryString}`;
     }
   }
+  
+  console.log(`[Server Debug] Final request URL: ${url}`);
   
   // Configure request options
   const options: RequestInit = {
@@ -48,16 +53,21 @@ export async function fetchFromServerApi<T>(
     next: { revalidate: 60 }, // Cache for 60 seconds
   };
   
+  console.log(`[Server Debug] Request method: ${method}`);
+  console.log(`[Server Debug] Request headers:`, options.headers);
+  
   // Add body if provided
   if (body && (method === 'POST' || method === 'PUT')) {
     options.body = JSON.stringify(body);
+    console.log(`[Server Debug] Request body:`, body);
   }
   
   // Make the request
-  console.log(`[Server] Making API request to: ${url}`);
+  console.log(`[Server Debug] Making API request to: ${url}`);
   
   try {
     const response = await fetch(url, options);
+    console.log(`[Server Debug] Response status: ${response.status} ${response.statusText}`);
     
     // Handle errors
     if (!response.ok) {
@@ -66,10 +76,10 @@ export async function fetchFromServerApi<T>(
       
       try {
         const errorData = await response.json();
-        console.error(`[API Error] ${statusCode} response:`, errorData);
+        console.error(`[Server Debug] API Error ${statusCode} response:`, errorData);
         errorText = errorData.error || errorText;
       } catch (parseError) {
-        console.error(`[API Error] Failed to parse error response: ${response.statusText}`);
+        console.error(`[Server Debug] Failed to parse error response: ${response.statusText}`);
       }
       
       throw new Error(errorText);
@@ -77,9 +87,10 @@ export async function fetchFromServerApi<T>(
     
     // Parse and return the response
     const data = await response.json();
+    console.log(`[Server Debug] API response received for ${endpoint}:`, data);
     return data;
   } catch (error) {
-    console.error(`[API Error] Request to ${url} failed:`, error);
+    console.error(`[Server Debug] Request to ${url} failed:`, error);
     throw error;
   }
 } 

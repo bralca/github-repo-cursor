@@ -203,6 +203,8 @@ export function parseContributorSlug(slug: string): { name: string, username: st
   
   // Extract GitHub ID - we expect it at the end after the last hyphen
   const parts = slug.split('-');
+  console.log(`[Debug] parseContributorSlug: Split parts:`, parts);
+  
   if (parts.length < 2) {
     console.log('[Debug] parseContributorSlug: Slug has less than 2 parts');
     return null;
@@ -210,6 +212,7 @@ export function parseContributorSlug(slug: string): { name: string, username: st
   
   // The last part should be the GitHub ID
   const githubId = parts[parts.length - 1];
+  console.log(`[Debug] parseContributorSlug: Last part (potential GitHub ID): "${githubId}"`);
   
   // Check if it's a valid numeric ID
   if (!/^\d+$/.test(githubId)) {
@@ -221,6 +224,7 @@ export function parseContributorSlug(slug: string): { name: string, username: st
   
   // Remove the GitHub ID from the slug
   const slugWithoutId = parts.slice(0, -1).join('-');
+  console.log(`[Debug] parseContributorSlug: Slug without GitHub ID: "${slugWithoutId}"`);
   
   // If the remaining slug has only one part, it's the name
   if (slugWithoutId.indexOf('-') === -1) {
@@ -239,8 +243,10 @@ export function parseContributorSlug(slug: string): { name: string, username: st
   const username = nameAndUsername.slice(1).join('-');
   
   console.log(`[Debug] parseContributorSlug: Complex slug with name: "${name}", username: "${username}"`);
+  const result = { name, username, githubId };
+  console.log(`[Debug] parseContributorSlug: Final result:`, result);
   
-  return { name, username, githubId };
+  return result;
 }
 
 /**

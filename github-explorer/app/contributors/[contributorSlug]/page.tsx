@@ -96,33 +96,44 @@ export default async function ContributorPage({ params }: ContributorPageProps) 
   // Await params before accessing properties
   const { contributorSlug } = await params;
   
+  console.log(`[ContributorPage Debug] Received contributorSlug: ${contributorSlug}`);
+  
   // Extract the GitHub ID from the slug
   const slugInfo = parseContributorSlug(contributorSlug);
   
+  console.log(`[ContributorPage Debug] Result of parseContributorSlug:`, slugInfo);
+  
   if (!slugInfo) {
+    console.log(`[ContributorPage Debug] No slug info extracted, returning 404`);
     notFound();
   }
   
   // Debug logging for troubleshooting
-  console.log(`[DEBUG] Processing contributor slug: ${contributorSlug}`);
-  console.log(`[DEBUG] Extracted GitHub ID: ${slugInfo.githubId}`);
+  console.log(`[ContributorPage Debug] Processing contributor slug: ${contributorSlug}`);
+  console.log(`[ContributorPage Debug] Extracted GitHub ID: ${slugInfo.githubId}`);
+  console.log(`[ContributorPage Debug] Extracted name: ${slugInfo.name}`);
+  console.log(`[ContributorPage Debug] Extracted username: ${slugInfo.username}`);
   
   // Fetch initial data server-side
   try {
+    console.log(`[ContributorPage Debug] Calling getContributorByGithubId with ID: ${slugInfo.githubId}`);
     const seoData = await getContributorByGithubId(slugInfo.githubId);
     
+    console.log(`[ContributorPage Debug] getContributorByGithubId response:`, seoData);
+    
     if (!seoData) {
-      console.log(`[DEBUG] No contributor data found for GitHub ID: ${slugInfo.githubId}`);
+      console.log(`[ContributorPage Debug] No contributor data found for GitHub ID: ${slugInfo.githubId}`);
       notFound();
     }
     
     // Convert the SEO data to the format expected by the client component
     const contributor = mapToContributorDetailData(seoData);
+    console.log(`[ContributorPage Debug] Mapped contributor data:`, contributor);
     
     // Pass the initial data to the client component
     return <ContributorContent contributor={contributor} />;
   } catch (error) {
-    console.error('Error fetching contributor data:', error);
+    console.error('[ContributorPage Debug] Error fetching contributor data:', error);
     throw error; // Let Next.js error boundary handle this
   }
 } 

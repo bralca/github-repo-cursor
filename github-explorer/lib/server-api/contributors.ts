@@ -66,18 +66,27 @@ export async function getContributorSEODataBySlug(slug: string): Promise<Contrib
  */
 export async function getContributorByGithubId(githubId: string): Promise<ContributorDetail | null> {
   if (!githubId) {
-    console.error('getContributorByGithubId called with empty ID');
+    console.error('[ContributorAPI Debug] getContributorByGithubId called with empty ID');
     return null;
   }
   
-  console.log(`[DEBUG API] Fetching contributor by GitHub ID: ${githubId}`);
+  console.log(`[ContributorAPI Debug] Fetching contributor by GitHub ID: ${githubId}`);
   
   try {
     // Use the standard endpoint from API Reference Guide
-    console.log(`[DEBUG API] Using standard login endpoint for GitHub ID: ${githubId}`);
-    return await fetchFromServerApi<ContributorDetail>(`contributors/${githubId}`);
+    console.log(`[ContributorAPI Debug] Building API endpoint for GitHub ID: ${githubId}`);
+    
+    // According to the API Reference, we should use the GitHub ID as a URL segment
+    // Check URL pattern according to API_REFERENCE.md
+    const endpoint = `contributors/${githubId}`;
+    console.log(`[ContributorAPI Debug] Final API endpoint: ${endpoint}`);
+    
+    const result = await fetchFromServerApi<ContributorDetail>(endpoint);
+    console.log(`[ContributorAPI Debug] API call result for contributor ${githubId}:`, result ? 'Data found' : 'No data');
+    
+    return result;
   } catch (error) {
-    console.error(`Error fetching contributor by GitHub ID ${githubId}:`, error);
+    console.error(`[ContributorAPI Debug] Error fetching contributor by GitHub ID ${githubId}:`, error);
     return null;
   }
 }
