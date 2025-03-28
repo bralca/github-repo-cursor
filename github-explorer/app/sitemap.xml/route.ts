@@ -7,7 +7,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhos
  * Sitemap.xml route handler
  * Proxies requests to the backend API endpoint and returns the XML content
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
     // Fetch the sitemap XML from the backend using the documented endpoint
     const response = await fetch(`${API_BASE_URL}/sitemap.xml`);

@@ -9,9 +9,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhos
  */
 export async function GET(
   request: Request,
-  { params }: { params: { filename: string } }
+  { params }: { params: Promise<{ filename: string }> }
 ) {
-  const { filename } = params;
+  // Wait for params to resolve
+  const resolvedParams = await params;
+  const { filename } = resolvedParams;
   
   // Ensure the filename is sanitized (prevent directory traversal)
   const sanitizedFilename = filename.replace(/[^a-zA-Z0-9_\-.]/g, '');
