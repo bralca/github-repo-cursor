@@ -8,7 +8,18 @@ import { getPipelineItemCount } from '../controllers/api/pipeline-item-count.js'
 import { getSitemapStatus, triggerSitemapGeneration, getSitemapContent } from '../controllers/api/sitemap.js';
 import { handleContributorRankings } from '../controllers/api/contributor-rankings.js';
 import { getRepositories, getRepositoryById, getRepositoryBySlug } from '../controllers/api/repositories.js';
-import { getContributors, getContributorById, getContributorByLogin } from '../controllers/api/contributors.js';
+import { 
+  getContributors, 
+  getContributorById, 
+  getContributorByLogin, 
+  getContributorActivity, 
+  getContributorImpact,
+  getContributorRepositories,
+  getContributorMergeRequests,
+  getContributorRecentActivity,
+  getContributorRankings,
+  getContributorProfileMetadata
+} from '../controllers/api/contributors.js';
 import { getMergeRequests, getMergeRequestById, getMergeRequestByNumber } from '../controllers/api/merge-requests.js';
 import { getCommits, getCommitById, getCommitBySha } from '../controllers/api/commits.js';
 
@@ -35,6 +46,13 @@ router.get('/repositories/:slug', getRepositoryBySlug);
 router.get('/contributors', getContributors);
 router.get('/contributors/id/:id', getContributorById);
 router.get('/contributors/:login', getContributorByLogin);
+router.get('/contributors/:id/activity', getContributorActivity);
+router.get('/contributors/:id/impact', getContributorImpact);
+router.get('/contributors/:id/repositories', getContributorRepositories);
+router.get('/contributors/:id/merge-requests', getContributorMergeRequests);
+router.get('/contributors/:id/recent-activity', getContributorRecentActivity);
+router.get('/contributors/:id/rankings', getContributorRankings);
+router.get('/contributors/:id/profile-metadata', getContributorProfileMetadata);
 
 // Merge request endpoints
 router.get('/merge-requests', getMergeRequests);

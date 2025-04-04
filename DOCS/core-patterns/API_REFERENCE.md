@@ -405,6 +405,396 @@ Get a contributor by GitHub login.
 
 **Response:** Single contributor object
 
+#### GET `/api/contributors/:id/activity`
+
+Get a contributor's activity data for calendar heatmap visualization.
+
+**Path Parameters:**
+- `id` (required) - Contributor's GitHub ID
+
+**Query Parameters:**
+- `timeframe` (optional) - Time period to include (default: "1year")
+  - Supported values: "30days", "90days", "6months", "1year", "all"
+
+**Response:**
+```json
+{
+  "total_commits": 427,
+  "first_commit_date": "2023-01-01T00:00:00Z",
+  "last_commit_date": "2024-01-01T00:00:00Z",
+  "activity": {
+    "2023-01-01": 5,
+    "2023-01-02": 3,
+    "2023-01-03": 0,
+    "2023-01-04": 8,
+    // Additional dates with commit counts
+    "2024-01-01": 4
+  },
+  "monthly_averages": [
+    { "month": "2023-01", "average": 4.2 },
+    { "month": "2023-02", "average": 3.8 },
+    // Additional months
+    { "month": "2024-01", "average": 5.1 }
+  ]
+}
+```
+
+The `activity` object contains date strings (YYYY-MM-DD format) as keys and the corresponding commit count for each day as values. Days with no activity will have a value of 0 if they fall within the requested timeframe.
+
+The `monthly_averages` array provides average daily commit counts for each month, useful for trend visualization.
+
+For large timeframes, pagination is not used; instead, the data is filtered to the specified timeframe. This approach ensures the front-end receives a complete dataset for calendar visualization without needing multiple requests.
+
+#### GET `/api/contributors/:id/impact`
+
+Get a contributor's code impact metrics for visualizing additions vs deletions.
+
+**Path Parameters:**
+- `id` (required) - Contributor's GitHub ID
+
+**Response:**
+```json
+{
+  "added": 8423,
+  "removed": 3127,
+  "total": 11550,
+  "ratio": {
+    "additions": 73,
+    "deletions": 27
+  },
+  "repository_breakdown": [
+    {
+      "repository": "owner/repo1",
+      "added": 3200,
+      "removed": 1100,
+      "total": 4300,
+      "percentage": 37
+    },
+    {
+      "repository": "owner/repo2",
+      "added": 2800,
+      "removed": 940,
+      "total": 3740,
+      "percentage": 32
+    },
+    {
+      "repository": "owner/repo3",
+      "added": 1300,
+      "removed": 600,
+      "total": 1900,
+      "percentage": 16
+    }
+  ]
+}
+```
+
+The response provides comprehensive code impact metrics:
+- Total lines added, removed, and combined total
+- Ratio of additions to deletions as percentages (always adds up to 100%)
+- Breakdown by top repositories showing each repository's contribution to the overall impact
+
+This endpoint is designed for visualizing code impact in pie charts or bar graphs, with the percentage values ready to use for visualization.
+
+#### GET `/api/contributors/:id/repositories`
+
+Get repositories a contributor has contributed to, with detailed contribution metrics.
+
+**Path Parameters:**
+- `id` (required) - Contributor's GitHub ID
+
+**Query Parameters:**
+- `limit` (optional) - Maximum items to return (default: 10)
+- `offset` (optional) - Pagination offset (default: 0)
+- `sort_by` (optional) - Field to sort by (default: "commit_count")
+  - Supported values: "commit_count", "stars", "forks", "last_contribution_date", "pull_requests", "lines_added", "lines_removed"
+- `sort_direction` (optional) - Sort direction (default: "desc")
+  - Supported values: "asc", "desc"
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": "123",
+      "github_id": 45678,
+      "name": "project-name",
+      "full_name": "owner/project-name",
+      "description": "Repository description",
+      "url": "https://github.com/owner/project-name",
+      "stars": 250,
+      "forks": 120,
+      "commit_count": 87,
+      "pull_requests": 15,
+      "reviews": 8,
+      "issues_opened": 12,
+      "lines_added": 4382,
+      "lines_removed": 1253,
+      "first_contribution_date": "2022-05-10T00:00:00Z",
+      "last_contribution_date": "2023-12-15T00:00:00Z",
+      "merged_pull_requests": 12,
+      "rejected_pull_requests": 3
+    },
+    // Additional repositories
+  ],
+  "pagination": {
+    "total": 35,
+    "limit": 10,
+    "offset": 0,
+    "has_more": true
+  }
+}
+```
+
+The response includes:
+- Repository data (id, name, description, etc.)
+- Repository popularity metrics (stars, forks)
+- Contributor-specific metrics (commit_count, pull_requests, lines added/removed)
+- Contribution timeline data (first and last contribution dates)
+- PR success metrics (merged vs. rejected pull requests)
+- Pagination metadata
+
+This endpoint is designed for both list views and detailed repository contribution analysis.
+
+#### GET `/api/contributors/:id/merge-requests`
+
+Get merge requests created by a contributor.
+
+**Path Parameters:**
+- `id` (required) - Contributor's GitHub ID
+
+**Query Parameters:**
+- `limit` (optional) - Maximum items to return (default: 10)
+- `offset` (optional) - Pagination offset (default: 0)
+- `state` (optional) - Filter by merge request state (default: "all")
+  - Supported values: "all", "open", "closed", "merged"
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": "123",
+      "github_id": 45678,
+      "title": "Add new feature",
+      "description": "This PR implements the new feature...",
+      "state": "merged",
+      "is_draft": false,
+      "created_at": "2023-05-15T00:00:00Z",
+      "updated_at": "2023-05-20T00:00:00Z",
+      "closed_at": "2023-05-20T00:00:00Z",
+      "merged_at": "2023-05-20T00:00:00Z",
+      "repository_id": "456",
+      "repository_name": "owner/project-name",
+      "repository_description": "A project description",
+      "commits_count": 5,
+      "additions": 230,
+      "deletions": 85,
+      "changed_files": 8,
+      "complexity_score": 65,
+      "review_time_hours": 24,
+      "cycle_time_hours": 120,
+      "labels": ["feature", "enhancement"],
+      "merged_by_username": "reviewer",
+      "merged_by_avatar": "https://github.com/avatar.png"
+    },
+    // Additional merge requests
+  ],
+  "pagination": {
+    "total": 42,
+    "limit": 10,
+    "offset": 0,
+    "has_more": true
+  }
+}
+```
+
+The response includes:
+- Merge request data (id, title, description, state, etc.)
+- Repository context (repository_name, repository_description)
+- Impact metrics (commits_count, additions, deletions, changed_files)
+- Time metrics (review_time_hours, cycle_time_hours)
+- Additional metadata (labels, complexity score)
+- Merger information (merged_by_username, merged_by_avatar)
+- Pagination metadata
+
+This endpoint supports building comprehensive PR lists and detailed PR analysis views.
+
+#### GET `/api/contributors/:id/recent-activity`
+
+Get a contributor's recent activity for timeline visualization.
+
+**Path Parameters:**
+- `id` (required) - Contributor's GitHub ID
+
+**Query Parameters:**
+- `limit` (optional) - Maximum items to return (default: 20)
+- `offset` (optional) - Pagination offset (default: 0)
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "date": "2023-12-15",
+      "activities": [
+        {
+          "id": "123",
+          "type": "commit",
+          "timestamp": "2023-12-15T14:35:27Z",
+          "repository": {
+            "id": "456",
+            "name": "owner/project-name",
+            "url": "https://github.com/owner/project-name"
+          },
+          "message": "Fix bug in authentication service",
+          "sha": "abcdef1234567890",
+          "filename": "src/auth/service.js",
+          "status": "modified",
+          "additions": 15,
+          "deletions": 7
+        },
+        {
+          "id": "124",
+          "type": "pull_request",
+          "timestamp": "2023-12-15T10:22:43Z",
+          "repository": {
+            "id": "789",
+            "name": "owner/other-project",
+            "url": "https://github.com/owner/other-project"
+          },
+          "title": "Add new feature",
+          "number": 42,
+          "state": "merged",
+          "additions": 230,
+          "deletions": 85
+        }
+      ]
+    },
+    {
+      "date": "2023-12-14",
+      "activities": [
+        // Activities from this date
+      ]
+    }
+    // Additional days
+  ],
+  "pagination": {
+    "total": 142,
+    "limit": 20,
+    "offset": 0,
+    "has_more": true
+  }
+}
+```
+
+The response has these key characteristics:
+- Activities are grouped by date for timeline display
+- Each day includes multiple activities of different types (commits, pull requests)
+- Activity data includes repository context for each item
+- Type-specific fields provide the relevant details for each activity type
+- Data is ordered chronologically (newest first) for easy timeline rendering
+- Standard pagination is supported
+
+This endpoint is specifically designed for creating activity feed or timeline visualizations.
+
+#### GET `/api/contributors/:id/rankings`
+
+Get a contributor's ranking data with detailed scores and percentiles.
+
+**Path Parameters:**
+- `id` (required) - Contributor's GitHub ID
+
+**Response:**
+```json
+{
+  "rank": 42,
+  "absolute_rank": 42,
+  "total_ranked": 5000,
+  "percentile": 99.2,
+  "calculation_date": "2023-12-01T00:00:00Z",
+  "scores": {
+    "total": 87.4,
+    "code_volume": 92.1,
+    "code_efficiency": 85.6,
+    "commit_impact": 88.3,
+    "repo_influence": 90.2,
+    "followers": 78.5,
+    "profile_completeness": 95.0,
+    "collaboration": 82.7,
+    "repo_popularity": 86.4
+  },
+  "percentiles": {
+    "total": 99.2,
+    "code_volume": 98.7,
+    "code_efficiency": 97.2,
+    "commit_impact": 98.9,
+    "repo_influence": 99.1,
+    "followers": 94.8
+  },
+  "raw_metrics": {
+    "followers_count": 1250,
+    "lines_added": 138720,
+    "lines_removed": 42310,
+    "commits_count": 1872,
+    "repositories_contributed": 35
+  },
+  "trend": {
+    "previous_timestamp": "2023-11-01T00:00:00Z",
+    "previous_rank": 53,
+    "previous_score": 85.1,
+    "rank_change": 11,
+    "score_change": 2.3
+  }
+}
+```
+
+The response provides comprehensive ranking metrics:
+- Absolute rank and percentile information
+- Detailed scores across multiple evaluation dimensions
+- Percentile calculations for each score component
+- Raw metrics that went into the score calculations
+- Trend data showing changes since the previous ranking calculation
+
+This endpoint is designed for detailed contributor profile pages and leaderboard displays. The percentile values are particularly useful for visualizations like radar charts or score comparison displays.
+
+#### GET `/api/contributors/:id/profile-metadata`
+
+Get a contributor's profile metadata for the profile display.
+
+**Path Parameters:**
+- `id` (required) - Contributor's GitHub ID
+
+**Response:**
+```json
+{
+  "active_period": {
+    "first_contribution": "2021-04-15T00:00:00Z",
+    "last_contribution": "2024-03-28T00:00:00Z",
+    "duration_days": 1079,
+    "duration_formatted": "2 years, 11 months"
+  },
+  "organizations": [
+    { "name": "Microsoft", "id": "123" },
+    { "name": "Google", "id": "456" },
+    { "name": "Meta", "id": "789" }
+  ],
+  "top_languages": [
+    { "name": "TypeScript", "percentage": 45 },
+    { "name": "JavaScript", "percentage": 30 },
+    { "name": "Python", "percentage": 15 },
+    { "name": "Go", "percentage": 10 }
+  ]
+}
+```
+
+The response provides supplementary profile information:
+- Active time period including first and last contribution dates
+- Duration of activity in days and a human-readable format
+- Organizations the contributor belongs to
+- Top programming languages with percentage breakdown
+
+This endpoint is designed to provide supporting metadata for contributor profile displays that isn't included in the main profile endpoint.
+
 ### Merge Request Endpoints
 
 #### GET `/api/merge-requests`

@@ -23,9 +23,10 @@ This guide provides solutions for common issues encountered when developing, dep
 1. [API Connection Issues](#api-connection-issues)
 2. [Frontend Issues](#frontend-issues)
 3. [Backend Issues](#backend-issues)
-4. [Database Issues](#database-issues)
-5. [Deployment Issues](#deployment-issues)
-6. [Environment Configuration Issues](#environment-configuration-issues)
+4. [SQL Query and API Development Issues](#sql-query-and-api-development-issues)
+5. [Database Issues](#database-issues)
+6. [Deployment Issues](#deployment-issues)
+7. [Environment Configuration Issues](#environment-configuration-issues)
 
 ## API Connection Issues
 
@@ -253,6 +254,197 @@ Access to fetch at 'https://backend-url.com/api/endpoint' from origin 'https://f
    ls -la ./db/github_explorer.db
    
    # For Supabase, check RLS policies in Supabase dashboard
+   ```
+
+## SQL Query and API Development Issues
+
+### SQL Query Alias Reference Errors
+
+**Symptom**: Error messages like "no such column" or "Assignment to constant variable" when working with nested SQL queries
+
+**Causes**:
+1. Outer query references column names that only exist in the inner query
+2. Not properly using column aliases across nested queries
+3. Using original column names instead of their aliases
+
+**Example Problem**:
+```javascript
+const monthlyQuery = `
+  SELECT 
+    strftime('%Y-%m', committed_at) as month, 
+    AVG(daily_count) as average_daily_commits
+  FROM (
+    SELECT 
+      date(committed_at) as day, 
+      COUNT(DISTINCT id) as daily_count,
+      strftime('%Y-%m', committed_at) as month_group
+    FROM commits 
+    WHERE contributor_id = ? 
+    GROUP BY date(committed_at)
+  ) 
+  GROUP BY strftime('%Y-%m', committed_at)  -- PROBLEM: using committed_at from inner query
+`;
+```
+
+**Resolution**:
+1. Always reference aliases from inner queries, not the original columns:
+   ```javascript
+   const monthlyQuery = `
+     SELECT 
+       month_group as month, 
+       AVG(daily_count) as average_daily_commits
+     FROM (
+       SELECT 
+         date(committed_at) as day, 
+         COUNT(DISTINCT id) as daily_count,
+         strftime('%Y-%m', committed_at) as month_group
+       FROM commits 
+       WHERE contributor_id = ? 
+       GROUP BY date(committed_at)
+     ) 
+     GROUP BY month_group  -- FIXED: using the alias from inner query
+   `;
+   ```
+
+2. Test SQL queries directly against the database before implementing in code:
+   ```bash
+   # Test the query directly in SQLite
+   sqlite3 db/github_explorer.db "YOUR QUERY HERE"
+   ```
+
+3. Use comments in complex SQL queries to document the purpose of each section
+
+### JavaScript Date Manipulation Errors
+
+**Symptom**: "Assignment to constant variable" errors when working with dates
+
+**Causes**:
+1. Attempting to modify const variables
+2. Date objects are mutable, but variables declared with const cannot be reassigned
+
+**Example Problem**:
+```javascript
+const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+// Later in the code
+startDate.setDate(startDate.getDate() - 1); // Error: Assignment to constant variable
+```
+
+**Resolution**:
+1. Use let instead of const for variables that will be modified:
+   ```javascript
+   let startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+   startDate.setDate(startDate.getDate() - 1); // Works fine
+   ```
+
+2. Create a new variable for the modified date:
+   ```javascript
+   const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+   const adjustedStartDate = new Date(startDate);
+   adjustedStartDate.setDate(adjustedStartDate.getDate() - 1);
+   ```
+
+3. Use date libraries like date-fns for safe date manipulations:
+   ```javascript
+   import { subDays } from 'date-fns';
+   
+   const startDate = new Date();
+   const previousDay = subDays(startDate, 1);
+   ```
+
+### API Parameter Validation Issues
+
+**Symptom**: Endpoint returns unexpected errors or incorrect data when provided with different parameter values
+
+**Causes**:
+1. Inconsistent ID handling (UUID vs GitHub ID)
+2. Missing validation for query parameters
+3. Improper type conversion
+
+**Resolution**:
+1. Clearly document and standardize ID types used in endpoints:
+   ```javascript
+   /**
+    * Gets a contributor by GitHub ID
+    * @param {number|string} id - The contributor's GitHub ID (not UUID)
+    */
+   async function getContributorById(req, res) {
+     const githubId = parseInt(req.params.id, 10);
+     
+     // Validate it's a GitHub ID not a UUID
+     if (isNaN(githubId) || req.params.id.includes('-')) {
+       return res.status(400).json({ error: "Invalid GitHub ID format. Use numeric GitHub ID, not UUID." });
+     }
+     
+     // Continue with query...
+   }
+   ```
+
+2. Standardize parameter handling in controllers:
+   ```javascript
+   // For timeframe parameters with defaults
+   const validTimeframes = ['30days', '90days', '6months', '1year', 'all'];
+   const timeframe = validTimeframes.includes(req.query.timeframe) 
+     ? req.query.timeframe 
+     : '1year'; // Default
+   ```
+
+3. Use middleware for common parameter validation:
+   ```javascript
+   function validateContributorId(req, res, next) {
+     const githubId = parseInt(req.params.id, 10);
+     if (isNaN(githubId)) {
+       return res.status(400).json({ error: "Invalid GitHub ID format" });
+     }
+     req.githubId = githubId; // Store validated parameter
+     next();
+   }
+   
+   // In routes file
+   router.get('/contributors/:id/activity', validateContributorId, getContributorActivity);
+   ```
+
+### Testing and Debugging API Endpoints
+
+**Symptom**: Endpoints work in some cases but fail in others
+
+**Causes**:
+1. Insufficient testing with different parameters
+2. Not testing direct SQL queries
+3. Unclear error messages
+
+**Resolution**:
+1. Test SQL queries directly before implementing in controllers:
+   ```bash
+   sqlite3 db/github_explorer.db "SELECT date(committed_at) as commit_date, COUNT(DISTINCT id) as count FROM commits WHERE contributor_id = 'your-id' GROUP BY date(committed_at)"
+   ```
+
+2. Implement progressive API testing:
+   ```bash
+   # Test with default parameters
+   curl http://localhost:3001/api/contributors/12345/activity
+   
+   # Test with specific timeframe
+   curl http://localhost:3001/api/contributors/12345/activity?timeframe=30days
+   
+   # Test with nonexistent ID
+   curl http://localhost:3001/api/contributors/99999/activity
+   ```
+
+3. Enhance error logging:
+   ```javascript
+   try {
+     // API logic
+   } catch (error) {
+     console.error(`Error in getContributorActivity: ${error.message}`);
+     console.error(`Query parameters: ${JSON.stringify(req.params)}`);
+     console.error(`Query: ${query}`);
+     console.error(`Stack: ${error.stack}`);
+     
+     return res.status(500).json({
+       error: "Database operation failed",
+       details: process.env.NODE_ENV !== 'production' ? error.message : undefined
+     });
+   }
    ```
 
 ## Database Issues
