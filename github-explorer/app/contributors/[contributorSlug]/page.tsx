@@ -4,6 +4,8 @@ import { parseContributorSlug } from '@/lib/url-utils';
 import { getContributorByGithubId } from '@/lib/server-api/contributors';
 import ContributorContent from '@/components/contributor/ContributorContent';
 import { ContributorDetailData } from '@/lib/client/fetchContributorData';
+import { ProfileMetadata } from '@/types/contributor';
+import { RepositoriesResponse } from '@/hooks/entity/use-contributor-repositories';
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic';
@@ -27,22 +29,32 @@ export function generateStaticParams() {
   return [];
 }
 
-// Convert the API data to the format expected by the client component
-function mapToContributorDetailData(contributor: any): ContributorDetailData {
-  return {
-    id: contributor.id,
-    github_id: contributor.github_id.toString(),
-    name: contributor.name || null,
-    username: contributor.username || null,
-    avatar: contributor.avatar || null,
-    bio: contributor.bio || null,
-    // Add missing fields required by ContributorDetailData
-    company: contributor.company || null,
-    location: contributor.location || null,
-    repositories: contributor.repositories || null,
-    impact_score: contributor.impact_score || null,
-    role_classification: contributor.role_classification || null
-  };
+async function fetchContributorData(githubId: string) {
+  try {
+    // Main contributor data (SSR)
+    const contributorRes = await fetch(`${process.env.API_URL}/api/contributors/id/${githubId}`);
+    if (!contributorRes.ok) throw new Error('Failed to fetch contributor data');
+    const contributor = await contributorRes.json();
+    
+    // Profile metadata (SSR)
+    const metadataRes = await fetch(`${process.env.API_URL}/api/contributors/${githubId}/profile-metadata`);
+    if (!metadataRes.ok) throw new Error('Failed to fetch profile metadata');
+    const metadata = await metadataRes.json();
+    
+    // First page of repositories (SSR)
+    const reposRes = await fetch(`${process.env.API_URL}/api/contributors/${githubId}/repositories?limit=5&offset=0`);
+    if (!reposRes.ok) throw new Error('Failed to fetch repositories');
+    const repositories = await reposRes.json();
+    
+    return {
+      contributor,
+      metadata,
+      repositories
+    };
+  } catch (error) {
+    console.error("Error fetching contributor data:", error);
+    throw error;
+  }
 }
 
 // Define metadata generation function for SEO
@@ -91,6 +103,23 @@ export async function generateMetadata({ params }: ContributorPageProps): Promis
   }
 }
 
+// Helper function to map API response to ContributorDetailData
+function mapToContributorDetailData(data: any): ContributorDetailData {
+  return {
+    id: data.id,
+    github_id: data.github_id.toString(),
+    name: data.name || null,
+    username: data.username || null,
+    avatar: data.avatar || null,
+    bio: data.bio || null,
+    company: data.company || null,
+    location: data.location || null,
+    repositories: data.repositories || null,
+    impact_score: data.impact_score || null,
+    role_classification: data.role_classification || null
+  };
+}
+
 // Default export for the page component
 export default async function ContributorPage({ params }: ContributorPageProps) {
   // Await params before accessing properties
@@ -125,13 +154,34 @@ export default async function ContributorPage({ params }: ContributorPageProps) 
       console.log(`[ContributorPage Debug] No contributor data found for GitHub ID: ${slugInfo.githubId}`);
       notFound();
     }
-    
-    // Convert the SEO data to the format expected by the client component
-    const contributor = mapToContributorDetailData(seoData);
-    console.log(`[ContributorPage Debug] Mapped contributor data:`, contributor);
-    
-    // Pass the initial data to the client component
-    return <ContributorContent contributor={contributor} />;
+
+    // Create contributor data object with proper typing
+    const contributorData = mapToContributorDetailData(seoData);
+
+    // Fetch additional data for SSR
+    try {
+      const additionalData = await fetchContributorData(slugInfo.githubId);
+      
+      // Pass the initial data to the client component
+      return (
+        <ContributorContent 
+          contributor={contributorData} 
+          metadata={additionalData.metadata as ProfileMetadata}
+          initialRepositories={additionalData.repositories as RepositoriesResponse}
+          contributorId={slugInfo.githubId}
+        />
+      );
+    } catch (error) {
+      console.error('[ContributorPage Debug] Error fetching additional data:', error);
+      
+      // Even if additional data fails, we can still render with basic data
+      return (
+        <ContributorContent 
+          contributor={contributorData}
+          contributorId={slugInfo.githubId}
+        />
+      );
+    }
   } catch (error) {
     console.error('[ContributorPage Debug] Error fetching contributor data:', error);
     throw error; // Let Next.js error boundary handle this

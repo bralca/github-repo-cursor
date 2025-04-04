@@ -4,6 +4,30 @@
 
 This epic covers the frontend implementation required for the Contributors Page based on the provided design architecture. The existing Contributors Page needs to be updated to match the new design while maintaining compatibility with the current URL structure and data fetching patterns.
 
+## Data Loading Strategy
+
+### Server-Side Rendering (SSR)
+The following data should be loaded via SSR because it's critical for SEO:
+- Contributor basic profile information (name, username, avatar, bio) - `/api/contributors/id/:id`
+- Profile metadata (active period, organizations, top languages) - `/api/contributors/:id/profile-metadata`
+- Repository associations - `/api/contributors/:id/repositories` (first page only)
+- Basic activity metrics (commit count, PR count)
+
+These should be loaded in the page's `getServerSideProps` to ensure they're available on initial page load and visible to search engines.
+
+### Client-Side Rendering (CSR)
+The following data should be loaded via CSR using React Query or similar for efficient caching:
+- Activity heatmap data - `/api/contributors/:id/activity?timeframe=1year`
+- Code impact metrics - `/api/contributors/:id/impact`
+- Detailed merge request data - `/api/contributors/:id/merge-requests`
+- Recent activity timeline - `/api/contributors/:id/recent-activity`
+- Rankings and detailed metrics - `/api/contributors/:id/rankings`
+- Any data that requires filtering or sorting on the client
+
+This approach ensures critical data appears immediately while deferring less SEO-critical interactive elements to client-side loading.
+
+> **Note:** Throughout this document, we've provided detailed API implementation guidance for each component, including specific endpoint usage, response structure, and React Query implementation examples. These specifications ensure consistent implementation and alignment with the backend endpoints that have been completed in the CONTRIBUTORS_PAGE_BACKEND_EPIC.
+
 ## Acceptance Criteria
 
 1. All components are implemented according to the design architecture document
@@ -35,6 +59,42 @@ Restructure the existing Contributors page container to follow the new component
 - Maintain the current URL pattern: `/contributors/[contributorSlug]`
 - Keep using the existing page component in the app router
 - Update the layout to use a three-column grid on desktop as per design
+- Use GitHub ID as the identifier in the URL, not UUID
+- Implement getServerSideProps for SSR data fetching:
+
+```javascript
+export async function getServerSideProps({ params }) {
+  const { contributorSlug } = params;
+  
+  try {
+    // Main contributor data (SSR)
+    const contributorData = await fetch(`${process.env.API_URL}/api/contributors/id/${contributorSlug}`);
+    const contributor = await contributorData.json();
+    
+    // Profile metadata (SSR)
+    const metadataData = await fetch(`${process.env.API_URL}/api/contributors/${contributorSlug}/profile-metadata`);
+    const metadata = await metadataData.json();
+    
+    // First page of repositories (SSR)
+    const reposData = await fetch(`${process.env.API_URL}/api/contributors/${contributorSlug}/repositories?limit=5&offset=0`);
+    const repositories = await reposData.json();
+    
+    return {
+      props: {
+        contributor,
+        metadata,
+        repositories,
+        contributorId: contributorSlug
+      }
+    };
+  } catch (error) {
+    console.error("Error fetching contributor:", error);
+    return {
+      notFound: true
+    };
+  }
+}
+```
 
 **Implementation Prompt:**
 ```
@@ -222,6 +282,24 @@ Create a component to display the contributor's code impact metrics with visuali
 **Implementation Notes:**
 - Use the card component from the design system
 - Use appropriate colors for additions (green) and deletions (red)
+- Fetch data from the `/api/contributors/:id/impact` endpoint with React Query:
+  ```typescript
+  const { data, isLoading, error } = useQuery(
+    ['contributorImpact', contributorId],
+    async () => {
+      const response = await fetch(`/api/contributors/${contributorId}/impact`);
+      if (!response.ok) throw new Error('Failed to fetch impact data');
+      return response.json();
+    },
+    { staleTime: 5 * 60 * 1000 } // Cache for 5 minutes
+  );
+  ```
+- The impact endpoint returns:
+  - `added`: Total lines added
+  - `removed`: Total lines removed
+  - `total`: Total lines modified (added + removed)
+  - `ratio`: Object with `additions` and `deletions` percentages
+  - `repository_breakdown`: Array of repositories with impact metrics
 
 **Implementation Prompt:**
 ```
@@ -257,8 +335,29 @@ Create a component to visualize the contributor's activity over time in a heatma
 
 **Implementation Notes:**
 - Use an appropriate charting library compatible with the design system
-- Fetch data from the activity endpoint
+- Use React Query to fetch data from the `/api/contributors/:id/activity` endpoint:
+  ```typescript
+  const fetchActivityData = async (contributorId, timeframe = '1year') => {
+    const response = await fetch(`/api/contributors/${contributorId}/activity?timeframe=${timeframe}`);
+    if (!response.ok) throw new Error('Failed to fetch activity data');
+    return response.json();
+  };
+
+  const { data, isLoading, error } = useQuery(
+    ['contributorActivity', contributorId, timeframe],
+    () => fetchActivityData(contributorId, timeframe),
+    { staleTime: 5 * 60 * 1000 } // Cache for 5 minutes
+  );
+  ```
+- The activity endpoint returns:
+  - `total_commits`: Total number of commits in the timeframe
+  - `first_commit_date`: Date of first commit (YYYY-MM-DD format)
+  - `last_commit_date`: Date of last commit (YYYY-MM-DD format)
+  - `activity`: Object with dates as keys and commit counts as values
+  - `monthly_averages`: Array of objects with month (YYYY-MM) and average daily commits
+
 - Match the exact layout shown in the design
+- Re-fetch data when timeframe changes
 
 **Implementation Prompt:**
 ```
@@ -300,6 +399,16 @@ Create a component for selecting different time frames for the activity visualiz
 **Implementation Notes:**
 - Use the design system's button or tab components
 - Ensure the component is reusable across different visualizations
+- The timeframe values must match exactly what the API expects:
+  - Valid values: `30days`, `90days`, `6months`, `1year`, `all` 
+  - Default value: `1year`
+- Component should emit changes via callback:
+  ```typescript
+  interface TimeframeSelectorProps {
+    value: '30days' | '90days' | '6months' | '1year' | 'all';
+    onChange: (value: '30days' | '90days' | '6months' | '1year' | 'all') => void;
+  }
+  ```
 
 **Implementation Prompt:**
 ```
@@ -336,7 +445,42 @@ Create a component to display the contributor's merge request history.
 - Implements proper loading states
 
 **Implementation Notes:**
-- Fetch data from the new merge requests endpoint
+- Fetch data from the `/api/contributors/:id/merge-requests` endpoint with React Query:
+  ```typescript
+  const fetchMergeRequests = async (
+    contributorId: string, 
+    page = 0, 
+    state: 'all' | 'open' | 'closed' | 'merged' = 'all'
+  ) => {
+    const limit = 10;
+    const offset = page * limit;
+    const response = await fetch(
+      `/api/contributors/${contributorId}/merge-requests?limit=${limit}&offset=${offset}&state=${state}`
+    );
+    if (!response.ok) throw new Error('Failed to fetch merge requests');
+    return response.json();
+  };
+
+  const { data, isLoading, error } = useQuery(
+    ['contributorMergeRequests', contributorId, page, state],
+    () => fetchMergeRequests(contributorId, page, state),
+    { 
+      staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+      keepPreviousData: true // Keep old data while fetching new page
+    }
+  );
+  ```
+- The merge-requests endpoint returns:
+  - `data`: Array of merge request objects
+  - `pagination`: Object with `total`, `limit`, `offset`, and `has_more` properties
+- Each merge request object contains:
+  - `id`, `github_id`: Identifiers
+  - `title`, `description`: Content
+  - `state`: Current state (open, closed, merged)
+  - `created_at`, `updated_at`, `closed_at`, `merged_at`: Dates
+  - `commits_count`, `additions`, `deletions`, `changed_files`: Stats
+  - `repository_name`, `repository_description`: Context
+  - Other metadata like `labels`, `cycle_time_hours`, etc.
 - Use responsive card design for different screen sizes
 
 **Implementation Prompt:**
@@ -376,6 +520,39 @@ Create a reusable card component for individual merge requests.
 **Implementation Notes:**
 - Use the card component from the design system
 - Implement responsive design for different screen sizes
+- Component should accept a merge request object from the API with this structure:
+  ```typescript
+  interface MergeRequest {
+    id: string;
+    github_id: number;
+    title: string;
+    description: string;
+    state: 'open' | 'closed' | 'merged';
+    is_draft: boolean;
+    created_at: string;
+    updated_at: string;
+    closed_at: string | null;
+    merged_at: string | null;
+    commits_count: number;
+    additions: number;
+    deletions: number;
+    changed_files: number;
+    complexity_score: number | null;
+    review_time_hours: number | null;
+    cycle_time_hours: number | null;
+    repository_name: string;
+    repository_description: string;
+    labels: string[] | null;
+    source_branch: string;
+    target_branch: string;
+    merged_by_username: string | null;
+    merged_by_avatar: string | null;
+  }
+  ```
+- Use different color schemes for each state:
+  - Open: blue
+  - Closed: grey or red
+  - Merged: green
 
 **Implementation Prompt:**
 ```
@@ -415,8 +592,41 @@ Create a component to display the contributor's recent commit and merge request 
 - Supports pagination for additional items
 
 **Implementation Notes:**
-- Fetch data from the new recent activity endpoint
+- Fetch data from the `/api/contributors/:id/recent-activity` endpoint with React Query:
+  ```typescript
+  const fetchRecentActivity = async (contributorId: string, page = 0) => {
+    const limit = 20;
+    const offset = page * limit;
+    const response = await fetch(
+      `/api/contributors/${contributorId}/recent-activity?limit=${limit}&offset=${offset}`
+    );
+    if (!response.ok) throw new Error('Failed to fetch recent activity');
+    return response.json();
+  };
+
+  const { data, isLoading, error, fetchNextPage, hasNextPage } = useInfiniteQuery(
+    ['contributorRecentActivity', contributorId],
+    ({ pageParam = 0 }) => fetchRecentActivity(contributorId, pageParam),
+    {
+      getNextPageParam: (lastPage, allPages) => {
+        return lastPage.pagination.has_more ? allPages.length : undefined;
+      },
+      staleTime: 5 * 60 * 1000 // Cache for 5 minutes
+    }
+  );
+  ```
+- The recent-activity endpoint returns:
+  - `data`: Array of activity day objects
+  - `pagination`: Object with `total`, `limit`, `offset`, and `has_more` properties
+- Each activity day object contains:
+  - `date`: The activity date (YYYY-MM-DD)
+  - `activities`: Array of activity items for that day
+- Activity items can be of different types:
+  - `type`: "commit" or "pull_request"
+  - Type-specific fields for each activity type
+  - All activities include `id`, `timestamp`, and `repository` information
 - Use a vertical timeline layout with appropriate spacing
+- Implement infinite scroll or "load more" pattern
 
 **Implementation Prompt:**
 ```
@@ -451,6 +661,47 @@ Create a reusable component for individual activity items in the timeline.
 **Implementation Notes:**
 - Use consistent styling for all activity types
 - Ensure component is reusable across different activity feeds
+- Component should accept activity items from the API with these structures:
+  ```typescript
+  // Base interface for all activity types
+  interface BaseActivity {
+    id: string;
+    type: 'commit' | 'pull_request';
+    timestamp: string;
+    repository: {
+      id: string;
+      name: string;
+      url: string;
+    };
+  }
+  
+  // Commit-specific activity
+  interface CommitActivity extends BaseActivity {
+    type: 'commit';
+    message: string;
+    sha: string;
+    filename: string;
+    status: 'added' | 'modified' | 'deleted';
+    additions: number;
+    deletions: number;
+  }
+  
+  // Pull request-specific activity
+  interface PullRequestActivity extends BaseActivity {
+    type: 'pull_request';
+    title: string;
+    number: number;
+    state: 'open' | 'closed' | 'merged';
+    additions: number;
+    deletions: number;
+  }
+  
+  type Activity = CommitActivity | PullRequestActivity;
+  ```
+- Use different icons for each activity type:
+  - Commit: git-commit icon
+  - Pull Request: git-pull-request icon
+  - Issue: issue-opened icon (if applicable)
 
 **Implementation Prompt:**
 ```
@@ -488,7 +739,55 @@ Create a component to display repositories the contributor has worked on.
 - Shows repository popularity indicators
 
 **Implementation Notes:**
-- Fetch data from the new repositories endpoint
+- The initial repositories data should come from SSR props if available
+- For pagination and sorting, fetch additional data from the `/api/contributors/:id/repositories` endpoint with React Query:
+  ```typescript
+  const fetchRepositories = async (
+    contributorId: string, 
+    page = 0, 
+    sortBy = 'commit_count', 
+    sortDirection = 'desc'
+  ) => {
+    const limit = 9;
+    const offset = page * limit;
+    const response = await fetch(
+      `/api/contributors/${contributorId}/repositories?limit=${limit}&offset=${offset}&sort_by=${sortBy}&sort_direction=${sortDirection}`
+    );
+    if (!response.ok) throw new Error('Failed to fetch repositories');
+    return response.json();
+  };
+
+  const { data, isLoading, error } = useQuery(
+    ['contributorRepositories', contributorId, page, sortBy, sortDirection],
+    () => fetchRepositories(contributorId, page, sortBy, sortDirection),
+    { 
+      staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+      keepPreviousData: true, // Keep old data while fetching new page
+      initialData: props.initialRepositories 
+    }
+  );
+  ```
+- The repositories endpoint returns:
+  - `data`: Array of repository objects
+  - `pagination`: Object with `total`, `limit`, `offset`, and `has_more` properties
+- Each repository object contains:
+  - `id`, `github_id`: Identifiers
+  - `name`, `full_name`: Repository names
+  - `description`: Repository description
+  - `url`: GitHub URL
+  - `stars`, `forks`: Popularity metrics
+  - Repository metadata (`primary_language`, `license`, etc.)
+  - Contributor-specific metrics:
+    - `commit_count`: Number of commits by this contributor
+    - `pull_requests`: Number of PRs by this contributor
+    - `reviews`: Number of reviews by this contributor
+    - `lines_added`, `lines_removed`: Code impact
+    - `first_contribution_date`, `last_contribution_date`: Activity timeline
+- Support sorting by:
+  - `commit_count` (default)
+  - `stars`
+  - `last_contribution_date`
+  - `lines_added`
 - Use responsive grid layout for different screen sizes
 
 **Implementation Prompt:**
@@ -512,223 +811,3 @@ Create the RepositoryContributions component:
 
 Follow the card styling from the design guidelines and ensure all interactive elements follow the established patterns.
 ```
-
-### Story 7: Implement Rankings and Metrics Display
-
-Create components to display the contributor's ranking and metrics.
-
-#### Task 7.1: Implement ContributorRankings Component
-
-**Description:**  
-Create a component to display the contributor's rankings and calculated metrics.
-
-**Acceptance Criteria:**
-- Shows the contributor's ranking position
-- Displays score breakdown across different metrics
-- Uses appropriate visualizations for score components
-- Shows percentile information where available
-
-**Implementation Notes:**
-- Fetch data from the new rankings endpoint
-- Use appropriate charts or gauge visualizations
-
-**Implementation Prompt:**
-```
-Create the ContributorRankings component:
-
-1. Fetch rankings data from the `/api/contributors/:id/rankings` endpoint
-2. Create a card-based layout to display:
-   - Overall rank position
-   - Composite ranking score
-   - Breakdown of score components
-   - Percentile information
-3. Use appropriate visualizations:
-   - Radar chart for score components
-   - Bar charts for comparisons
-   - Gauge charts for percentile displays
-4. Include explanatory tooltips for each metric
-5. Use consistent color coding for different metrics
-6. Implement skeleton loading states
-7. Handle the case where ranking data is not available
-
-Follow the data visualization guidelines and ensure all charts are responsive and accessible.
-```
-
-### Story 8: Implement Responsive Design and Optimizations
-
-Ensure the page is responsive and optimized for all device sizes.
-
-#### Task 8.1: Implement Responsive Layout Adjustments
-
-**Description:**  
-Ensure all components are properly responsive across different device sizes.
-
-**Acceptance Criteria:**
-- Desktop view uses three-column layout as specified
-- Tablet view uses appropriate column structure
-- Mobile view uses single-column layout
-- Components adapt their internal layout based on screen size
-- All content is accessible on small screens
-
-**Implementation Notes:**
-- Use Tailwind's responsive utilities
-- Test on multiple device sizes
-- Ensure no content overflow on small screens
-
-**Implementation Prompt:**
-```
-Review and optimize responsive behavior for all components:
-
-1. Use Tailwind's responsive prefixes consistently:
-   - Default: Mobile design
-   - md: Tablet design
-   - lg: Desktop design
-2. Adjust the main page layout:
-   - Three-column on large screens
-   - Two-column on medium screens
-   - Single-column on small screens
-3. Adapt component internals:
-   - Adjust card layouts for different widths
-   - Modify chart sizes based on available space
-   - Convert tables to card layouts on mobile
-4. Hide less critical information on smaller screens
-5. Create expansion patterns for accessing all data on mobile
-6. Test on actual devices or accurate device emulators
-7. Ensure text remains readable at all screen sizes
-
-Follow the responsive design implementation section from the design guidelines document.
-```
-
-#### Task 8.2: Implement Performance Optimizations
-
-**Description:**  
-Optimize the page for performance across different network conditions.
-
-**Acceptance Criteria:**
-- Data fetching is optimized with appropriate caching
-- Page loads quickly even with large data sets
-- Skeleton loading states are implemented for all components
-- Lazy loading is used for below-the-fold content
-
-**Implementation Notes:**
-- Use React Query for data fetching and caching
-- Implement pagination for large data sets
-- Use virtualization for long lists where appropriate
-
-**Implementation Prompt:**
-```
-Implement performance optimizations for the Contributors page:
-
-1. Configure React Query for efficient data fetching:
-   - Set appropriate stale times for caching
-   - Implement retry logic for network failures
-   - Use query keys that include contributor ID and filter parameters
-2. Optimize component rendering:
-   - Memoize expensive calculations with useMemo
-   - Prevent unnecessary re-renders with React.memo for pure components
-   - Use callback functions appropriately
-3. Implement skeleton loading states for all data-dependent components
-4. Add lazy loading for:
-   - Below-the-fold content
-   - Heavyweight visualizations
-   - Data-intensive components
-5. Implement virtualization for long lists
-6. Add pagination or "load more" patterns for large datasets
-7. Ensure smooth transitions between loading and loaded states
-
-Focus on maintaining responsive UI even when dealing with large datasets or slow network conditions.
-```
-
-### Story 9: Testing and Documentation
-
-Ensure the page is thoroughly tested and documented.
-
-#### Task 9.1: Create Component Tests
-
-**Description:**  
-Create comprehensive tests for all new and updated components.
-
-**Acceptance Criteria:**
-- Unit tests for all components
-- Tests for different data scenarios (empty, partial, full)
-- Tests for error states and edge cases
-- Responsive behavior tests
-
-**Implementation Notes:**
-- Follow established testing patterns
-- Use mock data that reflects API structure
-- Test loading and error states
-
-**Implementation Prompt:**
-```
-Create comprehensive tests for all Contributors page components:
-
-1. Write unit tests for each component focusing on:
-   - Rendering with different prop combinations
-   - User interactions (clicks, hovers, selections)
-   - Loading states and error handling
-2. Test data scenarios including:
-   - Empty data
-   - Partial/incomplete data
-   - Full data sets
-   - Edge cases (extremely large values, missing fields)
-3. Test responsive behavior by:
-   - Rendering at different viewport sizes
-   - Checking conditional rendering logic
-4. Mock API responses to test data fetching behavior
-5. Create tests for all user interaction flows
-6. Implement accessibility tests
-7. Test dark mode compatibility
-
-Follow existing testing patterns in the codebase and ensure all tests are meaningful and not just for coverage.
-```
-
-#### Task 9.2: Update Component Documentation
-
-**Description:**  
-Update or create documentation for all components.
-
-**Acceptance Criteria:**
-- Component props and types are documented
-- Usage examples are provided
-- Component responsibilities are clearly defined
-- Data requirements are specified
-
-**Implementation Notes:**
-- Follow established documentation patterns
-- Include code samples where appropriate
-- Document any non-obvious behavior
-
-**Implementation Prompt:**
-```
-Update or create documentation for all Contributors page components:
-
-1. Document each component with:
-   - Purpose and responsibility
-   - Props interface with type definitions
-   - Data requirements and structures
-   - Key behaviors and interactions
-2. Include usage examples showing:
-   - Basic implementation
-   - Common variants
-   - Handling of different states
-3. Document integration points with:
-   - API endpoints used
-   - State management
-   - Parent-child relationships
-4. Add inline code comments for complex logic
-5. Create stories that demonstrate component variations
-
-Follow the existing documentation format and ensure all documentation is clear, concise, and helpful for future developers.
-```
-
-## Implementation Dependencies
-
-- Backend API endpoints must be available (from Contributors Page Backend Epic)
-- Design System components must be implemented
-- Data structures must be compatible with new components
-- URL routing patterns must be maintained
-
-## Timeline
-
-The estimated timeline for this epic is 1-2 weeks, depending on the complexity of the implementation and availability of backend API endpoints. 
