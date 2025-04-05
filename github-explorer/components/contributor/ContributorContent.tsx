@@ -43,6 +43,14 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { format } from 'date-fns';
 
 interface ContributorContentProps {
   contributor: ContributorDetailData;
@@ -58,6 +66,8 @@ export default function ContributorContent({
   contributorId,
 }: ContributorContentProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>('30days');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [popupPosition, setPopupPosition] = useState<{ x: number, y: number } | null>(null);
 
   // Fetch data for the contributor using React Query hooks
   const { data: profileMetadata } = useContributorProfileMetadata(contributorId);
@@ -419,9 +429,17 @@ export default function ContributorContent({
                         }
                         
                         return displayLanguages.map((lang) => (
-                          <Badge key={lang.name} variant="outline" className="px-3 py-1">
-                            {lang.name} ({lang.percentage.toFixed(1)}%)
-                          </Badge>
+                          <TooltipProvider key={lang.name}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="px-3 py-1 max-w-full">
+                                  <span className="truncate max-w-[150px]">{lang.name}</span>
+                                  <span className="ml-1 whitespace-nowrap">({lang.percentage.toFixed(1)}%)</span>
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom">{lang.name} ({lang.percentage.toFixed(1)}%)</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         ));
                       })()}
                     </div>
@@ -458,9 +476,17 @@ export default function ContributorContent({
                         }
                         
                         return displayLanguages.map(lang => (
-                          <Badge key={lang.name} variant="outline" className="px-3 py-1">
-                            {lang.name} ({lang.percentage.toFixed(1)}%)
-                          </Badge>
+                          <TooltipProvider key={lang.name}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="px-3 py-1 max-w-full">
+                                  <span className="truncate max-w-[150px]">{lang.name}</span>
+                                  <span className="ml-1 whitespace-nowrap">({lang.percentage.toFixed(1)}%)</span>
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom">{lang.name} ({lang.percentage.toFixed(1)}%)</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         ));
                       })()}
                     </div>
@@ -551,58 +577,215 @@ export default function ContributorContent({
                 </div>
               </CardHeader>
               <CardContent>
-                {/* Simplified heatmap visualization - this would be replaced with a proper heatmap component */}
-                <div className="grid grid-cols-12 gap-1">
-                  {/* Month headers */}
-                  <div className="col-span-1"></div>
-                  <div className="col-span-1 text-xs text-center text-gray-500">Jan</div>
-                  <div className="col-span-1 text-xs text-center text-gray-500">Feb</div>
-                  <div className="col-span-1 text-xs text-center text-gray-500">Mar</div>
-                  <div className="col-span-1 text-xs text-center text-gray-500">Apr</div>
-                  <div className="col-span-1 text-xs text-center text-gray-500">May</div>
-                  <div className="col-span-1 text-xs text-center text-gray-500">Jun</div>
-                  <div className="col-span-1 text-xs text-center text-gray-500">Jul</div>
-                  <div className="col-span-1 text-xs text-center text-gray-500">Aug</div>
-                  <div className="col-span-1 text-xs text-center text-gray-500">Sep</div>
-                  <div className="col-span-1 text-xs text-center text-gray-500">Oct</div>
-                  <div className="col-span-1 text-xs text-center text-gray-500">Nov</div>
+                {/* Heatmap visualization - updated to match the design */}
+                <div className="flex">
+                  {/* Days of the week column */}
+                  <div className="flex flex-col justify-between pr-2 pt-8">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                      <div key={day} className="text-xs text-gray-500 h-8 flex items-center">{day}</div>
+                    ))}
+                  </div>
                   
-                  {/* Day rows with cells */}
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dayIndex) => (
-                    <React.Fragment key={day}>
-                      <div className="text-xs text-gray-500">{day}</div>
-                      {Array(12).fill(0).map((_, monthIndex) => {
-                        // Get a deterministic intensity based on month and day 
-                        // This ensures the same color is rendered on both server and client
-                        const intensity = ((dayIndex * 31 + monthIndex * 7) % 85) / 100;
-                        
-                        return (
-                          <div 
-                            key={monthIndex}
-                            className="w-full aspect-square rounded-sm"
-                            style={{ 
-                              backgroundColor: `rgba(21, 128, 61, ${intensity})` 
-                            }}
-                          />
-                        );
-                      })}
-                    </React.Fragment>
-                  ))}
-                </div>
-                
-                <div className="flex justify-center mt-4 text-xs text-gray-500">
-                  <div className="flex items-center">
-                    <span>Less</span>
-                    <div className="flex mx-1">
-                      <div className="w-3 h-3 mx-px rounded-sm bg-green-100" />
-                      <div className="w-3 h-3 mx-px rounded-sm bg-green-200" />
-                      <div className="w-3 h-3 mx-px rounded-sm bg-green-300" />
-                      <div className="w-3 h-3 mx-px rounded-sm bg-green-400" />
-                      <div className="w-3 h-3 mx-px rounded-sm bg-green-500" />
+                  {/* Main heatmap grid */}
+                  <div className="flex-1">
+                    {/* Month headers */}
+                    <div className="flex mb-2">
+                      {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month) => (
+                        <div key={month} className="flex-1 text-xs text-center text-gray-500">{month}</div>
+                      ))}
                     </div>
-                    <span>More</span>
+                    
+                    {/* Heatmap cells */}
+                    <div className="grid grid-rows-7 gap-1">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dayIndex) => (
+                        <div key={day} className="flex gap-1">
+                          {Array(12).fill(0).map((_, monthIndex) => {
+                            // Get real activity data instead of using dummy data
+                            // Convert dayIndex (0-6) and monthIndex (0-11) to find the appropriate date
+                            // Then check if we have activity data for that date
+                            
+                            // We'll calculate cell color based on activity level
+                            let intensity = 0.15; // Base intensity for empty cells
+                            let dateKey = '';
+                            let commitCount = 0;
+                            
+                            if (activityData?.activity) {
+                              // Get current date to help calculate relative dates for the heatmap
+                              const today = new Date();
+                              const currentYear = today.getFullYear();
+                              
+                              // Months are 0-indexed in JS Date
+                              const month = monthIndex;
+                              // Create a date for this cell by combining year, month, and dayOfWeek
+                              const date = new Date(currentYear, month, 1);
+                              
+                              // Find the first occurrence of this day of week in this month
+                              // If dayIndex is 0 (Sunday) and the first of the month is a Tuesday, we need to add days
+                              while (date.getDay() !== dayIndex) {
+                                date.setDate(date.getDate() + 1);
+                              }
+                              
+                              // Format date as YYYY-MM-DD to match API data format
+                              dateKey = date.toISOString().split('T')[0];
+                              
+                              // Check if we have activity for this date
+                              if (activityData.activity[dateKey]) {
+                                // Normalize activity count to a 0-1 scale for color intensity
+                                // For example, max 5 commits = 1.0 intensity
+                                const maxCommits = 5;
+                                commitCount = activityData.activity[dateKey];
+                                intensity = 0.2 + Math.min(0.8, commitCount / maxCommits);
+                              }
+                            }
+                            
+                            return (
+                              <div 
+                                key={monthIndex}
+                                className="flex-1 h-6 rounded-sm border border-gray-100 dark:border-gray-700 cursor-pointer transition-colors hover:border-gray-300 dark:hover:border-gray-500"
+                                style={{ 
+                                  backgroundColor: `rgba(21, 128, 61, ${intensity})` 
+                                }}
+                                onClick={(e) => {
+                                  if (dateKey && commitCount > 0) {
+                                    setSelectedDate(dateKey);
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setPopupPosition({ 
+                                      x: rect.left + window.scrollX,
+                                      y: rect.top + window.scrollY 
+                                    });
+                                  }
+                                }}
+                                title={dateKey ? `${format(new Date(dateKey), 'PPPP')}: ${commitCount} ${commitCount === 1 ? 'contribution' : 'contributions'}` : 'No contributions'}
+                              />
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
+                
+                {/* Popup for showing activity details */}
+                {selectedDate && (
+                  <Dialog 
+                    open={!!selectedDate} 
+                    onOpenChange={(open) => {
+                      if (!open) setSelectedDate(null);
+                    }}
+                  >
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center">
+                          <CalendarDays className="h-5 w-5 mr-2 text-amber-500" />
+                          Contributions on {selectedDate ? format(new Date(selectedDate), 'EEEE, MMMM d, yyyy') : ''}
+                        </DialogTitle>
+                      </DialogHeader>
+                      
+                      <div className="py-2">
+                        {selectedDate && activityData?.activity && activityData.activity[selectedDate] ? (
+                          <>
+                            <p className="text-gray-600 dark:text-gray-400 mb-4">
+                              {activityData.activity[selectedDate]} {activityData.activity[selectedDate] === 1 ? 'commit' : 'commits'}
+                            </p>
+                            
+                            {/* Find commits from recent activity that match this date */}
+                            {activityDays?.length > 0 && (
+                              <div className="space-y-4">
+                                {activityDays.map((day: any) => {
+                                  // Check if this activity day matches our selected date
+                                  if (day.date === selectedDate) {
+                                    return (
+                                      <div key={day.date}>
+                                        {day.activities.map((activity: any) => (
+                                          <div key={activity.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md mb-3">
+                                            {activity.type === 'commit' ? (
+                                              <>
+                                                <div className="flex items-center">
+                                                  <GitCommit className="h-4 w-4 mr-2 text-blue-500" />
+                                                  <span className="font-medium">Commit</span>
+                                                  {activity.sha && (
+                                                    <span className="ml-2 text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded font-mono">
+                                                      {activity.sha.substring(0, 7)}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                <p className="mt-2 text-sm">{activity.message}</p>
+                                                <div className="flex items-center text-xs text-gray-500 mt-2">
+                                                  <span>Repository: {activity.repository.name}</span>
+                                                </div>
+                                                {(activity.additions || activity.deletions) && (
+                                                  <div className="flex items-center text-xs mt-2">
+                                                    {activity.additions > 0 && (
+                                                      <span className="text-green-500 mr-2">+{activity.additions}</span>
+                                                    )}
+                                                    {activity.deletions > 0 && (
+                                                      <span className="text-red-500">-{activity.deletions}</span>
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </>
+                                            ) : activity.type === 'pull_request' ? (
+                                              <>
+                                                <div className="flex items-center">
+                                                  <GitPullRequest className="h-4 w-4 mr-2 text-purple-500" />
+                                                  <span className="font-medium">Pull Request #{activity.number}</span>
+                                                  <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+                                                    activity.state === 'merged' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                                                    activity.state === 'closed' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                                                    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                  }`}>
+                                                    {activity.state}
+                                                  </span>
+                                                </div>
+                                                <p className="mt-2 text-sm">{activity.title}</p>
+                                                <div className="flex items-center text-xs text-gray-500 mt-2">
+                                                  <span>Repository: {activity.repository.name}</span>
+                                                </div>
+                                                {(activity.additions || activity.deletions) && (
+                                                  <div className="flex items-center text-xs mt-2">
+                                                    {activity.additions > 0 && (
+                                                      <span className="text-green-500 mr-2">+{activity.additions}</span>
+                                                    )}
+                                                    {activity.deletions > 0 && (
+                                                      <span className="text-red-500">-{activity.deletions}</span>
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </>
+                                            ) : null}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })}
+                                
+                                {/* If we don't have detailed activity data for this date */}
+                                {!activityDays.some((day: any) => day.date === selectedDate) && (
+                                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                                    <p>Detailed commit information is not available for this date.</p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* If we don't have any recent activity data */}
+                            {(!activityDays || activityDays.length === 0) && (
+                              <div className="text-sm text-gray-600 dark:text-gray-400">
+                                <p>Detailed commit information is not available.</p>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-gray-600 dark:text-gray-400">
+                            No activity for this date.
+                          </p>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </CardContent>
             </Card>
             
