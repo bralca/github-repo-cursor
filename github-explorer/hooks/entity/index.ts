@@ -6,4 +6,5 @@
  */
 
 export { useEntityData } from './useEntityData';
-export { useContributorData } from './useContributorData'; 
+export { useContributorData } from './useContributorData';
+export { useContributorProfileData } from './use-contributor-profile-data'; 

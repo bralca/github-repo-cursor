@@ -8,6 +8,7 @@ import { useContributorMergeRequests } from '@/hooks/entity/use-contributor-merg
 import { useContributorRecentActivity } from '@/hooks/entity/use-contributor-recent-activity';
 import { useContributorRepositories, RepositoriesResponse } from '@/hooks/entity/use-contributor-repositories';
 import { useContributorRankings } from '@/hooks/entity/use-contributor-rankings';
+import { useContributorProfileData } from '@/hooks/entity/use-contributor-profile-data';
 import { ContributorDetailData } from '@/lib/client/fetchContributorData';
 import { ProfileMetadata } from '@/types/contributor';
 import { TimeframeSelector } from '@/components/common/TimeframeSelector';
@@ -61,6 +62,7 @@ export default function ContributorContent({
   // Fetch data for the contributor using React Query hooks
   const { data: profileMetadata } = useContributorProfileMetadata(contributorId);
   const { data: rankingsData } = useContributorRankings(contributorId);
+  const { data: profileData } = useContributorProfileData(contributorId);
   
   const { data: activityData } = useContributorActivity(contributorId, timeframe);
   const { data: impactData } = useContributorImpact(contributorId);
@@ -127,31 +129,34 @@ export default function ContributorContent({
               <CardHeader className="text-center pb-2">
                 <div className="flex justify-center mb-4">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src={contributor.avatar || ''} alt={contributor.name || contributor.username || ''} />
+                    <AvatarImage 
+                      src={profileData?.contributor.avatar || contributor.avatar || ''} 
+                      alt={profileData?.contributor.name || contributor.name || contributor.username || ''}
+                    />
                     <AvatarFallback>
-                      {(contributor.name || contributor.username || '??').substring(0, 2).toUpperCase()}
+                      {(profileData?.contributor.name || contributor.name || contributor.username || '??').substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </div>
                 <CardTitle className="text-xl">
-                  {contributor.name || contributor.username || `Contributor ${contributor.github_id}`}
+                  {profileData?.contributor.name || contributor.name || profileData?.contributor.username || contributor.username || `Contributor ${contributor.github_id}`}
                 </CardTitle>
                 <CardDescription>
-                  {contributor.username && (
+                  {(profileData?.contributor.username || contributor.username) && (
                     <a 
-                      href={`https://github.com/${contributor.username}`} 
+                      href={`https://github.com/${profileData?.contributor.username || contributor.username}`} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-blue-500 hover:text-blue-700"
                     >
-                      {contributor.username}
+                      {profileData?.contributor.username || contributor.username}
                     </a>
                   )}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {contributor.bio && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 mb-4">{contributor.bio}</p>
+                {(profileData?.contributor.bio || contributor.bio) && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 mb-4">{profileData?.contributor.bio || contributor.bio}</p>
                 )}
                 
                 <div className="space-y-3">
@@ -205,32 +210,34 @@ export default function ContributorContent({
               </CardContent>
             </Card>
             
-            {/* Developer Profile - Always shown */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center">
-                  <Users className="h-5 w-5 mr-2 text-gray-500" />
-                  <CardTitle className="text-lg">Developer Profile</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center text-sm mb-4">
-                  <Clock className="h-4 w-4 mr-2 text-gray-500" /> 
-                  <span>Active for {profileMetadata?.active_period?.duration_formatted || 'N/A'}</span>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Developer Profile - Only shown when there's data */}
+            {(profileData?.active_period?.duration_formatted || profileMetadata?.active_period?.duration_formatted) && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center">
+                    <Users className="h-5 w-5 mr-2 text-gray-500" />
+                    <CardTitle className="text-lg">Developer Profile</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center text-sm mb-4">
+                    <Clock className="h-4 w-4 mr-2 text-gray-500" /> 
+                    <span>Active for {profileData?.active_period?.duration_formatted || profileMetadata?.active_period?.duration_formatted}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             
-            {/* Organizations - Always shown */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center">
-                  <Users className="h-5 w-5 mr-2 text-gray-500" />
-                  <CardTitle className="text-lg">Organizations</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {(profileMetadata?.organizations && (profileMetadata?.organizations as any[]).length > 0) ? (
+            {/* Organizations - Only shown when there's data */}
+            {(profileMetadata?.organizations && (profileMetadata?.organizations as any[]).length > 0) && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center">
+                    <Users className="h-5 w-5 mr-2 text-gray-500" />
+                    <CardTitle className="text-lg">Organizations</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
                   <div className="flex flex-wrap gap-3">
                     {(profileMetadata?.organizations as any[]).map((org) => (
                       <TooltipProvider key={org.id || 'org-' + Math.random()}>
@@ -255,73 +262,212 @@ export default function ContributorContent({
                       </TooltipProvider>
                     ))}
                   </div>
-                ) : (
-                  <div className="text-sm text-gray-500">
-                    No organization data available
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Contributed Repositories - Always shown */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center">
-                  <Code className="h-5 w-5 mr-2 text-gray-500" />
-                  <CardTitle className="text-lg">Contributed Repositories</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {repositories.length > 0 ? (
-                  <div className="space-y-2">
-                    {repositories.slice(0, 3).map((repo: any) => (
-                      <div key={repo.id} className="text-sm">
-                        <a 
-                          href={`https://github.com/${repo.full_name}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-500 hover:text-blue-700"
-                        >
-                          {repo.name}
-                        </a>
-                      </div>
-                    ))}
+            {/* Contributed Repositories - Only shown when there's data */}
+            {(profileData?.repositories.data && profileData.repositories.data.length > 0) || repositories.length > 0 ? (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center">
+                    <Code className="h-5 w-5 mr-2 text-gray-500" />
+                    <CardTitle className="text-lg">Contributed Repositories</CardTitle>
                   </div>
-                ) : (
-                  <div className="text-sm text-gray-500">
-                    No repository data available
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Top Languages - Always shown */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center">
-                  <Code className="h-5 w-5 mr-2 text-gray-500" />
-                  <CardTitle className="text-lg">Top Languages</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {impactData?.languages && Object.keys(impactData.languages).length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(impactData.languages)
-                      .sort(([, a], [, b]) => b - a)
-                      .slice(0, 6)
-                      .map(([language, score]) => (
-                        <Badge key={language} variant="outline" className="px-3 py-1">
-                          {language}
-                        </Badge>
+                </CardHeader>
+                <CardContent>
+                  {profileData?.repositories.data && profileData.repositories.data.length > 0 ? (
+                    <div className="space-y-4">
+                      {profileData.repositories.data.slice(0, 3).map((repo) => (
+                        <div key={repo.repository_id} className="p-4 rounded-lg bg-white dark:bg-gray-850 shadow-sm border border-gray-200/50 dark:border-gray-700/30 transition-all hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md">
+                          <div className="flex items-center justify-between">
+                            <a 
+                              href={`https://github.com/${repo.full_name}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-500 hover:text-blue-700 font-medium"
+                            >
+                              {repo.name}
+                            </a>
+                            <div className="flex items-center space-x-3">
+                              {repo.stars_count > 0 && (
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 mr-1 text-amber-400">
+                                    <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
+                                  </svg>
+                                  {repo.stars_count}
+                                </div>
+                              )}
+                              {repo.forks_count > 0 && (
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 mr-1 text-gray-400">
+                                    <path fillRule="evenodd" d="M15.75 4.5a3 3 0 11.825 2.066l-8.421 4.679a3.002 3.002 0 010 1.51l8.421 4.679a3 3 0 11-.729 1.31l-8.421-4.678a3 3 0 110-4.132l8.421-4.679a3 3 0 01-.096-.755z" clipRule="evenodd" />
+                                  </svg>
+                                  {repo.forks_count}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {repo.description && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 mb-3 line-clamp-2">
+                              {repo.description}
+                            </p>
+                          )}
+                          
+                          <div className="flex flex-wrap items-center gap-y-2 gap-x-3">
+                            <div className="flex items-center text-xs">
+                              <span className="flex items-center text-blue-700 dark:text-blue-400">
+                                <GitCommit className="h-3.5 w-3.5 mr-1" />
+                                {repo.commit_count} {repo.commit_count === 1 ? 'commit' : 'commits'}
+                              </span>
+                            </div>
+                            
+                            {repo.primary_language && (
+                              <div className="flex items-center text-xs">
+                                <span className="flex items-center text-purple-700 dark:text-purple-400">
+                                  <Code className="h-3.5 w-3.5 mr-1" />
+                                  {repo.primary_language}
+                                </span>
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center text-xs ml-auto">
+                              <span className="text-green-500 mr-1">+{repo.lines_added}</span>
+                              <span className="text-red-500 mr-1">-{repo.lines_removed}</span>
+                              <span className="text-gray-500">lines</span>
+                            </div>
+                          </div>
+                        </div>
                       ))}
+                      
+                      {profileData.repositories.pagination.total > 3 && (
+                        <div className="text-center pt-2">
+                          <a 
+                            href="#repositories" 
+                            className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center"
+                          >
+                            View all {profileData.repositories.pagination.total} repositories
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 ml-1">
+                              <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                            </svg>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {repositories.slice(0, 3).map((repo: any) => (
+                        <div key={repo.id} className="p-4 rounded-lg bg-white dark:bg-gray-850 shadow-sm border border-gray-200/50 dark:border-gray-700/30 transition-all hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md">
+                          <a 
+                            href={`https://github.com/${repo.full_name}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-500 hover:text-blue-700 font-medium"
+                          >
+                            {repo.name}
+                          </a>
+                          {repo.description && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 mb-3 line-clamp-2">
+                              {repo.description}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {/* Top Languages - Only shown when there's data */}
+            {(profileData?.top_languages && profileData.top_languages.length > 0) || 
+              (impactData?.languages && Object.keys(impactData.languages).length > 0) ? (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center">
+                    <Code className="h-5 w-5 mr-2 text-gray-500" />
+                    <CardTitle className="text-lg">Top Languages</CardTitle>
                   </div>
-                ) : (
-                  <div className="text-sm text-gray-500">
-                    No language data available
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardContent>
+                  {profileData?.top_languages && profileData.top_languages.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {(() => {
+                        // Group languages with less than 10% into "Other"
+                        const mainLanguages = profileData.top_languages
+                          .filter(lang => lang.percentage >= 10)
+                          .sort((a, b) => b.percentage - a.percentage);
+                        
+                        const smallLanguages = profileData.top_languages
+                          .filter(lang => lang.percentage < 10);
+                        
+                        // If there are small languages, create an "Other" category
+                        const displayLanguages = [...mainLanguages];
+                        
+                        if (smallLanguages.length > 0) {
+                          const otherPercentage = smallLanguages.reduce((sum, lang) => sum + lang.percentage, 0);
+                          const otherCount = smallLanguages.reduce((sum, lang) => sum + lang.count, 0);
+                          
+                          if (otherPercentage > 0) {
+                            displayLanguages.push({
+                              name: "Other",
+                              percentage: otherPercentage,
+                              count: otherCount
+                            });
+                          }
+                        }
+                        
+                        return displayLanguages.map((lang) => (
+                          <Badge key={lang.name} variant="outline" className="px-3 py-1">
+                            {lang.name} ({lang.percentage.toFixed(1)}%)
+                          </Badge>
+                        ));
+                      })()}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {(() => {
+                        // Convert object to array and sort
+                        const langEntries = Object.entries(impactData!.languages)
+                          .sort(([, a], [, b]) => b - a);
+                        
+                        // Calculate total for percentage
+                        const total = langEntries.reduce((sum, [, value]) => sum + value, 0);
+                        
+                        // Filter main languages (≥10%)
+                        const mainLanguages = langEntries
+                          .filter(([, value]) => (value / total) * 100 >= 10)
+                          .map(([name, value]) => ({
+                            name,
+                            percentage: (value / total) * 100
+                          }));
+                        
+                        // Calculate "Other" percentage
+                        const otherPercentage = langEntries
+                          .filter(([, value]) => (value / total) * 100 < 10)
+                          .reduce((sum, [, value]) => sum + value, 0) / total * 100;
+                        
+                        // Combine main languages with "Other"
+                        const displayLanguages = [...mainLanguages];
+                        if (otherPercentage > 0) {
+                          displayLanguages.push({
+                            name: "Other",
+                            percentage: otherPercentage
+                          });
+                        }
+                        
+                        return displayLanguages.map(lang => (
+                          <Badge key={lang.name} variant="outline" className="px-3 py-1">
+                            {lang.name} ({lang.percentage.toFixed(1)}%)
+                          </Badge>
+                        ));
+                      })()}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : null}
           </div>
         </div>
         
@@ -340,47 +486,6 @@ export default function ContributorContent({
           
           {/* Key metrics */}
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center">
-                  <BarChart3 className="h-5 w-5 mr-2 text-blue-500" />
-                  <CardTitle>Contribution Activity</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="flex flex-col space-y-1">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Impact Score</span>
-                    <div className="flex items-center">
-                      <Code className="h-4 w-4 mr-1 text-purple-500" />
-                      <span className="text-xl font-semibold">{formatNumber(impactScore)}</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col space-y-1">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Commits</span>
-                    <div className="flex items-center">
-                      <GitCommit className="h-4 w-4 mr-1 text-amber-500" />
-                      <span className="text-xl font-semibold">{formatNumber(totalContributions)}</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col space-y-1">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Pull Requests</span>
-                    <div className="flex items-center">
-                      <GitPullRequest className="h-4 w-4 mr-1 text-indigo-500" />
-                      <span className="text-xl font-semibold">{formatNumber(profileMetadata?.pull_requests_total)}</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col space-y-1">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Lines Changed</span>
-                    <div className="flex items-center">
-                      <FileCode className="h-4 w-4 mr-1 text-emerald-500" />
-                      <span className="text-xl font-semibold">{formatNumber(totalLinesChanged)}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
             {/* Code Impact Section */}
             <Card>
               <CardHeader>
@@ -596,12 +701,30 @@ export default function ContributorContent({
                               </div>
                               
                               <div>
-                                <h4 className="font-medium">
-                                  {activity.type === 'commit' ? 
-                                    activity.message : 
-                                    activity.title
-                                  }
-                                </h4>
+                                <div className="flex items-start">
+                                  <span className="inline-flex items-center mr-2 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                                    {activity.type === 'commit' ? (
+                                      <>
+                                        <GitCommit className="h-3 w-3 mr-1 text-blue-500" />
+                                        Commit
+                                      </>
+                                    ) : (
+                                      <>
+                                        <GitPullRequest className="h-3 w-3 mr-1 text-purple-500" />
+                                        PR
+                                      </>
+                                    )}
+                                  </span>
+                                  <h4 
+                                    className="font-medium line-clamp-2 flex-1"
+                                    title={activity.type === 'commit' ? activity.message : activity.title}
+                                  >
+                                    {activity.type === 'commit' ? 
+                                      activity.message : 
+                                      activity.title
+                                    }
+                                  </h4>
+                                </div>
                                 <div className="flex items-center text-sm text-gray-500 mt-1">
                                   <span>{activity.repository.name}</span>
                                   <span className="mx-2">•</span>
