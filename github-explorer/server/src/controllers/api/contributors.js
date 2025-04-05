@@ -856,7 +856,22 @@ export async function getContributorRepositories(req, res) {
     
     // Return repositories with pagination metadata
     res.json({
-      data: reposResult.rows,
+      data: reposResult.rows.map(repo => ({
+        repository_id: repo.repository_id,
+        repository_github_id: repo.repository_github_id,
+        commit_count: repo.commit_count,
+        lines_added: repo.lines_added,
+        lines_removed: repo.lines_removed,
+        first_commit_date: repo.first_commit_date,
+        last_commit_date: repo.last_commit_date,
+        name: repo.name,
+        full_name: repo.full_name,
+        description: repo.description,
+        primary_language: repo.primary_language,
+        stars_count: repo.stars,
+        forks_count: repo.forks,
+        license: repo.license
+      })),
       pagination: {
         total: totalCount,
         limit,
@@ -1527,4 +1542,293 @@ function formatDuration(days) {
       return `${yearText}, ${monthText}`;
     }
   }
+}
+
+/**
+ * Get comprehensive profile data for a contributor directly from commits table
+ * This is a direct implementation that doesn't rely on the contributor_repository table
+ */
+export async function getContributorProfileData(req, res) {
+  try {
+    const { id } = req.params;
+    const limit = parseInt(req.query.limit, 10) || 5;
+    const offset = parseInt(req.query.offset, 10) || 0;
+
+    console.log('DEBUG: Starting getContributorProfileData for id:', id);
+    
+    // Get contributor details
+    const contributorQuery = `
+      SELECT id, github_id, username, name, avatar, bio
+      FROM contributors
+      WHERE github_id = ?
+    `;
+    
+    const contributorResult = await pool.query(contributorQuery, [id]);
+    
+    if (!contributorResult.rows.length) {
+      return res.status(404).json({ error: "Contributor not found" });
+    }
+    
+    const contributor = contributorResult.rows[0];
+    console.log('DEBUG: Found contributor:', contributor);
+    
+    // Get top languages
+    const fileExtensionsQuery = `
+      SELECT 
+        SUBSTR(filename, INSTR(filename, '.') + 1) AS extension, 
+        COUNT(*) AS count,
+        ROUND(COUNT(*) * 100.0 / (
+          SELECT COUNT(*) 
+          FROM commits 
+          WHERE contributor_github_id = ? AND INSTR(filename, '.') > 0
+        ), 2) AS percentage
+      FROM 
+        commits 
+      WHERE 
+        contributor_github_id = ? 
+        AND INSTR(filename, '.') > 0
+      GROUP BY 
+        extension
+      ORDER BY 
+        count DESC
+      LIMIT 5
+    `;
+    
+    const fileExtensionsResult = await pool.query(fileExtensionsQuery, [id, id]);
+    console.log('DEBUG: File extensions result rows:', fileExtensionsResult.rows ? fileExtensionsResult.rows.length : 'undefined');
+    
+    // Map file extensions to languages
+    const topLanguages = fileExtensionsResult.rows && fileExtensionsResult.rows.length > 0 
+      ? mapFileExtensionsToLanguages(fileExtensionsResult.rows) 
+      : [];
+    
+    console.log('DEBUG: Mapped top languages:', topLanguages);
+    
+    // Get activity period
+    const activityPeriodQuery = `
+      SELECT 
+        MIN(committed_at) AS first_contribution, 
+        MAX(committed_at) AS last_contribution
+      FROM 
+        commits
+      WHERE 
+        contributor_github_id = ?
+    `;
+    
+    const activityPeriodResult = await pool.query(activityPeriodQuery, [id]);
+    console.log('DEBUG: Activity period result:', activityPeriodResult.rows[0]);
+    
+    // Get contributed repositories
+    const repositoriesQuery = `
+      SELECT 
+        cr.repository_id,
+        cr.repository_github_id,
+        cr.commit_count,
+        cr.lines_added,
+        cr.lines_removed,
+        cr.first_commit_date,
+        cr.last_commit_date,
+        r.name,
+        r.full_name,
+        r.description,
+        r.primary_language,
+        r.stars,
+        r.forks,
+        r.license
+      FROM 
+        (
+          SELECT 
+            repository_id,
+            repository_github_id,
+            COUNT(*) AS commit_count,
+            SUM(additions) AS lines_added,
+            SUM(deletions) AS lines_removed,
+            MIN(committed_at) AS first_commit_date,
+            MAX(committed_at) AS last_commit_date
+          FROM 
+            commits
+          WHERE 
+            contributor_github_id = ?
+          GROUP BY 
+            repository_id, repository_github_id
+          ORDER BY 
+            commit_count DESC
+          LIMIT ? OFFSET ?
+        ) cr
+      JOIN 
+        repositories r ON cr.repository_id = r.id
+    `;
+    
+    const repositoriesResult = await pool.query(repositoriesQuery, [
+      contributor.github_id, 
+      limit,
+      offset
+    ]);
+    
+    console.log('DEBUG: Repositories result rows:', repositoriesResult.rows ? repositoriesResult.rows.length : 'undefined');
+    
+    // Get total repository count for pagination
+    const totalReposQuery = `
+      SELECT 
+        COUNT(DISTINCT repository_id) AS total
+      FROM 
+        commits
+      WHERE 
+        contributor_github_id = ?
+    `;
+    
+    const totalReposResult = await pool.query(totalReposQuery, [contributor.github_id]);
+    console.log('DEBUG: Total repos result:', totalReposResult.rows[0]);
+    
+    // Format activity period
+    const activePeriod = formatActivityPeriod(
+      activityPeriodResult.rows[0]?.first_contribution,
+      activityPeriodResult.rows[0]?.last_contribution
+    );
+    
+    console.log('DEBUG: Before constructing response');
+    console.log('DEBUG: repositoriesResult.rows:', typeof repositoriesResult.rows, repositoriesResult.rows === undefined ? 'undefined' : 'defined');
+    
+    // Return combined data
+    res.json({
+      contributor: {
+        id: contributor.id,
+        github_id: contributor.github_id,
+        username: contributor.username,
+        name: contributor.name,
+        avatar: contributor.avatar,
+        bio: contributor.bio
+      },
+      active_period: activePeriod,
+      top_languages: topLanguages,
+      repositories: {
+        data: repositoriesResult.rows ? repositoriesResult.rows.map(repo => ({
+          repository_id: repo.repository_id,
+          repository_github_id: repo.repository_github_id,
+          commit_count: repo.commit_count,
+          lines_added: repo.lines_added,
+          lines_removed: repo.lines_removed,
+          first_commit_date: repo.first_commit_date,
+          last_commit_date: repo.last_commit_date,
+          name: repo.name,
+          full_name: repo.full_name,
+          description: repo.description,
+          primary_language: repo.primary_language,
+          stars_count: repo.stars,
+          forks_count: repo.forks,
+          license: repo.license
+        })) : [],
+        pagination: {
+          total: totalReposResult.rows[0]?.total || 0,
+          limit,
+          offset,
+          has_more: (offset + limit) < totalReposResult.rows[0]?.total
+        }
+      }
+    });
+  } catch (error) {
+    console.error('DEBUG: Error in getContributorProfileData:', error);
+    handleDbError(error, res);
+  }
+}
+
+/**
+ * Map file extensions to programming languages
+ * @param {Array} extensions - Array of file extensions with counts
+ * @returns {Array} - Array of language objects with names and percentages
+ */
+function mapFileExtensionsToLanguages(extensions) {
+  const languageMap = {
+    'js': 'JavaScript',
+    'ts': 'TypeScript',
+    'jsx': 'JavaScript (React)',
+    'tsx': 'TypeScript (React)',
+    'py': 'Python',
+    'rb': 'Ruby',
+    'java': 'Java',
+    'php': 'PHP',
+    'cs': 'C#',
+    'cpp': 'C++',
+    'c': 'C',
+    'go': 'Go',
+    'rs': 'Rust',
+    'swift': 'Swift',
+    'kt': 'Kotlin',
+    'scala': 'Scala',
+    'html': 'HTML',
+    'css': 'CSS',
+    'scss': 'SCSS',
+    'less': 'Less',
+    'md': 'Markdown',
+    'json': 'JSON',
+    'yml': 'YAML',
+    'yaml': 'YAML',
+    'sh': 'Shell',
+    'bash': 'Shell',
+    'ps1': 'PowerShell',
+    'sql': 'SQL',
+    'vue': 'Vue',
+    'svelte': 'Svelte',
+    'dart': 'Dart',
+    'ex': 'Elixir',
+    'exs': 'Elixir',
+    'hs': 'Haskell'
+  };
+  
+  return extensions.map(ext => ({
+    name: languageMap[ext.extension] || ext.extension.toUpperCase(),
+    percentage: ext.percentage,
+    count: ext.count
+  }));
+}
+
+/**
+ * Format activity period with first and last contribution dates
+ * @param {string} firstDate - First contribution date
+ * @param {string} lastDate - Last contribution date
+ * @returns {Object} - Formatted activity period
+ */
+function formatActivityPeriod(firstDate, lastDate) {
+  if (!firstDate || !lastDate) {
+    return {
+      first_contribution: null,
+      last_contribution: null,
+      duration_days: 0,
+      duration_formatted: 'No activity'
+    };
+  }
+  
+  const first = new Date(firstDate);
+  const last = new Date(lastDate);
+  const durationMs = last.getTime() - first.getTime();
+  const durationDays = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+  
+  // Format duration as human-readable string
+  let durationFormatted;
+  if (durationDays < 1) {
+    durationFormatted = 'Today';
+  } else if (durationDays === 1) {
+    durationFormatted = '1 day';
+  } else if (durationDays < 30) {
+    durationFormatted = `${durationDays} days`;
+  } else if (durationDays < 365) {
+    const months = Math.floor(durationDays / 30);
+    durationFormatted = months === 1 ? '1 month' : `${months} months`;
+  } else {
+    const years = Math.floor(durationDays / 365);
+    const remainingMonths = Math.floor((durationDays % 365) / 30);
+    
+    if (remainingMonths === 0) {
+      durationFormatted = years === 1 ? '1 year' : `${years} years`;
+    } else {
+      durationFormatted = `${years} year${years > 1 ? 's' : ''} ${remainingMonths} month${remainingMonths > 1 ? 's' : ''}`;
+    }
+  }
+  
+  return {
+    first_contribution: firstDate,
+    last_contribution: lastDate,
+    duration_days: durationDays,
+    duration_formatted: durationFormatted
+  };
 } 

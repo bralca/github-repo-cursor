@@ -314,6 +314,109 @@ const monthlyQuery = `
 
 3. Use comments in complex SQL queries to document the purpose of each section
 
+### SQL Queries Starting with WITH Clause Not Returning Rows
+
+**Symptom**: API endpoints return empty arrays or "Cannot read properties of undefined (reading 'map')" errors when using SQL queries that start with WITH clauses
+
+**Causes**:
+1. The database pool implementation in `db-pool.js` only recognizes queries starting with "SELECT" for fetching rows
+2. Queries starting with "WITH" are processed differently, causing the rows property to be undefined
+3. The conditional logic in db-pool.js uses:
+   ```javascript
+   // For SELECT queries
+   if (sql.trim().toUpperCase().startsWith('SELECT')) {
+     const result = await db.all(sql, params);
+     return { rows: result };
+   } 
+   // For other queries (INSERT, UPDATE, DELETE, etc.)
+   else {
+     const result = await db.run(sql, params);
+     return { rowCount: result.changes, lastID: result.lastID };
+   }
+   ```
+
+**Example Problem**:
+```javascript
+// This query won't return rows properly in the current implementation
+const problematicQuery = `
+  WITH contributor_repos AS (
+    SELECT 
+      repository_id,
+      repository_github_id,
+      COUNT(*) AS commit_count
+    FROM 
+      commits
+    WHERE 
+      contributor_github_id = ?
+    GROUP BY 
+      repository_id, repository_github_id
+  )
+  SELECT 
+    cr.*,
+    r.name,
+    r.full_name
+  FROM 
+    contributor_repos cr
+  JOIN 
+    repositories r ON cr.repository_id = r.id
+`;
+
+// When executed, repositoriesResult.rows will be undefined
+const repositoriesResult = await pool.query(problematicQuery, [contributorId]);
+```
+
+**Resolution**:
+1. Rewrite queries to start with SELECT by using subqueries instead of WITH clauses:
+   ```javascript
+   // Fixed query that will return rows properly
+   const fixedQuery = `
+     SELECT 
+       cr.repository_id,
+       cr.repository_github_id,
+       cr.commit_count,
+       r.name,
+       r.full_name
+     FROM 
+       (
+         SELECT 
+           repository_id,
+           repository_github_id,
+           COUNT(*) AS commit_count
+         FROM 
+           commits
+         WHERE 
+           contributor_github_id = ?
+         GROUP BY 
+           repository_id, repository_github_id
+       ) cr
+     JOIN 
+       repositories r ON cr.repository_id = r.id
+   `;
+   ```
+
+2. Add defensive null checks when using the result:
+   ```javascript
+   const data = repositoriesResult.rows ? repositoriesResult.rows.map(item => ({
+     // ... mapping logic
+   })) : [];
+   ```
+
+3. For a long-term solution, update the `db-pool.js` implementation to properly handle WITH clauses:
+   ```javascript
+   // Improved implementation that handles WITH clauses
+   if (sql.trim().toUpperCase().startsWith('SELECT') || 
+       sql.trim().toUpperCase().startsWith('WITH')) {
+     const result = await db.all(sql, params);
+     return { rows: result };
+   }
+   ```
+
+**Verification**:
+Test the query directly in SQLite CLI to confirm it returns the expected results:
+```bash
+sqlite3 github-explorer/server/db/github_explorer.db "SELECT cr.*, r.name FROM (SELECT repository_id, COUNT(*) AS count FROM commits WHERE contributor_github_id = 123 GROUP BY repository_id) cr JOIN repositories r ON cr.repository_id = r.id;"
+```
+
 ### JavaScript Date Manipulation Errors
 
 **Symptom**: "Assignment to constant variable" errors when working with dates

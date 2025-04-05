@@ -795,6 +795,137 @@ The response provides supplementary profile information:
 
 This endpoint is designed to provide supporting metadata for contributor profile displays that isn't included in the main profile endpoint.
 
+#### GET `/api/contributors/:id/profile-data`
+
+Get comprehensive profile data for a contributor directly from commits data, bypassing the need for the contributor_repository junction table.
+
+**Path Parameters:**
+- `id` (required) - Contributor's GitHub ID
+
+**Query Parameters:**
+- `limit` (optional) - Maximum number of repositories to return (default: 5)
+- `offset` (optional) - Pagination offset for repositories (default: 0)
+
+**Response:**
+```json
+{
+  "contributor": {
+    "id": "4fdfb98f-9b2d-46ac-b776-fd56057effe9",
+    "github_id": 49186168,
+    "username": "KelvinTegelaar",
+    "name": null,
+    "avatar": "https://avatars.githubusercontent.com/u/49186168?v=4",
+    "bio": "CTO @ Lime Networks, Blogger @ CyberDrain.com :) Microsoft MVP"
+  },
+  "active_period": {
+    "first_contribution": "2025-03-07T12:46:52Z",
+    "last_contribution": "2025-03-17T11:51:29Z",
+    "duration_days": 9,
+    "duration_formatted": "9 days"
+  },
+  "top_languages": [
+    {
+      "name": "PowerShell",
+      "percentage": 94.71,
+      "count": 197
+    },
+    {
+      "name": "CSV",
+      "percentage": 1.92,
+      "count": 4
+    },
+    {
+      "name": "JSON",
+      "percentage": 1.44,
+      "count": 3
+    }
+  ],
+  "repositories": {
+    "data": [
+      {
+        "repository_id": "7af352f3-31aa-4184-bc30-7c011ea91fe2",
+        "repository_github_id": 930239709,
+        "commit_count": 208,
+        "lines_added": 235498,
+        "lines_removed": 1000,
+        "first_commit_date": "2025-03-07T12:46:52Z",
+        "last_commit_date": "2025-03-17T11:51:29Z",
+        "name": "CIPP-API",
+        "full_name": "drtun5726/CIPP-API",
+        "description": null,
+        "primary_language": "PowerShell",
+        "stars_count": 0,
+        "forks_count": 0,
+        "license": "AGPL-3.0"
+      }
+    ],
+    "pagination": {
+      "total": 1,
+      "limit": 5,
+      "offset": 0,
+      "has_more": false
+    }
+  }
+}
+```
+
+**Field Descriptions:**
+
+- **contributor**: Basic information about the contributor
+  - `id`: UUID of the contributor in the database
+  - `github_id`: GitHub's numeric ID for the contributor
+  - `username`: GitHub username
+  - `name`: Full name (if available, may be null)
+  - `avatar`: URL to the contributor's GitHub avatar
+  - `bio`: Contributor's GitHub bio text
+
+- **active_period**: Information about the contributor's activity timeline
+  - `first_contribution`: ISO timestamp of first commit
+  - `last_contribution`: ISO timestamp of most recent commit
+  - `duration_days`: Number of days between first and last contribution
+  - `duration_formatted`: Human-readable duration (e.g., "9 days", "3 months", "2 years 5 months")
+
+- **top_languages**: Array of the contributor's most used programming languages
+  - `name`: Programming language name (derived from file extensions)
+  - `percentage`: Percentage of usage compared to other languages
+  - `count`: Raw count of files in this language
+
+- **repositories**: Information about repositories the contributor has worked on
+  - **data**: Array of repository objects
+    - `repository_id`: UUID of the repository in the database
+    - `repository_github_id`: GitHub's numeric ID for the repository
+    - `commit_count`: Number of commits by this contributor
+    - `lines_added`: Total lines of code added by this contributor
+    - `lines_removed`: Total lines of code removed by this contributor
+    - `first_commit_date`: ISO timestamp of contributor's first commit to this repository
+    - `last_commit_date`: ISO timestamp of contributor's most recent commit to this repository
+    - `name`: Repository name
+    - `full_name`: Full repository name with owner (e.g., "owner/repo")
+    - `description`: Repository description (may be null)
+    - `primary_language`: Primary programming language of the repository
+    - `stars_count`: Number of GitHub stars
+    - `forks_count`: Number of GitHub forks
+    - `license`: Repository license identifier
+  - **pagination**: Information for paginating through repositories
+    - `total`: Total count of repositories the contributor has worked on
+    - `limit`: Maximum number of repositories per page
+    - `offset`: Current offset in the result set
+    - `has_more`: Boolean indicating if more repositories are available
+
+This endpoint calculates contributor profile data directly from commits, analyzing file extensions for language statistics and grouping commits by repository to determine repository-level metrics. All data is derived directly from the commits table, making it resilient even when contributor-repository junction tables are incomplete.
+
+**Usage example with fetch:**
+```javascript
+const response = await fetch('http://localhost:3001/api/contributors/49186168/profile-data');
+const profileData = await response.json();
+```
+
+**Usage with React Query:**
+```javascript
+const { data, isLoading, error } = useQuery(['contributorProfile', contributorId], 
+  () => fetchFromApi(`contributors/${contributorId}/profile-data`));
+```
+
 ### Merge Request Endpoints
 
 #### GET `/api/merge-requests`

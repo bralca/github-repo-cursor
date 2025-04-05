@@ -18,7 +18,8 @@ import {
   getContributorMergeRequests,
   getContributorRecentActivity,
   getContributorRankings,
-  getContributorProfileMetadata
+  getContributorProfileMetadata,
+  getContributorProfileData
 } from '../controllers/api/contributors.js';
 import { getMergeRequests, getMergeRequestById, getMergeRequestByNumber } from '../controllers/api/merge-requests.js';
 import { getCommits, getCommitById, getCommitBySha } from '../controllers/api/commits.js';
@@ -53,6 +54,7 @@ router.get('/contributors/:id/merge-requests', getContributorMergeRequests);
 router.get('/contributors/:id/recent-activity', getContributorRecentActivity);
 router.get('/contributors/:id/rankings', getContributorRankings);
 router.get('/contributors/:id/profile-metadata', getContributorProfileMetadata);
+router.get('/contributors/:id/profile-data', getContributorProfileData);
 
 // Merge request endpoints
 router.get('/merge-requests', getMergeRequests);
