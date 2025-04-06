@@ -9,137 +9,140 @@
 
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
-import { getDbPath } from '../utils/db-path.js';
 import { logger } from '../utils/logger.js';
+import { resolve } from 'path';
 
-// Private module-level variables
-let _dbConnection = null;
-let _connectionPromise = null;
-let _isClosing = false;
+// Connection state
+let db = null;
+let isConnecting = false;
+let connectionQueue = [];
+let lastConnectAttempt = 0;
+const RECONNECT_DELAY = 1000; // 1 second minimum between connection attempts
 
-// Connection configuration
-const CONNECTION_CONFIG = {
-  busyTimeout: 5000,    // 5 seconds
-  maxRetryCount: 3,
-  journalMode: 'WAL'    // Write-Ahead Logging
-};
-
-/**
- * Check if connection is valid and working
- * @param {Object} db - Database connection to test
- * @returns {Promise<boolean>} True if connection is valid
- */
-async function isConnectionValid(db) {
-  if (!db) return false;
-  
-  try {
-    // Simple test query to check connection 
-    await db.get('SELECT 1 as test');
-    return true;
-  } catch (error) {
-    logger.error('Connection validation failed', { 
-      error,
-      message: error.message 
-    });
-    return false;
-  }
-}
+// Database configuration
+const DB_PATH = process.env.DB_PATH || resolve('./db/github_explorer.db');
 
 /**
- * Initialize and get the shared database connection
- * @returns {Promise<object>} Database connection
+ * Get a database connection
+ * @returns {Promise<Object>} Database connection
  */
-async function getConnection() {
-  // If we're in the process of closing, wait before opening a new connection
-  if (_isClosing) {
-    logger.warn('Attempting to get connection while previous one is closing. Waiting...');
-    await new Promise(resolve => setTimeout(resolve, 100));
-    return getConnection();
-  }
-
-  // If we already have a connection, verify it's still valid
-  if (_dbConnection) {
-    // Check if connection is valid before returning it
+export async function getConnection() {
+  // If we already have a valid connection, return it
+  if (db) {
     try {
-      const isValid = await isConnectionValid(_dbConnection);
-      if (isValid) {
-        return _dbConnection;
-      } else {
-        logger.warn('Existing connection is invalid, creating a new one');
-        _dbConnection = null; // Clear invalid connection
-      }
-    } catch (error) {
-      logger.warn('Error checking connection validity, will create new connection', { error });
-      _dbConnection = null; // Clear potentially problematic connection
-    }
-  }
-
-  // If we're already connecting, return the promise
-  if (_connectionPromise) {
-    return _connectionPromise;
-  }
-
-  // Create a new connection promise
-  _connectionPromise = (async () => {
-    try {
-      const dbPath = getDbPath();
-      logger.info(`Opening persistent SQLite connection at: ${dbPath}`);
-
-      // Open the database connection
-      const db = await open({
-        filename: dbPath,
-        driver: sqlite3.Database
-      });
-
-      // Configure connection settings
-      await db.exec(`PRAGMA busy_timeout = ${CONNECTION_CONFIG.busyTimeout};`);
-      await db.exec(`PRAGMA journal_mode = ${CONNECTION_CONFIG.journalMode};`);
-      await db.exec('PRAGMA synchronous = NORMAL;');
-      await db.exec('PRAGMA foreign_keys = ON;');
-
-      // Test the connection
-      const result = await db.get('SELECT sqlite_version() as version');
-      logger.info(`SQLite connection established successfully (version: ${result.version})`);
-
-      _dbConnection = db;
+      // Test the connection with a simple query
+      await db.get('SELECT 1');
       return db;
     } catch (error) {
-      logger.error('Failed to establish SQLite connection', { error });
-      _connectionPromise = null;
-      throw error;
+      logger.warn('Existing connection is invalid, creating a new one', { error: error.message });
+      // Continue to create a new connection
+      db = null;
     }
-  })();
+  }
+
+  // If a connection is in progress, wait for it
+  if (isConnecting) {
+    return new Promise((resolve, reject) => {
+      connectionQueue.push({ resolve, reject });
+    });
+  }
+
+  // Rate limit connection attempts
+  const now = Date.now();
+  if (now - lastConnectAttempt < RECONNECT_DELAY) {
+    await new Promise(resolve => setTimeout(resolve, RECONNECT_DELAY));
+  }
+  
+  // Set connecting flag and update timestamp
+  isConnecting = true;
+  lastConnectAttempt = Date.now();
 
   try {
-    return await _connectionPromise;
+    logger.info(`Opening persistent SQLite connection at: ${DB_PATH}`);
+    
+    // Open SQLite database connection
+    db = await open({
+      filename: DB_PATH,
+      driver: sqlite3.Database
+    });
+    
+    // Enable foreign keys
+    await db.exec('PRAGMA foreign_keys = ON');
+    
+    // Configure connection
+    await db.exec('PRAGMA journal_mode = WAL');
+    await db.exec('PRAGMA synchronous = NORMAL');
+    await db.exec('PRAGMA temp_store = MEMORY');
+    await db.exec('PRAGMA cache_size = -20000'); // 20MB cache
+    
+    // Add event handler for process termination
+    setupConnectionCleanup();
+    
+    // Resolve all waiting promises with the new connection
+    connectionQueue.forEach(({ resolve }) => resolve(db));
+    connectionQueue = [];
+    
+    return db;
+  } catch (error) {
+    logger.error(`Failed to open database connection: ${error.message}`, { error });
+    
+    // Reject all waiting promises
+    connectionQueue.forEach(({ reject }) => reject(error));
+    connectionQueue = [];
+    
+    throw error;
   } finally {
-    _connectionPromise = null;
+    isConnecting = false;
   }
 }
 
 /**
- * Close the shared database connection
- * @returns {Promise<void>}
+ * Close the database connection
+ * This should only be called during application shutdown
  */
 async function closeConnection() {
-  if (!_dbConnection) {
-    logger.debug('No active connection to close');
-    return;
+  if (db) {
+    try {
+      logger.info('Closing database connection...');
+      await db.close();
+      logger.info('Database connection closed successfully');
+      db = null;
+    } catch (error) {
+      logger.error(`Error closing database connection: ${error.message}`, { error });
+      throw error;
+    }
   }
+}
 
-  // Set flag to prevent new connections during close
-  _isClosing = true;
-
-  try {
-    logger.info('Closing SQLite connection');
-    await _dbConnection.close();
-    logger.info('SQLite connection closed successfully');
-  } catch (error) {
-    logger.error('Error closing SQLite connection', { error });
-    throw error;
-  } finally {
-    _dbConnection = null;
-    _isClosing = false;
+/**
+ * Set up cleanup handlers to close the database connection on process exit
+ */
+function setupConnectionCleanup() {
+  // Only set up listeners once
+  if (process.listenerCount('SIGINT') === 0) {
+    process.on('SIGINT', async () => {
+      logger.info('Received SIGINT signal, shutting down...');
+      await closeConnection();
+      process.exit(0);
+    });
+  }
+  
+  if (process.listenerCount('SIGTERM') === 0) {
+    process.on('SIGTERM', async () => {
+      logger.info('Received SIGTERM signal, shutting down...');
+      await closeConnection();
+      process.exit(0);
+    });
+  }
+  
+  if (process.listenerCount('unhandledRejection') === 0) {
+    process.on('unhandledRejection', async (reason, promise) => {
+      logger.error('Unhandled promise rejection, initiating shutdown', { 
+        reason: reason?.message || reason, 
+        stack: reason?.stack
+      });
+      await closeConnection();
+    });
   }
 }
 
@@ -152,21 +155,20 @@ async function resetConnection() {
   logger.info('Resetting database connection');
   
   // Force close any existing connection without throwing errors
-  if (_dbConnection) {
+  if (db) {
     try {
-      await _dbConnection.close().catch(err => {
+      await db.close().catch(err => {
         logger.debug('Error during connection reset close (expected)', { error: err });
       });
     } catch (error) {
       logger.debug('Error during connection reset (expected)', { error });
     } finally {
-      _dbConnection = null;
+      db = null;
     }
   }
   
   // Clear any pending connection promises
-  _connectionPromise = null;
-  _isClosing = false;
+  connectionQueue = [];
   
   // Create a fresh connection
   return getConnection();
@@ -177,7 +179,7 @@ async function resetConnection() {
  * @returns {boolean} True if connection exists
  */
 function hasActiveConnection() {
-  return _dbConnection !== null;
+  return db !== null;
 }
 
 /**
@@ -185,16 +187,16 @@ function hasActiveConnection() {
  * Warning: Only use this in tests!
  */
 function _resetConnectionForTesting() {
-  _dbConnection = null;
-  _connectionPromise = null;
-  _isClosing = false;
+  db = null;
+  isConnecting = false;
+  connectionQueue = [];
+  lastConnectAttempt = 0;
 }
 
 // Export public methods
 export {
-  getConnection,
-  closeConnection,
   resetConnection,
   hasActiveConnection,
-  _resetConnectionForTesting // Only export for testing
+  closeConnection,
+  _resetConnectionForTesting
 }; 

@@ -704,7 +704,7 @@ class PipelineOperationsController extends BaseController {
       
       // Step 7: Close the database connection
       logger.info('Step 7: Closing database connection');
-      await db.close();
+      
       logger.info('Database connection closed');
       
       // Step 8: Get stats for unprocessed items
@@ -723,7 +723,7 @@ class PipelineOperationsController extends BaseController {
           message: statsError.message
         });
       } finally {
-        await statsDb.close();
+        
         logger.info('Stats database connection closed');
       }
       
@@ -801,7 +801,7 @@ class PipelineOperationsController extends BaseController {
       
       if (!tableExists) {
         logger.error("The closed_merge_requests_raw table does not exist. Cannot process data.");
-        await db.close();
+        
         return {
           success: false,
           message: "Table closed_merge_requests_raw does not exist",
@@ -825,7 +825,7 @@ class PipelineOperationsController extends BaseController {
       
       if (itemCount === 0) {
         logger.info("No items to process. Data processing complete.");
-        await db.close();
+        
         return {
           success: true,
           message: "No items to process",
@@ -853,7 +853,7 @@ class PipelineOperationsController extends BaseController {
       stats.failedItems = failedIds.length;
       
       // Close database connection
-      await db.close();
+      
       
       logger.info("Completed data processing", { stats });
       
@@ -1003,7 +1003,7 @@ class PipelineOperationsController extends BaseController {
       } finally {
         // Ensure the database connection is closed
         if (db) {
-          await db.close();
+          
           logger.info('Database connection closed');
         }
       }
@@ -1097,7 +1097,7 @@ class PipelineOperationsController extends BaseController {
         repoUnenrichedCount = repoUnenrichedCount ? repoUnenrichedCount.count : 0;
         logger.info(`Found ${repoUnenrichedCount} unenriched repositories`);
         
-        await db.close();
+        
         
         // Only continue with repository enrichment if there are unenriched items
         if (repoUnenrichedCount > 0) {
@@ -2213,7 +2213,7 @@ class PipelineOperationsController extends BaseController {
       await this.ensureContributorRepositoryTable(db);
       
       // Step 4: Close the database connection
-      await db.close();
+      
       
       // Step 5: Update documentation to reflect schema changes
       logger.info('Database schema updated and verified, documentation update recommended');
@@ -2519,7 +2519,7 @@ class PipelineOperationsController extends BaseController {
       }
       
       // Close the database connection
-      await db.close();
+      
       
       return {
         success: true,
@@ -2696,7 +2696,7 @@ class PipelineOperationsController extends BaseController {
         return historyId;
       } finally {
         // Close the database connection
-        await db.close();
+        
       }
     } catch (error) {
       logger.error('Error creating pipeline history entry:', { error });
@@ -2739,7 +2739,7 @@ class PipelineOperationsController extends BaseController {
         logger.info(`Updated pipeline history entry ${historyId}`);
       } finally {
         // Close the database connection
-        await db.close();
+        
       }
     } catch (error) {
       logger.error(`Error updating pipeline history entry ${historyId}:`, { error });
@@ -2796,7 +2796,7 @@ class PipelineOperationsController extends BaseController {
       let remainingCount = contribUnenrichedCount ? contribUnenrichedCount.count : 0;
       logger.info(`Found ${remainingCount} unenriched contributors`);
       
-      await db.close();
+      
       
       // Only continue with contributor enrichment if there are unenriched items
       if (remainingCount > 0) {
@@ -2995,7 +2995,7 @@ class PipelineOperationsController extends BaseController {
       let remainingCount = mrUnenrichedCount ? mrUnenrichedCount.count : 0;
       logger.info(`Found ${remainingCount} unenriched merge requests`);
       
-      await db.close();
+      
       
       // Only continue with merge request enrichment if there are unenriched items
       if (remainingCount > 0) {

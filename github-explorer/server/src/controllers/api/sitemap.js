@@ -269,10 +269,6 @@ export async function getSitemapStatus(req, res) {
   } catch (error) {
     logger.error('Error getting sitemap status:', error);
     return res.status(500).json({ error: error.message });
-  } finally {
-    if (db) {
-      await db.close();
-    }
   }
 }
 
@@ -318,9 +314,8 @@ export async function triggerSitemapGeneration(req, res) {
             SET status = ?, is_generating = ?, error_message = ?, updated_at = CURRENT_TIMESTAMP
             WHERE 1=1
           `, ['error', false, error.message]);
-          await errorDb.close();
-        } catch (dbError) {
-          logger.error('Error updating sitemap status after failure:', dbError);
+        } catch (error) {
+          logger.error(`Error updating sitemap status after failure`, { error: error.message });
         }
       }
     }, 0);
@@ -332,10 +327,6 @@ export async function triggerSitemapGeneration(req, res) {
   } catch (error) {
     logger.error('Error triggering sitemap generation:', error);
     return res.status(500).json({ error: error.message, success: false });
-  } finally {
-    if (db) {
-      await db.close();
-    }
   }
 }
 

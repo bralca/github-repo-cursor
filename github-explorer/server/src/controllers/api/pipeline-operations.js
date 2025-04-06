@@ -57,9 +57,9 @@ export async function handlePipelineOperations(req, res) {
     console.error(`Error performing ${operation} operation on ${pipelineType} pipeline:`, error);
     return res.status(500).json({ error: error.message });
   } finally {
-    if (db) {
-      await db.close();
-    }
+    // Connection is managed by connection manager, no need to close
+    
+    logger.info('Pipeline operations: returning response');
   }
 }
 

@@ -579,9 +579,8 @@ async function calculateRankings(req, res) {
       message: 'Failed to calculate contributor rankings' 
     });
   } finally {
-    if (db) {
-      await db.close();
-    }
+    // Connection is managed by connection manager, no need to close
+    // No need to return response here as it's already handled in the try/catch blocks
   }
 }
 

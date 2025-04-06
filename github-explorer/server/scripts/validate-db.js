@@ -8,6 +8,7 @@ import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { getConnection } from '../src/db/connection-manager.js';
 
 // Simple logger for compatibility
 const logger = {
@@ -42,13 +43,9 @@ async function validateDatabase() {
   const dbPath = getDbPath();
   console.log(`Validating database at: ${dbPath}`);
   
-  let db;
   try {
-    // Open database connection
-    db = await open({
-      filename: dbPath,
-      driver: sqlite3.Database
-    });
+    // Get database connection from connection manager
+    const db = await getConnection();
     
     // Check critical tables
     const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table'");
@@ -89,11 +86,8 @@ async function validateDatabase() {
   } catch (error) {
     logger.error('Error validating database:', error);
     process.exit(1);
-  } finally {
-    if (db) {
-      await db.close();
-    }
   }
+  // Connection is managed by connection manager, no need to close
 }
 
 // Run validation

@@ -10,43 +10,25 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import { getDbPath } from './db-path.js';
 import { logger } from './logger.js';
+import { getConnection } from '../db/connection-manager.js';
 
 /**
  * Open a connection to the SQLite database
  * @returns {Promise<Object>} SQLite database connection
+ * @deprecated Use getConnection() from connection-manager.js instead
  */
 export async function openSQLiteConnection() {
-  const dbPath = getDbPath();
+  logger.warn('DEPRECATED: openSQLiteConnection() is deprecated. Use getConnection() from connection-manager.js instead');
   
-  logger.debug(`Opening SQLite database connection at: ${dbPath}`);
-  
-  try {
-    // Open the database connection
-    const db = await open({
-      filename: dbPath,
-      driver: sqlite3.Database
-    });
-    
-    // Set pragmas for better performance
-    await db.exec('PRAGMA journal_mode = WAL;');
-    await db.exec('PRAGMA synchronous = NORMAL;');
-    await db.exec('PRAGMA foreign_keys = ON;');
-    
-    logger.debug('Successfully opened SQLite database connection');
-    return db;
-  } catch (error) {
-    logger.error(`Failed to open SQLite database: ${error.message}`, {
-      error,
-      dbPath
-    });
-    throw error;
-  }
+  // Use the connection manager to get a connection
+  return getConnection();
 }
 
 /**
  * Close a SQLite database connection
  * @param {Object} db - SQLite database connection to close
  * @returns {Promise<void>}
+ * @deprecated Connections are now managed by connection-manager.js
  */
 export async function closeSQLiteConnection(db) {
   if (!db) {
@@ -54,12 +36,8 @@ export async function closeSQLiteConnection(db) {
     return;
   }
   
-  try {
-    logger.debug('Closing SQLite database connection');
-    await db.close();
-    logger.debug('SQLite database connection closed successfully');
-  } catch (error) {
-    logger.error(`Error closing SQLite database connection: ${error.message}`, { error });
-    throw error;
-  }
+  logger.warn('DEPRECATED: closeSQLiteConnection() is deprecated. Connections are now managed by connection-manager.js');
+  
+  // No need to close the connection as it's managed by the connection manager
+  // Just log a warning but don't actually close
 } 

@@ -11,6 +11,7 @@ import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getDbPath } from '../utils/db-path.js';
+import { getConnection } from '../db/connection-manager.js';
 
 // Get the migration file from command line arguments
 const migrationFile = process.argv[2];
@@ -44,11 +45,8 @@ async function runMigration() {
   console.log(`Database path: ${dbPath}`);
   
   try {
-    // Open database connection
-    const db = await open({
-      filename: dbPath,
-      driver: sqlite3.Database
-    });
+    // Get database connection from connection manager
+    const db = await getConnection();
     
     // Start a transaction
     await db.exec('BEGIN TRANSACTION');
@@ -66,8 +64,7 @@ async function runMigration() {
       console.error('Migration failed:', error);
       process.exit(1);
     } finally {
-      // Close the database connection
-      await db.close();
+      // Connection is managed by connection manager, no need to close
     }
   } catch (error) {
     console.error('Error opening database:', error);

@@ -618,14 +618,16 @@ export class ContributorEnricher {
    * @returns {Promise<void>}
    */
   async close() {
-    if (this.db) {
-      try {
-        logger.debug('Closing contributor enricher database connection');
-        await this.db.close();
-        logger.debug('Contributor enricher database connection closed successfully');
-      } catch (error) {
-        logger.error('Error closing contributor enricher database connection', { error });
+    try {
+      // Clean up
+      if (this.db) {
+        // Connection is managed by connection manager, no need to close
       }
+      
+      this.isRunning = false;
+      logger.info(`ContributorEnricher: cleanup completed`);
+    } catch (cleanupError) {
+      logger.error(`ContributorEnricher: error during cleanup:`, cleanupError);
     }
   }
 } 

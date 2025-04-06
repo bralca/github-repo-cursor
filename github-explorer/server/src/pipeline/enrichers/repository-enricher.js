@@ -466,11 +466,11 @@ export class RepositoryEnricher {
   async close() {
     if (this.db) {
       try {
-        logger.debug('Closing repository enricher database connection');
-        await this.db.close();
-        logger.debug('Repository enricher database connection closed successfully');
+        logger.debug('Repository enricher database connection managed by connection manager');
+        // Connection is managed by connection manager, no need to close
+        logger.debug('Repository enricher cleanup completed');
       } catch (error) {
-        logger.error('Error closing repository enricher database connection', { error });
+        logger.error('Error during repository enricher cleanup', { error });
       }
     }
   }

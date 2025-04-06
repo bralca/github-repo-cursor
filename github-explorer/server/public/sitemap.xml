@@ -1,19 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
-    <loc>http://localhost:3000/sitemaps/repositories.xml</loc>
-    <lastmod>2025-04-06</lastmod>
+    <path>/Users/alessiocarra/Desktop/github-repo-cursor/github-explorer/server/public/sitemaps/repositories.xml</path>
+    <filename>repositories.xml</filename>
+    <type>repositories</type>
+    <count>1370</count>
+    <lastmod>2025-04-06T22:00:00.161Z</lastmod>
   </sitemap>
   <sitemap>
-    <loc>http://localhost:3000/sitemaps/contributors.xml</loc>
-    <lastmod>2025-04-06</lastmod>
+    <path>/Users/alessiocarra/Desktop/github-repo-cursor/github-explorer/server/public/sitemaps/contributors.xml</path>
+    <filename>contributors.xml</filename>
+    <type>contributors</type>
+    <count>1388</count>
+    <lastmod>2025-04-06T22:00:00.167Z</lastmod>
   </sitemap>
   <sitemap>
-    <loc>http://localhost:3000/sitemaps/merge_requests.xml</loc>
-    <lastmod>2025-04-06</lastmod>
+    <path>/Users/alessiocarra/Desktop/github-repo-cursor/github-explorer/server/public/sitemaps/merge_requests.xml</path>
+    <filename>merge_requests.xml</filename>
+    <type>merge_requests</type>
+    <count>1425</count>
+    <lastmod>2025-04-06T22:00:00.179Z</lastmod>
   </sitemap>
   <sitemap>
-    <loc>http://localhost:3000/sitemaps/commits.xml</loc>
-    <lastmod>2025-04-06</lastmod>
+    <path>/Users/alessiocarra/Desktop/github-repo-cursor/github-explorer/server/public/sitemaps/commits.xml</path>
+    <filename>commits.xml</filename>
+    <type>commits</type>
+    <count>37065</count>
+    <lastmod>2025-04-06T22:00:00.461Z</lastmod>
   </sitemap>
 </sitemapindex>

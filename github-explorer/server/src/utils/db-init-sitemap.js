@@ -108,7 +108,7 @@ export async function resetSitemapMetadata() {
     throw error;
   } finally {
     if (db) {
-      await db.close();
+      // Connection is managed by connection manager, no need to close
     }
   }
 }

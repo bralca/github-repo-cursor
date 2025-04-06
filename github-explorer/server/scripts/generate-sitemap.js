@@ -209,76 +209,15 @@ function generateSitemapIndexXML(sitemaps) {
 }
 
 /**
- * Ensure the public directory and sitemaps subdirectory exist
- */
-async function ensureDirectoriesExist() {
-  await fs.mkdir(PUBLIC_DIR, { recursive: true });
-  await fs.mkdir(SITEMAPS_DIR, { recursive: true });
-  logger.info(`Sitemap directories created/verified: ${SITEMAPS_DIR}`);
-}
-
-/**
- * Generate a sitemap for a specific entity type
- */
-async function generateEntitySitemap(db, entityConfig) {
-  const { type, query, generateUrl } = entityConfig;
-  logger.info(`Generating sitemap for entity type: ${type}`);
-  
-  // Get all entities from the database
-  const entities = await db.all(query);
-  logger.info(`Found ${entities.length} ${type} to include in sitemap`);
-  
-  // If no entities, skip this sitemap
-  if (entities.length === 0) {
-    logger.info(`No ${type} found, skipping sitemap generation`);
-    return [];
-  }
-  
-  // Generate URLs for each entity
-  const allUrls = entities.map(generateUrl);
-  
-  // Split URLs into chunks to stay under the maximum limit per file
-  const urlChunks = [];
-  for (let i = 0; i < allUrls.length; i += SITEMAP_MAX_URLS) {
-    urlChunks.push(allUrls.slice(i, i + SITEMAP_MAX_URLS));
-  }
-  
-  // Generate and write sitemap files for each chunk
-  const sitemapFiles = [];
-  for (let i = 0; i < urlChunks.length; i++) {
-    const chunk = urlChunks[i];
-    const filename = `${type}${i > 0 ? '-' + i : ''}.xml`;
-    const filePath = path.join(SITEMAPS_DIR, filename);
-    
-    // Generate sitemap XML
-    const sitemapXML = generateSitemapXML(chunk);
-    
-    // Write sitemap file
-    await fs.writeFile(filePath, sitemapXML, 'utf8');
-    logger.info(`Wrote sitemap file: ${filePath} with ${chunk.length} URLs`);
-    
-    // Add to the list of sitemap files
-    sitemapFiles.push({
-      loc: `${BASE_URL}/sitemaps/${filename}`,
-      lastmod: new Date().toISOString().split('T')[0]
-    });
-  }
-  
-  // Return information about the created sitemap files
-  return sitemapFiles;
-}
-
-/**
  * Generate all sitemaps and the sitemap index
  */
 async function generateAllSitemaps() {
-  let db = null;
   try {
     // Ensure directories exist
     await ensureDirectoriesExist();
     
     // Connect to the database
-    db = await getConnection();
+    const db = await getConnection();
     
     // Update sitemap_status to indicate generation has started
     await db.run(`
@@ -321,26 +260,112 @@ async function generateAllSitemaps() {
     logger.info('Sitemap generation completed successfully');
     return true;
   } catch (error) {
-    logger.error(`Error generating sitemaps: ${error.message}`, { error });
+    logger.error(`Error generating sitemaps: ${error.message}`, { 
+      errorMessage: error.message,
+      errorStack: error.stack
+    });
     
     // Update sitemap_status to indicate generation failed
-    if (db) {
-      try {
-        await db.run(`
-          UPDATE sitemap_status 
-          SET status = ?, is_generating = ?, error_message = ?, updated_at = CURRENT_TIMESTAMP
-          WHERE 1=1
-        `, ['error', false, error.message]);
-      } catch (dbError) {
-        logger.error(`Error updating sitemap status: ${dbError.message}`, { error: dbError });
-      }
+    try {
+      const errorDb = await getConnection();
+      await errorDb.run(`
+        UPDATE sitemap_status 
+        SET status = ?, is_generating = ?, error_message = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE 1=1
+      `, ['error', false, error.message]);
+    } catch (dbError) {
+      logger.error(`Error updating sitemap status: ${dbError.message}`, { 
+        errorMessage: dbError.message,
+        errorStack: dbError.stack
+      });
     }
     
     return false;
-  } finally {
-    if (db) {
-      await db.close();
+  }
+}
+
+/**
+ * Generate sitemaps for a specific entity type
+ * @param {Object} db - Database connection
+ * @param {Object} entityConfig - Entity configuration
+ * @returns {Promise<Array>} Array of sitemap file information
+ */
+async function generateEntitySitemap(db, entityConfig) {
+  const { type, query, generateUrl } = entityConfig;
+  logger.info(`Generating sitemap for entity type: ${type}`);
+  
+  try {
+    // Get all entities from the database
+    const entities = await db.all(query);
+    
+    if (!entities || entities.length === 0) {
+      logger.warn(`No ${type} found to include in sitemap`);
+      return [];
     }
+    
+    logger.info(`Found ${entities.length} ${type} to include in sitemap`);
+    
+    // Split entities into chunks if needed
+    const chunks = [];
+    if (entities.length > SITEMAP_MAX_URLS) {
+      for (let i = 0; i < entities.length; i += SITEMAP_MAX_URLS) {
+        chunks.push(entities.slice(i, i + SITEMAP_MAX_URLS));
+      }
+    } else {
+      chunks.push(entities);
+    }
+    
+    const sitemapFiles = [];
+    
+    // Create sitemap files
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const urls = chunk.map(entity => generateUrl(entity));
+      
+      // Generate XML sitemap
+      const sitemapXML = generateSitemapXML(urls);
+      
+      // Create sitemap filename
+      const sitemapFilename = chunks.length > 1 ? `${type}-${i + 1}.xml` : `${type}.xml`;
+      const sitemapPath = path.join(SITEMAPS_DIR, sitemapFilename);
+      
+      // Write sitemap to file
+      await fs.writeFile(sitemapPath, sitemapXML, 'utf8');
+      
+      logger.info(`Wrote sitemap file: ${sitemapPath} with ${urls.length} URLs`);
+      
+      // Add sitemap info to the list
+      sitemapFiles.push({
+        path: sitemapPath,
+        filename: sitemapFilename,
+        type,
+        count: urls.length,
+        lastmod: new Date().toISOString()
+      });
+    }
+    
+    return sitemapFiles;
+  } catch (error) {
+    logger.error(`Error generating sitemap for ${type}: ${error.message}`, { error });
+    return [];
+  }
+}
+
+/**
+ * Ensure the directories for sitemaps exist
+ */
+async function ensureDirectoriesExist() {
+  try {
+    // Create public directory if it doesn't exist
+    await fs.mkdir(PUBLIC_DIR, { recursive: true });
+    
+    // Create sitemaps directory if it doesn't exist
+    await fs.mkdir(SITEMAPS_DIR, { recursive: true });
+    
+    logger.info(`Sitemap directories created/verified: ${SITEMAPS_DIR}`);
+  } catch (error) {
+    logger.error(`Error creating sitemap directories: ${error.message}`, { error });
+    throw error;
   }
 }
 

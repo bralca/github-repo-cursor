@@ -11,6 +11,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { getConnection } from '../src/db/connection-manager.js';
 
 // Simple logger for render.com compatibility
 const logger = {
@@ -62,11 +63,8 @@ async function initializeDatabase() {
   
   logger.info(`Initializing SQLite database at: ${dbPath}`);
   
-  // Open database connection
-  const db = await open({
-    filename: dbPath,
-    driver: sqlite3.Database
-  });
+  // Get database connection from connection manager
+  const db = await getConnection();
   
   try {
     // Enable foreign keys support
@@ -499,8 +497,6 @@ async function initializeDatabase() {
   } catch (error) {
     logger.error('Error initializing database:', error);
     throw error;
-  } finally {
-    await db.close();
   }
 }
 

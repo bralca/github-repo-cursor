@@ -46,10 +46,18 @@ async function verifyDbConnection() {
     const repoCount = await db.get('SELECT COUNT(*) as count FROM repositories');
     console.log(`Repository count: ${repoCount.count}`);
     
-    // Close connection
-    await db.close();
-    console.log('Database connection closed');
-    console.log('Verification completed successfully');
+    // Check if tables exist
+    const result = await db.get(
+      "SELECT count(*) as count FROM sqlite_master WHERE type='table'"
+    );
+    
+    // Connection is managed by connection manager, no need to close
+    
+    return {
+      connected: true,
+      tableCount: result?.count || 0,
+      error: null
+    };
   } catch (error) {
     console.error('ERROR connecting to database:', error);
     process.exit(1);

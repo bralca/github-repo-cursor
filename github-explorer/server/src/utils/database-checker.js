@@ -10,6 +10,7 @@ import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { getConnection } from '../db/connection-manager.js';
 
 // Get the current directory
 const __filename = fileURLToPath(import.meta.url);
@@ -24,17 +25,11 @@ const DB_PATH = process.env.SQLITE_DB_PATH || DEFAULT_DB_PATH;
 /**
  * Get a database connection
  * @returns {Promise<Object>} SQLite database connection
+ * @deprecated Use getConnection() directly from connection-manager.js
  */
 async function getDbConnection() {
-  try {
-    return await open({
-      filename: DB_PATH,
-      driver: sqlite3.Database
-    });
-  } catch (error) {
-    logger.error('Failed to open SQLite database', { error, path: DB_PATH });
-    throw error;
-  }
+  logger.warn('getDbConnection is deprecated, use getConnection from connection-manager.js');
+  return getConnection();
 }
 
 /**
@@ -44,7 +39,7 @@ async function getDbConnection() {
  */
 export async function tableExists(tableName) {
   try {
-    const db = await getDbConnection();
+    const db = await getConnection();
     
     // Check if table exists by querying the sqlite_master table
     const result = await db.get(
@@ -52,7 +47,7 @@ export async function tableExists(tableName) {
       [tableName]
     );
     
-    await db.close();
+    // Connection is managed by connection manager, no need to close
     
     // If result exists, table exists
     return !!result;
@@ -118,11 +113,12 @@ export async function createFallbackTable(tableName, createTableSql) {
     
     logger.info(`Creating fallback table ${tableName}`);
     
-    const db = await getDbConnection();
+    const db = await getConnection();
     
     // Execute the SQL to create the table
     await db.exec(createTableSql);
-    await db.close();
+    
+    // Connection is managed by connection manager, no need to close
     
     logger.info(`Successfully created table ${tableName}`);
     return true;
