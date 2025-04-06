@@ -1180,7 +1180,7 @@ class PipelineOperationsController extends BaseController {
                 WHERE is_enriched = 0 AND enrichment_attempts < 3
               `);
               repoUnenrichedCount = countResult ? countResult.count : 0;
-              await dbConn.close();
+              // Connection is managed by connection manager, no need to close
               
               // Emit progress event
               pipelineEvents.emit('pipeline_progress', {

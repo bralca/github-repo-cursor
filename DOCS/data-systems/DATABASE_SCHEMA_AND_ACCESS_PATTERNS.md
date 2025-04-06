@@ -499,21 +499,52 @@ const repos = await apiClient.repositories.getAll({ limit: 10, offset: 0 });
 
 ## Connection Management
 
-Database connections are managed through the `withDb` utility function in `lib/database/connection.ts` which:
+Database connections are managed through the connection manager in `github-explorer/server/src/db/connection-manager.js`, which implements a singleton pattern to maintain a persistent SQLite connection throughout the application lifecycle.
 
-1. Opens a connection to SQLite database
-2. Performs the requested operation
-3. Closes the connection when complete
+### Key Features
 
-This ensures proper resource management and prevents connection leaks.
+1. **Persistent Connection**: Maintains a single, long-lived database connection
+2. **Connection Pooling**: Reuses the same connection across multiple requests
+3. **Automatic Recovery**: Detects and recovers from invalid connections
+4. **Graceful Shutdown**: Properly closes the connection when the application shuts down
 
-```typescript
-export async function withDb<T>(operation: (db: any) => Promise<T>): Promise<T> {
-  const db = await getSQLiteDb();
-  try {
-    return await operation(db);
-  } finally {
-    await db.close();
-  }
+### Using the Connection Manager
+
+```javascript
+import { getConnection } from '../db/connection-manager.js';
+
+async function performDatabaseOperation() {
+  // Get the shared database connection
+  const db = await getConnection();
+  
+  // Use the connection for database operations
+  const results = await db.all('SELECT * FROM repositories LIMIT 10');
+  
+  // No need to close the connection - it's managed by the connection manager
+  return results;
 }
 ```
+
+### Best Practices
+
+1. **Never Close Connections Manually**: Don't call `db.close()` on connections from the manager
+2. **Always Use getConnection()**: Avoid creating direct database connections
+3. **Handle Connection Errors**: Implement proper error handling around database operations
+4. **Log Connection Issues**: Use the logger to track connection failures for debugging
+
+### Legacy Connection Methods (Deprecated)
+
+The following methods have been deprecated and should not be used in new code:
+
+- `openSQLiteConnection()` - Use `getConnection()` instead
+- `closeSQLiteConnection()` - Don't close connections manually
+- `withDb()` utility - Use direct `getConnection()` calls instead
+
+### Connection Lifecycle
+
+The connection manager handles the entire lifecycle of the database connection:
+
+1. **Initialization**: Connection is created on first request
+2. **Validation**: Connection is validated before each use
+3. **Recovery**: Invalid connections are automatically recreated
+4. **Cleanup**: Connection is properly closed during application shutdown
