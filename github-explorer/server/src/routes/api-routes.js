@@ -20,7 +20,7 @@ import {
   getContributorRankings,
   getContributorProfileMetadata,
   getContributorProfileData
-} from '../controllers/api/contributors.js';
+} from '../controllers/api/contributors-wrapped.js';
 import { getMergeRequests, getMergeRequestById, getMergeRequestByNumber } from '../controllers/api/merge-requests.js';
 import { getCommits, getCommitById, getCommitBySha } from '../controllers/api/commits.js';
 

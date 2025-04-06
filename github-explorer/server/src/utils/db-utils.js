@@ -4,6 +4,8 @@
  * @param {Object} res - Express response object
  */
 export const handleDbError = (error, res) => {
+  console.log('[DEBUG] Error caught:', error);
+  console.log('[DEBUG] Error stack:', error.stack);
   console.error('Database error:', error);
   
   // Determine status code based on error type
@@ -20,6 +22,9 @@ export const handleDbError = (error, res) => {
   } else if (error.code === 'SQLITE_READONLY') {
     statusCode = 500; // Internal Server Error
     message = 'Database is read-only';
+  } else if (error.code === 'SQLITE_MISUSE') {
+    statusCode = 500; // Internal Server Error
+    message = 'Database connection error';
   }
   
   // Send error response

@@ -16,6 +16,7 @@ import { createSitemapPipeline } from './pipeline/index.js';
 import { initializeRequiredPipelines } from './pipeline/initialize-pipelines.js';
 import runCronJobs from './scripts/run-cron-jobs.js';
 import pipelineOperationsController from './controllers/pipeline-operations-controller.js';
+import { closeConnection, getConnection } from './db/connection-manager.js';
 
 // Import routes
 import healthRoutes from './routes/health.js';
@@ -42,14 +43,29 @@ app.use(express.json({ limit: '5mb' })); // Parse JSON bodies with size limit
 /**
  * Initialize all server components
  */
-function initializeServer() {
+async function initializeServer() {
   try {
+    // Initialize and validate database connection first
+    logger.info('Initializing database connection...');
+    const db = await getConnection();
+    
+    // Validate the connection with a test query
+    try {
+      const result = await db.get('SELECT sqlite_version() as version');
+      logger.info('Database connection validated successfully', { 
+        sqlite_version: result.version,
+        journal_mode: await db.get('PRAGMA journal_mode').then(r => r.journal_mode)
+      });
+    } catch (dbError) {
+      logger.error('Failed to validate database connection', { error: dbError });
+      throw new Error(`Database validation failed: ${dbError.message}`);
+    }
+    
     // Reset any stale pipeline running statuses
     logger.info('Resetting stale pipeline running statuses');
-    pipelineOperationsController.resetAllPipelineStatuses().then(() => {
-      logger.info('Pipeline statuses reset complete');
-    }).catch(error => {
+    await pipelineOperationsController.resetAllPipelineStatuses().catch(error => {
       logger.error('Error resetting pipeline statuses', { error });
+      // Don't throw here - allow server to continue
     });
     
     // Initialize pipelines
@@ -217,14 +233,14 @@ app.post('/api/repositories/:id/process', async (req, res) => {
 /**
  * Start the server
  * @param {number} port - Port to listen on
- * @returns {Object} Express server instance
+ * @returns {Promise<Object>} Express server instance
  */
-function startServer(port) {
+async function startServer(port) {
   try {
     logger.info(`Attempting to start server on port ${port}`);
     
     // Initialize server components
-    initializeServer();
+    await initializeServer();
     
     // Start listening on the specified port
     const server = app.listen(port);
@@ -274,6 +290,47 @@ function startServer(port) {
     process.on('SIGTERM', shutdownServer(server));
     process.on('SIGINT', shutdownServer(server));
     
+    // Handle uncaught exceptions
+    process.on('uncaughtException', async (error) => {
+      logger.error('Uncaught exception, initiating shutdown', { 
+        error, 
+        message: error.message,
+        stack: error.stack
+      });
+      
+      // Close database connection
+      try {
+        logger.info('Closing database connection due to uncaught exception...');
+        await closeConnection();
+        logger.info('Database connection closed successfully');
+      } catch (dbError) {
+        logger.error('Error closing database connection', { error: dbError });
+      }
+      
+      // Exit with error code
+      process.exit(1);
+    });
+    
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', async (reason, promise) => {
+      logger.error('Unhandled promise rejection, initiating shutdown', { 
+        reason, 
+        promise
+      });
+      
+      // Close database connection
+      try {
+        logger.info('Closing database connection due to unhandled rejection...');
+        await closeConnection();
+        logger.info('Database connection closed successfully');
+      } catch (dbError) {
+        logger.error('Error closing database connection', { error: dbError });
+      }
+      
+      // Exit with error code
+      process.exit(1);
+    });
+    
     return server;
   } catch (error) {
     logger.error('Failed to start server', { error });
@@ -283,17 +340,35 @@ function startServer(port) {
 
 // Graceful shutdown function
 function shutdownServer(server) {
-  return () => {
-    logger.info('Received shutdown signal, closing server...');
+  return async () => {
+    logger.info('Received shutdown signal, beginning graceful shutdown...');
+    let shutdownComplete = false;
+    
+    // Close database connection first
+    try {
+      logger.info('Closing database connection...');
+      await closeConnection();
+      logger.info('Database connection closed successfully');
+    } catch (dbError) {
+      logger.error('Error closing database connection', { error: dbError });
+      // Continue with shutdown even if database close fails
+    }
+    
+    // Now close the HTTP server
+    logger.info('Closing HTTP server...');
     server.close(() => {
-      logger.info('Server closed successfully');
+      logger.info('HTTP server closed successfully');
+      shutdownComplete = true;
+      // Exit after all cleanup is done
       process.exit(0);
     });
     
     // Force shutdown after timeout
     setTimeout(() => {
-      logger.error('Server shutdown timed out, forcing exit');
-      process.exit(1);
+      if (!shutdownComplete) {
+        logger.error('Server shutdown timed out after 10 seconds, forcing exit');
+        process.exit(1);
+      }
     }, 10000);
   };
 }

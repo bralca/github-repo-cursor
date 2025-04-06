@@ -21,6 +21,9 @@ import path from 'path';
 import fs from 'fs';
 import { openSQLiteConnection, closeSQLiteConnection } from '../utils/sqlite.js';
 import { pipelineEvents } from '../utils/event-emitter.js';
+import { withTransaction } from '../db/transaction-manager.js';
+import { withRetry } from '../utils/retry.js';
+import { getConnection, closeConnection } from '../db/connection-manager.js';
 
 /**
  * Fetches recent merged pull requests using the GitHub API
@@ -131,104 +134,108 @@ async function getRecentMergedPullRequests(githubClient) {
  * Stores a merged pull request in the SQLite database
  * 
  * @param {Object} prEvent - The pull request event from GitHub
- * @param {Object} db - SQLite database connection
+ * @param {Object} db - SQLite database connection (backward compatibility)
  */
 async function storeMergedPullRequest(prEvent, db) {
-  try {
-    if (!prEvent.payload?.pull_request) {
-      logger.warn('Invalid PR event data - missing payload or pull_request', {
-        event_id: prEvent.id,
-        event_type: prEvent.type,
-        payload_keys: prEvent.payload ? Object.keys(prEvent.payload) : 'null'
-      });
-      return;
-    }
-    
-    const pr = prEvent.payload.pull_request;
-    const repoName = prEvent.repo?.name;
-    
-    if (!repoName) {
-      logger.warn('Invalid PR event data - missing repository name', {
-        event_id: prEvent.id,
-        pr_id: pr.id,
-        pr_number: pr.number
-      });
-      return;
-    }
-    
-    logger.info(`Processing PR #${pr.number} from ${repoName}`, {
+  if (!prEvent.payload?.pull_request) {
+    logger.warn('Invalid PR event data - missing payload or pull_request', {
+      event_id: prEvent.id,
+      event_type: prEvent.type,
+      payload_keys: prEvent.payload ? Object.keys(prEvent.payload) : 'null'
+    });
+    return;
+  }
+  
+  const pr = prEvent.payload.pull_request;
+  const repoName = prEvent.repo?.name;
+  
+  if (!repoName) {
+    logger.warn('Invalid PR event data - missing repository name', {
+      event_id: prEvent.id,
       pr_id: pr.id,
-      pr_title: pr.title,
+      pr_number: pr.number
+    });
+    return;
+  }
+  
+  logger.info(`Processing PR #${pr.number} from ${repoName}`, {
+    pr_id: pr.id,
+    pr_title: pr.title,
+    created_at: pr.created_at,
+    merged_at: pr.merged_at
+  });
+  
+  // The commits should be directly accessible in the payload
+  // Check if they are available at various possible locations
+  const commits = pr.commits_url ? pr._links?.commits?.href : [];
+  logger.debug('Commit data availability', {
+    has_commits_url: Boolean(pr.commits_url),
+    has_commits_href: Boolean(pr._links?.commits?.href),
+    commit_count: pr.commits || 0
+  });
+  
+  // Extract the needed data in a format similar to the legacy implementation
+  const data = {
+    repository: {
+      id: prEvent.repo.id,
+      full_name: repoName,
+      owner: repoName.split('/')[0],
+      description: pr.base?.repo?.description,
+      url: pr.base?.repo?.html_url,
+      stars: pr.base?.repo?.stargazers_count || 0,
+      forks: pr.base?.repo?.forks_count || 0
+    },
+    pull_request: {
+      id: pr.id,
+      pr_number: pr.number,
+      title: pr.title,
+      body: pr.body,
+      state: pr.state,
       created_at: pr.created_at,
-      merged_at: pr.merged_at
-    });
-    
-    // The commits should be directly accessible in the payload
-    // Check if they are available at various possible locations
-    const commits = pr.commits_url ? pr._links?.commits?.href : [];
-    logger.debug('Commit data availability', {
-      has_commits_url: Boolean(pr.commits_url),
-      has_commits_href: Boolean(pr._links?.commits?.href),
-      commit_count: pr.commits || 0
-    });
-    
-    // Extract the needed data in a format similar to the legacy implementation
-    const data = {
-      repository: {
-        id: prEvent.repo.id,
-        full_name: repoName,
-        owner: repoName.split('/')[0],
-        description: pr.base?.repo?.description,
-        url: pr.base?.repo?.html_url,
-        stars: pr.base?.repo?.stargazers_count || 0,
-        forks: pr.base?.repo?.forks_count || 0
-      },
-      pull_request: {
-        id: pr.id,
-        pr_number: pr.number,
-        title: pr.title,
-        body: pr.body,
-        state: pr.state,
-        created_at: pr.created_at,
-        updated_at: pr.updated_at,
-        closed_at: pr.closed_at,
-        merged_at: pr.merged_at,
-        user: pr.user,
-        merged_by: pr.merged_by,
-        review_comments: pr.review_comments,
-        commits_count: pr.commits,
-        additions: pr.additions,
-        deletions: pr.deletions,
-        changed_files: pr.changed_files,
-        labels: pr.labels,
-        base: pr.base,
-        head: pr.head,
-        commits_url: pr.commits_url
-      },
-      // If there are commits directly in the PR object, include them
-      commits: Array.isArray(pr.commits) ? pr.commits : []
-    };
-    
-    // Log the extracted data structure
-    logger.debug('Extracted PR data structure', {
-      pr_id: pr.id,
-      repository_id: data.repository.id,
-      user_login: data.pull_request.user?.login,
-      merged_by: data.pull_request.merged_by?.login,
-      commit_data_included: Boolean(data.commits && data.commits.length > 0)
-    });
-    
-    // Convert the data to JSON string
-    const jsonData = JSON.stringify(data);
-    const prId = pr.id.toString();
-    
-    logger.info(`Checking if PR #${pr.number} already exists in database`, {
-      pr_id: prId,
-      repo: repoName
-    });
+      updated_at: pr.updated_at,
+      closed_at: pr.closed_at,
+      merged_at: pr.merged_at,
+      user: pr.user,
+      merged_by: pr.merged_by,
+      review_comments: pr.review_comments,
+      commits_count: pr.commits,
+      additions: pr.additions,
+      deletions: pr.deletions,
+      changed_files: pr.changed_files,
+      labels: pr.labels,
+      base: pr.base,
+      head: pr.head,
+      commits_url: pr.commits_url
+    },
+    // If there are commits directly in the PR object, include them
+    commits: Array.isArray(pr.commits) ? pr.commits : []
+  };
+  
+  // Log the extracted data structure
+  logger.debug('Extracted PR data structure', {
+    pr_id: pr.id,
+    repository_id: data.repository.id,
+    user_login: data.pull_request.user?.login,
+    merged_by: data.pull_request.merged_by?.login,
+    commit_data_included: Boolean(data.commits && data.commits.length > 0)
+  });
+  
+  // Convert the data to JSON string
+  const jsonData = JSON.stringify(data);
+  const prId = pr.id.toString();
+  
+  logger.info(`Storing PR #${pr.number} from ${repoName} with retry and transaction support`, {
+    pr_id: prId,
+    repo: repoName
+  });
+  
+  // Use withTransaction to handle both transaction management and retries
+  await withTransaction(async (connection) => {
+    // For backward compatibility, use the provided db connection if available
+    const dbConnection = db || connection;
     
     // Check if this PR already exists in the database
-    const existingPR = await db.get(
+    const existingPR = await dbConnection.get(
       `SELECT id FROM closed_merge_requests_raw 
        WHERE json_extract(data, '$.pull_request.id') = ?`,
       [prId]
@@ -242,26 +249,17 @@ async function storeMergedPullRequest(prEvent, db) {
         repo: repoName
       });
       
-      try {
-        await db.run(
-          `UPDATE closed_merge_requests_raw 
-           SET data = ? 
-           WHERE id = ?`,
-          [jsonData, existingPR.id]
-        );
-        logger.info(`Successfully updated PR #${pr.number} in database`, {
-          pr_id: prId,
-          db_id: existingPR.id
-        });
-      } catch (dbError) {
-        logger.error(`Database error updating PR #${pr.number}`, {
-          error: dbError,
-          message: dbError.message,
-          pr_id: prId,
-          db_id: existingPR.id
-        });
-        throw dbError;
-      }
+      await dbConnection.run(
+        `UPDATE closed_merge_requests_raw 
+         SET data = ? 
+         WHERE id = ?`,
+        [jsonData, existingPR.id]
+      );
+      
+      logger.info(`Successfully updated PR #${pr.number} in database`, {
+        pr_id: prId,
+        db_id: existingPR.id
+      });
     } else {
       // PR is new, insert it
       logger.info(`Storing new PR #${pr.number} from ${repoName}`, {
@@ -269,24 +267,16 @@ async function storeMergedPullRequest(prEvent, db) {
         repo: repoName
       });
       
-      try {
-        const result = await db.run(
-          'INSERT INTO closed_merge_requests_raw (data, is_processed) VALUES (?, ?)',
-          [jsonData, 0]  // 0 means not processed yet
-        );
-        logger.info(`Successfully inserted new PR #${pr.number} in database`, {
-          pr_id: prId,
-          db_id: result.lastID,
-          changes: result.changes
-        });
-      } catch (dbError) {
-        logger.error(`Database error inserting PR #${pr.number}`, {
-          error: dbError,
-          message: dbError.message,
-          pr_id: prId
-        });
-        throw dbError;
-      }
+      const result = await dbConnection.run(
+        'INSERT INTO closed_merge_requests_raw (data, is_processed) VALUES (?, ?)',
+        [jsonData, 0]  // 0 means not processed yet
+      );
+      
+      logger.info(`Successfully inserted new PR #${pr.number} in database`, {
+        pr_id: prId,
+        db_id: result.lastID,
+        changes: result.changes
+      });
     }
     
     // Log information about commits (if any were found)
@@ -297,16 +287,12 @@ async function storeMergedPullRequest(prEvent, db) {
       repo: repoName,
       commit_count: commitCount
     });
-  } catch (error) {
-    logger.error('Error storing pull request data:', { 
-      error,
-      message: error.message,
-      stack: error.stack,
-      pr_id: prEvent.payload?.pull_request?.id,
-      repo: prEvent.repo?.name
-    });
-    throw error;
-  }
+  }, {
+    // Retry configuration
+    retries: 3,
+    initialDelay: 100,
+    maxDelay: 2000
+  });
 }
 
 /**
@@ -604,9 +590,9 @@ class PipelineOperationsController extends BaseController {
         token_length: process.env.GITHUB_TOKEN ? `${process.env.GITHUB_TOKEN.length} chars` : 'none'
       });
       
-      // Step 3: Set up database connection
-      logger.info('Step 3: Setting up database connection');
-      const db = await openSQLiteConnection();
+      // Step 3: Set up database connection using connection manager
+      logger.info('Step 3: Getting database connection');
+      const db = await getConnection();
       logger.info('Database connection established');
       
       // Check if we can read from the database
