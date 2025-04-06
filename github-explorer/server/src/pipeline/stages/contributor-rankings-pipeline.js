@@ -11,7 +11,7 @@
 import { pipelineFactory } from '../core/pipeline-factory.js';
 import { BaseStage } from '../core/base-stage.js';
 import { logger } from '../../utils/logger.js';
-import { openSQLiteConnection, closeSQLiteConnection } from '../../utils/sqlite.js';
+import { getConnection } from '../../db/connection-manager.js';
 
 /**
  * Stage for generating contributor rankings
@@ -55,8 +55,8 @@ class ContributorRankingsStage extends BaseStage {
     };
     
     try {
-      // Open database connection
-      const db = await openSQLiteConnection();
+      // Get database connection
+      const db = await getConnection();
       
       try {
         // Get contributors to rank
@@ -95,9 +95,6 @@ class ContributorRankingsStage extends BaseStage {
           message: error.message,
           stack: error.stack
         });
-      } finally {
-        // Close database connection
-        await closeSQLiteConnection(db);
       }
       
       // Update context with stats

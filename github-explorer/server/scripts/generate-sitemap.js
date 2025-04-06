@@ -8,7 +8,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { XMLBuilder } from 'fast-xml-parser';
-import { openSQLiteConnection, closeSQLiteConnection } from '../src/utils/sqlite.js';
+import { getConnection } from '../src/db/connection-manager.js';
 import { logger } from '../src/utils/logger.js';
 import { fileURLToPath } from 'url';
 
@@ -278,7 +278,7 @@ async function generateAllSitemaps() {
     await ensureDirectoriesExist();
     
     // Connect to the database
-    db = await openSQLiteConnection();
+    db = await getConnection();
     
     // Update sitemap_status to indicate generation has started
     await db.run(`
@@ -339,7 +339,7 @@ async function generateAllSitemaps() {
     return false;
   } finally {
     if (db) {
-      await closeSQLiteConnection(db);
+      await db.close();
     }
   }
 }

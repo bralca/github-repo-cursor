@@ -1,4 +1,4 @@
-import { openSQLiteConnection, closeSQLiteConnection } from './sqlite.js';
+import { getConnection } from '../db/connection-manager.js';
 
 /**
  * Helper function to manage database connections
@@ -6,12 +6,10 @@ import { openSQLiteConnection, closeSQLiteConnection } from './sqlite.js';
  * @returns {Promise<any>} - Result of the operation
  */
 export async function withDb(operation) {
-  const db = await openSQLiteConnection();
+  const db = await getConnection();
   try {
     return await operation(db);
-  } finally {
-    if (db) {
-      await closeSQLiteConnection(db);
-    }
+  } catch (error) {
+    throw error;
   }
 } 

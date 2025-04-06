@@ -1,4 +1,4 @@
-import { openSQLiteConnection, closeSQLiteConnection } from '../../utils/sqlite.js';
+import { getConnection } from '../../db/connection-manager.js';
 import { cacheOrCompute, generateCacheKey } from '../../utils/cache.js';
 import { setupLogger } from '../../utils/logger.js';
 
@@ -43,9 +43,8 @@ export async function getEntityCounts(req, res) {
  * @returns {Promise<object>} Entity counts
  */
 async function fetchEntityCountsFromDb() {
-  let db = null;
   try {
-    db = await openSQLiteConnection();
+    const db = await getConnection();
     
     // Basic entity counts
     const repositories = await db.get('SELECT COUNT(*) as count FROM repositories');
@@ -137,9 +136,5 @@ async function fetchEntityCountsFromDb() {
   } catch (error) {
     logger.error('Error fetching entity counts from database:', { error });
     throw error;
-  } finally {
-    if (db) {
-      await closeSQLiteConnection(db);
-    }
   }
 } 

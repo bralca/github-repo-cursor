@@ -1,4 +1,4 @@
-import { openSQLiteConnection, closeSQLiteConnection } from '../../utils/sqlite.js';
+import { getConnection } from '../../db/connection-manager.js';
 import { randomUUID } from 'crypto';
 import { withDb } from '../../utils/db.js';
 import { cacheOrCompute, generateCacheKey } from '../../utils/cache.js';
@@ -176,9 +176,8 @@ async function getRankingsByTimeframe(req, res, timeframe) {
  * @returns {Promise<Object>} Rankings data with metadata
  */
 async function fetchRankingsByTimeframeFromDb(timeframe) {
-  let db = null;
   try {
-    db = await openSQLiteConnection();
+    const db = await getConnection();
     
     // For now, we just return the latest rankings regardless of timeframe
     // In the future, we can implement filtering by date if needed
@@ -243,10 +242,6 @@ async function fetchRankingsByTimeframeFromDb(timeframe) {
   } catch (error) {
     logger.error(`Error fetching rankings for timeframe ${timeframe}:`, error);
     throw error;
-  } finally {
-    if (db) {
-      await closeSQLiteConnection(db);
-    }
   }
 }
 
@@ -262,7 +257,7 @@ async function calculateRankings(req, res) {
     await ensureRankingsTableExists();
     
     console.log('Starting to calculate contributor rankings...');
-    db = await openSQLiteConnection();
+    db = await getConnection();
     
     // Generate a timestamp for this calculation batch
     const calculationTimestamp = new Date().toISOString();
@@ -585,7 +580,7 @@ async function calculateRankings(req, res) {
     });
   } finally {
     if (db) {
-      await closeSQLiteConnection(db);
+      await db.close();
     }
   }
 }
@@ -675,68 +670,38 @@ async function getMostCollaborativeMergeRequest(db, contributorId) {
 }
 
 /**
- * Ensure the contributor_rankings table exists
+ * Ensure rankings table exists
  */
 async function ensureRankingsTableExists() {
-  await withDb(async (db) => {
-    // Check if the table already exists
-    const tableExists = await db.get(`
-      SELECT name FROM sqlite_master 
-      WHERE type='table' AND name='contributor_rankings'
-    `);
+  try {
+    const db = await getConnection();
     
-    // If the table doesn't exist, create it
+    // Check if table exists
+    const tableExists = await db.get(
+      `SELECT name FROM sqlite_master WHERE type='table' AND name='contributor_rankings'`
+    );
+    
     if (!tableExists) {
-      await db.run(`
+      // Create the table if it doesn't exist
+      await db.exec(`
         CREATE TABLE contributor_rankings (
           id TEXT PRIMARY KEY,
           contributor_id TEXT NOT NULL,
-          contributor_github_id INTEGER NOT NULL,
           rank_position INTEGER NOT NULL,
-          total_score REAL NOT NULL,
-          code_volume_score REAL NOT NULL,
-          code_efficiency_score REAL NOT NULL,
-          commit_impact_score REAL NOT NULL,
-          collaboration_score REAL NOT NULL,
-          repo_popularity_score REAL NOT NULL,
-          repo_influence_score REAL NOT NULL,
-          followers_score REAL NOT NULL,
-          profile_completeness_score REAL NOT NULL,
-          followers_count INTEGER,
-          raw_lines_added INTEGER,
-          raw_lines_removed INTEGER,
-          raw_commits_count INTEGER,
-          repositories_contributed INTEGER,
-          calculation_timestamp TIMESTAMP NOT NULL
-        )
+          metrics TEXT,
+          score REAL,
+          rank_change INTEGER,
+          calculation_timestamp TEXT NOT NULL,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX idx_contributor_rankings_contributor_id ON contributor_rankings(contributor_id);
+        CREATE INDEX idx_contributor_rankings_timestamp ON contributor_rankings(calculation_timestamp);
       `);
       
-      // Create indices for efficient querying
-      await db.run(`CREATE INDEX idx_contributor_rankings_contributor_id ON contributor_rankings(contributor_id)`);
-      await db.run(`CREATE INDEX idx_contributor_rankings_timestamp ON contributor_rankings(calculation_timestamp)`);
-      await db.run(`CREATE INDEX idx_contributor_rankings_rank ON contributor_rankings(rank_position)`);
-    } else {
-      // Check for missing columns and add them if needed
-      
-      // Check if the collaboration_score column exists
-      try {
-        await db.get(`SELECT collaboration_score FROM contributor_rankings LIMIT 1`);
-      } catch (e) {
-        // If the column doesn't exist, add it
-        if (e.message.includes('no such column')) {
-          await db.run(`ALTER TABLE contributor_rankings ADD COLUMN collaboration_score REAL DEFAULT 30`);
-        }
-      }
-      
-      // Check if the repo_popularity_score column exists
-      try {
-        await db.get(`SELECT repo_popularity_score FROM contributor_rankings LIMIT 1`);
-      } catch (e) {
-        // If the column doesn't exist, add it
-        if (e.message.includes('no such column')) {
-          await db.run(`ALTER TABLE contributor_rankings ADD COLUMN repo_popularity_score REAL DEFAULT 0`);
-        }
-      }
+      logger.info('Created contributor_rankings table');
     }
-  });
+  } catch (error) {
+    logger.error('Error ensuring rankings table exists:', error);
+    throw error;
+  }
 } 

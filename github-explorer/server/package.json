@@ -42,6 +42,7 @@
     "sqlite3": "^5.1.6",
     "uuid": "^9.0.0",
     "winston": "^3.8.2",
+    "xmlbuilder": "^15.1.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {

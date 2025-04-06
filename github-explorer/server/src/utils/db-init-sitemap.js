@@ -5,55 +5,84 @@
  * Creates the sitemap_metadata table if it doesn't exist.
  */
 
-import { openSQLiteConnection, closeSQLiteConnection } from './sqlite.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { logger } from './logger.js';
+import { getConnection } from '../db/connection-manager.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * Initialize the sitemap_metadata table if it doesn't exist
  * @returns {Promise<void>}
  */
 export async function initSitemapTable() {
-  let db = null;
-  
   try {
-    logger.info('Initializing sitemap_metadata table...');
-    db = await openSQLiteConnection();
+    const db = await getConnection();
     
-    // Create the sitemap_metadata table if it doesn't exist
-    const createTableSql = `
-      CREATE TABLE IF NOT EXISTS sitemap_metadata (
-        entity_type TEXT PRIMARY KEY,
-        current_page INTEGER NOT NULL DEFAULT 1,
-        url_count INTEGER NOT NULL DEFAULT 0,
-        last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
+    // Check if table exists
+    const tableExists = await db.get(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='sitemap_metadata'"
+    );
     
-    await db.exec(createTableSql);
-    
-    // Check if we need to populate initial entity types
-    const existingTypes = await db.all('SELECT entity_type FROM sitemap_metadata');
-    const requiredTypes = ['repositories', 'contributors', 'merge_requests'];
-    
-    // Insert initial records for each entity type if they don't exist
-    for (const type of requiredTypes) {
-      if (!existingTypes.some(row => row.entity_type === type)) {
-        await db.run(
-          'INSERT INTO sitemap_metadata (entity_type, current_page, url_count) VALUES (?, ?, ?)',
-          [type, 1, 0]
-        );
-        logger.info(`Initialized sitemap_metadata for entity type: ${type}`);
-      }
+    if (!tableExists) {
+      logger.info('Creating sitemap_metadata table');
+      
+      // Create the table
+      await db.run(`
+        CREATE TABLE IF NOT EXISTS sitemap_metadata (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          entity_type TEXT NOT NULL UNIQUE,
+          file_path TEXT,
+          url_count INTEGER DEFAULT 0,
+          last_build_date TEXT,
+          current_page INTEGER DEFAULT 0,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      // Initialize with default entity types
+      await db.run(`
+        INSERT INTO sitemap_metadata (entity_type) VALUES 
+        ('repositories'),
+        ('contributors'),
+        ('merge_requests'),
+        ('commits')
+      `);
+      
+      logger.info('Sitemap_metadata table created and initialized');
     }
-    
-    logger.info('Sitemap database initialization completed successfully');
   } catch (error) {
-    logger.error(`Error initializing sitemap database schema: ${error.message}`, { error });
+    logger.error(`Error initializing sitemap table: ${error.message}`, { error });
     throw error;
-  } finally {
-    if (db) {
-      await closeSQLiteConnection(db);
+  }
+}
+
+/**
+ * Ensure the sitemap directory exists
+ * @returns {Promise<string>} Path to the sitemap directory
+ */
+export async function ensureSitemapDirectory() {
+  try {
+    const db = await getConnection();
+    
+    // Get the sitemap directory path
+    const sitemapDir = path.join(__dirname, '../../public/sitemap');
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(sitemapDir)) {
+      fs.mkdirSync(sitemapDir, { recursive: true });
+      logger.info(`Created sitemap directory: ${sitemapDir}`);
     }
+    
+    return sitemapDir;
+  } catch (error) {
+    logger.error(`Error ensuring sitemap directory: ${error.message}`, { error });
+    throw error;
   }
 }
 
@@ -66,7 +95,7 @@ export async function resetSitemapMetadata() {
   
   try {
     logger.info('Resetting sitemap metadata...');
-    db = await openSQLiteConnection();
+    db = await getConnection();
     
     await db.run(`
       UPDATE sitemap_metadata
@@ -79,9 +108,9 @@ export async function resetSitemapMetadata() {
     throw error;
   } finally {
     if (db) {
-      await closeSQLiteConnection(db);
+      await db.close();
     }
   }
 }
 
-export default { initSitemapTable, resetSitemapMetadata }; 
+export default { initSitemapTable, resetSitemapMetadata, ensureSitemapDirectory }; 

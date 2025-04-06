@@ -19,7 +19,6 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import path from 'path';
 import fs from 'fs';
-import { openSQLiteConnection, closeSQLiteConnection } from '../utils/sqlite.js';
 import { pipelineEvents } from '../utils/event-emitter.js';
 import { withTransaction } from '../db/transaction-manager.js';
 import { withRetry } from '../utils/retry.js';
@@ -315,23 +314,19 @@ class PipelineOperationsController extends BaseController {
       }
       
       // Check if the pipeline is already running
-      const db = await openSQLiteConnection();
-      try {
-        const pipelineStatus = await db.get(
-          'SELECT is_running FROM pipeline_status WHERE pipeline_type = ?',
-          [pipeline_type]
-        );
-        
-        if (pipelineStatus && pipelineStatus.is_running === 1) {
-          logger.info(`Pipeline ${pipeline_type} is already running, skipping execution`);
-          return res.json({
-            success: false,
-            message: `${pipeline_type} pipeline is already running`,
-            alreadyRunning: true
-          });
-        }
-      } finally {
-        await closeSQLiteConnection(db);
+      const db = await getConnection();
+      const pipelineStatus = await db.get(
+        'SELECT is_running FROM pipeline_status WHERE pipeline_type = ?',
+        [pipeline_type]
+      );
+      
+      if (pipelineStatus && pipelineStatus.is_running === 1) {
+        logger.info(`Pipeline ${pipeline_type} is already running, skipping execution`);
+        return res.json({
+          success: false,
+          message: `${pipeline_type} pipeline is already running`,
+          alreadyRunning: true
+        });
       }
       
       // Determine whether this is a direct execution or a scheduled pipeline
@@ -412,9 +407,8 @@ class PipelineOperationsController extends BaseController {
    * @private
    */
   async updatePipelineStatus(pipelineType, status, isRunning) {
-    let db = null;
     try {
-      db = await openSQLiteConnection();
+      const db = await getConnection();
       
       // Check if there's an entry in the pipeline_status table
       const existingStatus = await db.get(
@@ -447,8 +441,6 @@ class PipelineOperationsController extends BaseController {
       logger.info(`Updated pipeline status for ${pipelineType} to ${status}, is_running=${isRunning}`);
     } catch (error) {
       logger.error(`Error updating pipeline status for ${pipelineType}:`, { error });
-    } finally {
-      if (db) await closeSQLiteConnection(db);
     }
   }
   
@@ -717,7 +709,7 @@ class PipelineOperationsController extends BaseController {
       
       // Step 8: Get stats for unprocessed items
       logger.info('Step 8: Getting stats for unprocessed items');
-      const statsDb = await openSQLiteConnection();
+      const statsDb = await getConnection();
       
       let unprocessedCount = 0;
       try {
@@ -799,7 +791,7 @@ class PipelineOperationsController extends BaseController {
     
     try {
       // Set up database connection
-      const db = await openSQLiteConnection();
+      const db = await getConnection();
       
       // Check if the closed_merge_requests_raw table exists with the correct structure
       const tableExists = await db.get(
@@ -919,7 +911,7 @@ class PipelineOperationsController extends BaseController {
       };
       
       // Open a database connection
-      const db = await openSQLiteConnection();
+      const db = await getConnection();
       
       try {
         // First, mark all contributors without github_id as enriched to prevent repeated processing
@@ -1093,7 +1085,7 @@ class PipelineOperationsController extends BaseController {
         let repoUnenrichedCount = 1;
         
         // Get database connection for counts
-        const db = await openSQLiteConnection();
+        const db = await getConnection();
         
         // Get counts for progress tracking
         repoUnenrichedCount = await db.get(`
@@ -1112,7 +1104,7 @@ class PipelineOperationsController extends BaseController {
           // Create repository enricher for processing batches
           const repositoryEnricher = new RepositoryEnricher({ 
             githubClient, 
-            db: await openSQLiteConnection(),
+            db: await getConnection(),
             config: { batchSize }
           });
           
@@ -1181,7 +1173,7 @@ class PipelineOperationsController extends BaseController {
               }
               
               // Get updated count for next iteration
-              const dbConn = await openSQLiteConnection();
+              const dbConn = await getConnection();
               const countResult = await dbConn.get(`
                 SELECT COUNT(*) as count 
                 FROM repositories 
@@ -1350,7 +1342,7 @@ class PipelineOperationsController extends BaseController {
       // For now, we'll just update the history record
       
       // Update the pipeline history with a stopped status
-      const { error } = await openSQLiteConnection()
+      const { error } = await getConnection()
         .from('pipeline_history')
         .update({
           status: 'failed',
@@ -1443,7 +1435,7 @@ class PipelineOperationsController extends BaseController {
       if (historyId && typeof historyId === 'string' && historyId.includes('-')) {
         // Only update Supabase if we have a properly formatted UUID
         try {
-          const { error } = await openSQLiteConnection()
+          const { error } = await getConnection()
             .from('pipeline_history')
             .update(data)
             .eq('id', historyId);
@@ -2146,7 +2138,7 @@ class PipelineOperationsController extends BaseController {
       logger.info('Reviewing database documentation and schema requirements');
       
       // Step 2: Establish database connection
-      const db = await openSQLiteConnection();
+      const db = await getConnection();
       
       // Step 3: Check if closed_merge_requests_raw table exists and has correct structure
       logger.info('Checking if closed_merge_requests_raw table exists');
@@ -2442,7 +2434,7 @@ class PipelineOperationsController extends BaseController {
       }
       
       // Open database connection
-      const db = await openSQLiteConnection();
+      const db = await getConnection();
       
       // Determine if we need to fetch and add commits
       let dataToStore = pullRequestData;
@@ -2563,9 +2555,8 @@ class PipelineOperationsController extends BaseController {
       }
       
       // Update the pipeline status to running
-      let db = null;
       try {
-        db = await openSQLiteConnection();
+        const db = await getConnection();
         
         // Check if there's an entry in the pipeline_status table
         const existingStatus = await db.get(
@@ -2588,8 +2579,6 @@ class PipelineOperationsController extends BaseController {
         }
       } catch (dbError) {
         logger.error('Database error updating pipeline status:', { error: dbError });
-      } finally {
-        if (db) await closeSQLiteConnection(db);
       }
       
       // Execute the pipeline
@@ -2608,15 +2597,13 @@ class PipelineOperationsController extends BaseController {
       
       // Update the pipeline status to completed
       try {
-        db = await openSQLiteConnection();
+        const db = await getConnection();
         await db.run(
           'UPDATE pipeline_status SET status = ?, is_running = 0 WHERE pipeline_type = ?',
           ['completed', 'sitemap_generation']
         );
       } catch (dbError) {
         logger.error('Database error updating pipeline status:', { error: dbError });
-      } finally {
-        if (db) await closeSQLiteConnection(db);
       }
       
       logger.info('Sitemap generation pipeline completed successfully');
@@ -2631,12 +2618,11 @@ class PipelineOperationsController extends BaseController {
       
       // Update the pipeline status to failed
       try {
-        const db = await openSQLiteConnection();
+        const db = await getConnection();
         await db.run(
           'UPDATE pipeline_status SET status = ?, is_running = 0 WHERE pipeline_type = ?',
           ['failed', 'sitemap_generation']
         );
-        await closeSQLiteConnection(db);
       } catch (dbError) {
         logger.error('Database error updating pipeline status:', { error: dbError });
       }
@@ -2661,7 +2647,7 @@ class PipelineOperationsController extends BaseController {
     
     try {
       // Open a database connection
-      const db = await openSQLiteConnection();
+      const db = await getConnection();
       
       try {
         // Check if pipeline_history table exists
@@ -2732,7 +2718,7 @@ class PipelineOperationsController extends BaseController {
     
     try {
       // Open a database connection
-      const db = await openSQLiteConnection();
+      const db = await getConnection();
       
       try {
         // Update the history entry
@@ -2798,7 +2784,7 @@ class PipelineOperationsController extends BaseController {
       const maxPasses = processAllItems ? 100 : 1; // Limit to prevent infinite loops
       
       // Get database connection for counts
-      const db = await openSQLiteConnection();
+      const db = await getConnection();
       
       // Get counts for progress tracking
       const contribUnenrichedCount = await db.get(`
@@ -2817,7 +2803,7 @@ class PipelineOperationsController extends BaseController {
         // Create contributor enricher
         const contributorEnricher = new ContributorEnricher({
           githubClient,
-          db: await openSQLiteConnection(),
+          db: await getConnection(),
           config: { batchSize }
         });
         
@@ -2888,7 +2874,7 @@ class PipelineOperationsController extends BaseController {
             }
             
             // Get updated count for next iteration
-            const dbConn = await openSQLiteConnection();
+            const dbConn = await getConnection();
             const countResult = await dbConn.get(`
               SELECT COUNT(*) as count 
               FROM contributors 
@@ -2997,7 +2983,7 @@ class PipelineOperationsController extends BaseController {
       const maxPasses = processAllItems ? 100 : 1; // Limit to prevent infinite loops
       
       // Get database connection for counts
-      const db = await openSQLiteConnection();
+      const db = await getConnection();
       
       // Get counts for progress tracking
       const mrUnenrichedCount = await db.get(`
@@ -3014,7 +3000,7 @@ class PipelineOperationsController extends BaseController {
       // Only continue with merge request enrichment if there are unenriched items
       if (remainingCount > 0) {
         // Create a database connection and MR enricher
-        const dbConn = await openSQLiteConnection();
+        const dbConn = await getConnection();
         const mrEnricher = new MergeRequestEnricher(dbConn, githubClient);
         
         // Loop and process merge requests in batches
@@ -3243,7 +3229,7 @@ class PipelineOperationsController extends BaseController {
       // For now, we'll just update the history record
       
       // Update the pipeline history with a stopped status
-      const { error } = await openSQLiteConnection()
+      const { error } = await getConnection()
         .from('pipeline_history')
         .update({
           status: 'failed',
@@ -3336,7 +3322,7 @@ class PipelineOperationsController extends BaseController {
       if (historyId && typeof historyId === 'string' && historyId.includes('-')) {
         // Only update Supabase if we have a properly formatted UUID
         try {
-          const { error } = await openSQLiteConnection()
+          const { error } = await getConnection()
             .from('pipeline_history')
             .update(data)
             .eq('id', historyId);
@@ -3992,10 +3978,9 @@ class PipelineOperationsController extends BaseController {
    * @returns {Promise<void>}
    */
   async resetAllPipelineStatuses() {
-    let db = null;
     try {
       logger.info('Resetting all pipeline running statuses to prevent stale states');
-      db = await openSQLiteConnection();
+      const db = await getConnection();
       
       // Update all pipelines to not running
       await db.run('UPDATE pipeline_status SET is_running = 0 WHERE is_running = 1');
@@ -4011,8 +3996,6 @@ class PipelineOperationsController extends BaseController {
       }
     } catch (error) {
       logger.error('Error resetting pipeline statuses:', { error });
-    } finally {
-      if (db) await closeSQLiteConnection(db);
     }
   }
 }

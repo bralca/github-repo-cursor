@@ -11,185 +11,196 @@
 
 import { pipelineFactory } from '../core/pipeline-factory.js';
 import { BaseStage } from '../core/base-stage.js';
+import { getConnection } from '../../db/connection-manager.js';
 import { logger } from '../../utils/logger.js';
-import { openSQLiteConnection, closeSQLiteConnection } from '../../utils/sqlite.js';
-import fs from 'fs/promises';
+import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
- * Stage for generating XML sitemaps
+ * Pipeline stage for generating XML sitemaps
  */
-class SitemapGeneratorStage extends BaseStage {
-  /**
-   * Create a new sitemap generator stage
-   * @param {Object} options - Processor options
-   */
-  constructor(options = {}) {
-    super({
-      name: 'generate-sitemap',
-      abortOnError: true,
-      config: {
-        maxUrlsPerFile: 50000,
-        outputDir: options.outputDir || './public/sitemaps',
-        baseUrl: options.baseUrl || 'https://github-explorer.example.com',
-        entityTypes: ['repository', 'contributor', 'organization'],
-        ...options.config
-      }
-    });
+export default class SitemapGenerationPipeline extends BaseStage {
+  constructor() {
+    super('sitemap-generation');
+    this.logger = logger;
   }
   
   /**
-   * Execute the stage processing
-   * @param {Object} context - Pipeline context
-   * @param {Object} pipelineConfig - Pipeline configuration
-   * @returns {Promise<Object>} Updated pipeline context
+   * Process and generate sitemaps
+   * @returns {Promise<Object>} Result of processing
    */
-  async execute(context, pipelineConfig) {
-    this.log('info', '======================================');
-    this.log('info', '🔄 RUNNING PIPELINE: SITEMAP GENERATION');
-    this.log('info', '🌐 STEP: Generating XML Sitemaps');
-    this.log('info', '======================================');
-    this.log('info', `Started at: ${new Date().toISOString()}`);
-    
-    // Initialize stats for reporting
-    const stats = {
-      totalEntities: 0,
-      entitiesByType: {},
-      sitemapFiles: [],
-      errors: []
-    };
+  async process() {
+    this.logger.info('Starting sitemap generation');
     
     try {
-      // Create output directory if it doesn't exist
-      await this.ensureDirectoryExists(this.config.outputDir);
-      this.log('info', `📊 PROGRESS: Output directory ensured: ${this.config.outputDir}`);
+      const db = await getConnection();
       
-      // Open database connection
-      const db = await openSQLiteConnection();
+      // Ensure sitemap directory exists
+      const sitemapDir = path.join(__dirname, '../../../../public/sitemaps');
+      if (!fs.existsSync(sitemapDir)) {
+        fs.mkdirSync(sitemapDir, { recursive: true });
+        this.logger.info(`Created sitemap directory: ${sitemapDir}`);
+      }
+      
+      // Start transaction for database operations
+      await db.run('BEGIN TRANSACTION');
       
       try {
-        // Generate sitemap for each entity type
-        for (const entityType of this.config.entityTypes) {
-          this.log('info', `📊 PROGRESS: Generating sitemap for entity type: ${entityType}`);
+        // Generate sitemaps for each entity type
+        const entityTypes = ['repositories', 'contributors', 'merge_requests'];
+        const results = {};
+        
+        for (const entityType of entityTypes) {
+          this.logger.info(`Generating sitemap for ${entityType}`);
           
-          try {
-            // Get all entities of this type
-            const entities = await this.getEntities(db, entityType);
-            
-            if (entities && entities.length > 0) {
-              stats.totalEntities += entities.length;
-              stats.entitiesByType[entityType] = entities.length;
+          // Get entity data from database
+          let entities = [];
+          switch (entityType) {
+            case 'repositories':
+              entities = await db.all(`
+                SELECT id, name, full_name, slug
+                FROM repositories
+                WHERE is_enriched = 1
+                LIMIT 50000
+              `);
+              break;
               
-              this.log('info', `📊 PROGRESS: Found ${entities.length} ${entityType} entities for sitemap`);
+            case 'contributors':
+              entities = await db.all(`
+                SELECT id, username, name
+                FROM contributors
+                WHERE is_enriched = 1
+                LIMIT 50000
+              `);
+              break;
               
-              // Create sitemap files for this entity type
-              const sitemapFiles = await this.generateSitemapFiles(entityType, entities);
-              stats.sitemapFiles.push(...sitemapFiles);
-              
-              this.log('info', `📊 PROGRESS: Generated ${sitemapFiles.length} sitemap files for ${entityType}`);
-            } else {
-              this.log('info', `📊 PROGRESS: No ${entityType} entities found for sitemap`);
-              stats.entitiesByType[entityType] = 0;
-            }
-          } catch (error) {
-            this.log('error', `Error generating sitemap for ${entityType}: ${error.message}`, { error });
-            stats.errors.push({
-              message: error.message,
-              stack: error.stack,
-              entityType
-            });
+            case 'merge_requests':
+              entities = await db.all(`
+                SELECT mr.id, mr.number, r.full_name
+                FROM merge_requests mr
+                JOIN repositories r ON mr.repository_id = r.id
+                WHERE mr.is_enriched = 1
+                LIMIT 50000
+              `);
+              break;
           }
+          
+          if (entities.length === 0) {
+            this.logger.warn(`No entities found for ${entityType}`);
+            continue;
+          }
+          
+          // Generate sitemap XML
+          const sitemapXml = this.generateSitemapXml(entities, entityType);
+          
+          // Write sitemap to file
+          const filePath = path.join(sitemapDir, `${entityType}.xml`);
+          fs.writeFileSync(filePath, sitemapXml);
+          
+          // Update sitemap metadata in database
+          await db.run(`
+            INSERT INTO sitemap_metadata 
+            (entity_type, file_path, url_count, last_build_date, updated_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT(entity_type) DO UPDATE SET
+            file_path = excluded.file_path,
+            url_count = excluded.url_count,
+            last_build_date = excluded.last_build_date,
+            updated_at = excluded.updated_at
+          `, [entityType, filePath, entities.length]);
+          
+          results[entityType] = entities.length;
+          this.logger.info(`Sitemap for ${entityType} generated with ${entities.length} URLs`);
         }
         
-        // Generate sitemap index file
-        if (stats.sitemapFiles.length > 0) {
-          const indexFile = await this.generateSitemapIndex(stats.sitemapFiles);
-          this.log('info', `📊 PROGRESS: Generated sitemap index file: ${indexFile}`);
-        } else {
-          this.log('warning', '📊 PROGRESS: No sitemap files generated, skipping index file');
-        }
+        // Generate sitemap index
+        const sitemapIndex = this.generateSitemapIndex(entityTypes);
+        fs.writeFileSync(path.join(sitemapDir, 'sitemap.xml'), sitemapIndex);
+        
+        // Commit all database changes
+        await db.run('COMMIT');
+        
+        return {
+          success: true,
+          results
+        };
       } catch (error) {
-        this.log('error', `Error during sitemap generation: ${error.message}`, { error });
-        stats.errors.push({
-          message: error.message,
-          stack: error.stack
-        });
-      } finally {
-        // Close database connection
-        await closeSQLiteConnection(db);
+        // Rollback transaction on error
+        await db.run('ROLLBACK');
+        throw error;
+      }
+    } catch (error) {
+      this.logger.error('Error generating sitemaps:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+  
+  /**
+   * Generate sitemap XML for entities
+   * @param {Array} entities - Array of entities
+   * @param {string} entityType - Type of entities
+   * @returns {string} XML sitemap
+   */
+  generateSitemapXml(entities, entityType) {
+    const baseUrl = process.env.BASE_URL || 'https://github-explorer.example.com';
+    
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+    
+    for (const entity of entities) {
+      xml += '  <url>\n';
+      
+      switch (entityType) {
+        case 'repositories':
+          xml += `    <loc>${baseUrl}/repositories/${entity.slug || entity.full_name}</loc>\n`;
+          break;
+          
+        case 'contributors':
+          xml += `    <loc>${baseUrl}/contributors/${entity.username}</loc>\n`;
+          break;
+          
+        case 'merge_requests':
+          xml += `    <loc>${baseUrl}/repositories/${entity.full_name}/pulls/${entity.number}</loc>\n`;
+          break;
       }
       
-      // Update context with stats
-      context.sitemapGenerationStats = stats;
-      
-      this.log('info', `✅ COMPLETED: Sitemap Generation Pipeline. Total entities: ${stats.totalEntities}, Sitemap files: ${stats.sitemapFiles.length}`);
-      this.log('info', `Finished at: ${new Date().toISOString()}`);
-      this.log('info', '======================================');
-      
-      return context;
-    } catch (error) {
-      this.log('error', `❌ ERROR: Sitemap Generation Pipeline failed: ${error.message}`, { error });
-      this.log('info', '======================================');
-      throw error;
+      xml += '    <changefreq>weekly</changefreq>\n';
+      xml += '    <priority>0.8</priority>\n';
+      xml += '  </url>\n';
     }
+    
+    xml += '</urlset>';
+    return xml;
   }
   
   /**
-   * Ensure the output directory exists
-   * @param {string} dirPath - Directory path
-   * @returns {Promise<void>}
+   * Generate sitemap index XML
+   * @param {Array} entityTypes - Entity types
+   * @returns {string} XML sitemap index
    */
-  async ensureDirectoryExists(dirPath) {
-    try {
-      await fs.mkdir(dirPath, { recursive: true });
-    } catch (error) {
-      this.log('error', `Failed to create directory ${dirPath}: ${error.message}`, { error });
-      throw error;
+  generateSitemapIndex(entityTypes) {
+    const baseUrl = process.env.BASE_URL || 'https://github-explorer.example.com';
+    
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+    
+    for (const entityType of entityTypes) {
+      xml += '  <sitemap>\n';
+      xml += `    <loc>${baseUrl}/sitemaps/${entityType}.xml</loc>\n`;
+      xml += `    <lastmod>${new Date().toISOString()}</lastmod>\n`;
+      xml += '  </sitemap>\n';
     }
-  }
-  
-  /**
-   * Get all entities of a specific type
-   * @param {Object} db - Database connection
-   * @param {string} entityType - Type of entity to retrieve
-   * @returns {Promise<Array>} Array of entities
-   */
-  async getEntities(db, entityType) {
-    // In a real implementation, this would query the database for all entities of the given type
-    // This is a placeholder for the actual implementation
-    this.log('info', `Would fetch all ${entityType} entities for sitemap`);
     
-    // Return an empty array for now
-    return [];
-  }
-  
-  /**
-   * Generate sitemap files for a specific entity type
-   * @param {string} entityType - Entity type
-   * @param {Array} entities - Array of entities
-   * @returns {Promise<Array>} Array of generated sitemap file paths
-   */
-  async generateSitemapFiles(entityType, entities) {
-    // In a real implementation, this would generate XML sitemap files
-    // This is a placeholder for the actual implementation
-    this.log('info', `Would generate sitemap files for ${entities.length} ${entityType} entities`);
-    
-    // Return an empty array for now
-    return [];
-  }
-  
-  /**
-   * Generate sitemap index file
-   * @param {Array} sitemapFiles - Array of sitemap file paths
-   * @returns {Promise<string>} Path to the generated index file
-   */
-  async generateSitemapIndex(sitemapFiles) {
-    // In a real implementation, this would generate an XML sitemap index file
-    // This is a placeholder for the actual implementation
-    this.log('info', `Would generate sitemap index file for ${sitemapFiles.length} sitemap files`);
-    
-    // Return an empty string for now
-    return '';
+    xml += '</sitemapindex>';
+    return xml;
   }
 }
 
@@ -203,14 +214,7 @@ export function registerSitemapGenerationPipeline(options = {}) {
   
   // Register the sitemap generator stage
   pipelineFactory.registerStage('generate-sitemap', () => {
-    return new SitemapGeneratorStage({
-      outputDir: options.outputDir,
-      baseUrl: options.baseUrl,
-      config: {
-        maxUrlsPerFile: options.maxUrlsPerFile || 50000,
-        entityTypes: options.entityTypes || ['repository', 'contributor', 'organization']
-      }
-    });
+    return new SitemapGenerationPipeline();
   });
   
   // Register the sitemap generation pipeline

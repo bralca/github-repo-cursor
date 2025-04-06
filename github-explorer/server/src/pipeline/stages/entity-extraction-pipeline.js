@@ -11,7 +11,7 @@
 import { pipelineFactory } from '../core/pipeline-factory.js';
 import { BaseStage } from '../core/base-stage.js';
 import { logger } from '../../utils/logger.js';
-import { openSQLiteConnection, closeSQLiteConnection } from '../../utils/sqlite.js';
+import { getConnection } from '../../db/connection-manager.js';
 
 /**
  * Stage for extracting entities from raw data
@@ -60,7 +60,7 @@ class EntityExtractionStage extends BaseStage {
     
     try {
       // Open database connection
-      const db = await openSQLiteConnection();
+      const db = await getConnection();
       
       try {
         // Process each entity type
@@ -110,9 +110,6 @@ class EntityExtractionStage extends BaseStage {
           message: error.message,
           stack: error.stack
         });
-      } finally {
-        // Close database connection
-        await closeSQLiteConnection(db);
       }
       
       // Update context with stats

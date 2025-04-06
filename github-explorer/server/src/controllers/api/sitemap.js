@@ -1,12 +1,190 @@
-import { openSQLiteConnection, closeSQLiteConnection } from '../../utils/sqlite.js';
-import fs from 'fs/promises';
-import path from 'path';
+import { getConnection } from '../../db/connection-manager.js';
 import { logger } from '../../utils/logger.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import generateAllSitemaps from '../../../scripts/generate-sitemap.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Constants
 const PUBLIC_DIR = path.resolve(process.cwd(), 'public');
 const SITEMAP_INDEX_PATH = path.join(PUBLIC_DIR, 'sitemap.xml');
+
+/**
+ * Generate or retrieve sitemap for a specific entity type
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+export async function getSitemap(req, res) {
+  const { type } = req.params;
+  
+  if (!type) {
+    return res.status(400).json({ error: 'Sitemap type is required' });
+  }
+  
+  try {
+    const db = await getConnection();
+    
+    // Check if sitemap exists
+    const sitemap = await db.get(
+      'SELECT * FROM sitemaps WHERE entity_type = ?',
+      [type]
+    );
+    
+    if (!sitemap) {
+      return res.status(404).json({
+        error: `Sitemap for '${type}' not found. You may need to generate it first.`
+      });
+    }
+    
+    // Check if sitemap file exists
+    const sitemapFilePath = path.join(__dirname, '../../../public/sitemaps', `${type}.xml`);
+    if (!fs.existsSync(sitemapFilePath)) {
+      return res.status(404).json({
+        error: `Sitemap file for '${type}' not found. You may need to regenerate it.`
+      });
+    }
+    
+    // Read sitemap file
+    const sitemapContent = fs.readFileSync(sitemapFilePath, 'utf8');
+    
+    // Set content type and send sitemap
+    res.setHeader('Content-Type', 'application/xml');
+    return res.send(sitemapContent);
+  } catch (error) {
+    logger.error(`Error retrieving sitemap for '${type}':`, error);
+    return res.status(500).json({ error: error.message });
+  }
+}
+
+/**
+ * Generate sitemap for a specific entity type
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+export async function generateSitemap(req, res) {
+  const { type } = req.params;
+  
+  if (!type) {
+    return res.status(400).json({ error: 'Sitemap type is required' });
+  }
+  
+  try {
+    const db = await getConnection();
+    
+    // Check if sitemap generation is already in progress
+    const sitemap = await db.get(
+      'SELECT * FROM sitemaps WHERE entity_type = ? AND status = ?',
+      [type, 'generating']
+    );
+    
+    if (sitemap) {
+      return res.status(409).json({
+        error: `Sitemap generation for '${type}' is already in progress`
+      });
+    }
+    
+    // Update sitemap status to generating
+    const result = await db.run(
+      'UPDATE sitemaps SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE entity_type = ?',
+      ['generating', type]
+    );
+    
+    if (result.changes === 0) {
+      // If no rows were affected, insert a new row
+      await db.run(
+        'INSERT INTO sitemaps (entity_type, status, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)',
+        [type, 'generating']
+      );
+    }
+    
+    // Start sitemap generation process asynchronously
+    // We'll immediately return success to the client
+    generateSitemapAsync(type).catch(error => {
+      logger.error(`Error generating sitemap for '${type}':`, error);
+      
+      // Update sitemap status to error in case of failure
+      try {
+        const errorDb = getConnection().then(db => {
+          db.run(
+            'UPDATE sitemaps SET status = ?, error = ?, updated_at = CURRENT_TIMESTAMP WHERE entity_type = ?',
+            ['error', error.message, type]
+          );
+        }).catch(err => {
+          logger.error(`Error updating sitemap status for '${type}':`, err);
+        });
+      } catch (err) {
+        logger.error(`Error connecting to database to update sitemap status:`, err);
+      }
+    });
+    
+    return res.json({ 
+      success: true, 
+      message: `Sitemap generation for '${type}' started` 
+    });
+  } catch (error) {
+    logger.error(`Error starting sitemap generation for '${type}':`, error);
+    return res.status(500).json({ error: error.message });
+  }
+}
+
+/**
+ * Generate sitemap asynchronously
+ * @param {string} type - Entity type for sitemap generation
+ * @returns {Promise<void>}
+ */
+async function generateSitemapAsync(type) {
+  // TODO: Implement actual sitemap generation based on entity type
+  
+  // This is a placeholder for the actual implementation
+  // In a real implementation, you would:
+  // 1. Query the database for all entities of the specified type
+  // 2. Generate sitemap XML
+  // 3. Save sitemap XML to a file
+  // 4. Update sitemap status in the database
+  
+  try {
+    const db = await getConnection();
+    
+    // Simulate sitemap generation with a delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Create sitemaps directory if it doesn't exist
+    const sitemapsDir = path.join(__dirname, '../../../public/sitemaps');
+    if (!fs.existsSync(sitemapsDir)) {
+      fs.mkdirSync(sitemapsDir, { recursive: true });
+    }
+    
+    // Generate dummy sitemap content
+    let sitemapContent = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    sitemapContent += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+    sitemapContent += '  <url>\n';
+    sitemapContent += '    <loc>https://example.com/sample</loc>\n';
+    sitemapContent += '    <lastmod>2023-01-01</lastmod>\n';
+    sitemapContent += '    <changefreq>weekly</changefreq>\n';
+    sitemapContent += '    <priority>0.8</priority>\n';
+    sitemapContent += '  </url>\n';
+    sitemapContent += '</urlset>';
+    
+    // Save sitemap content to file
+    const sitemapFilePath = path.join(sitemapsDir, `${type}.xml`);
+    fs.writeFileSync(sitemapFilePath, sitemapContent);
+    
+    // Update sitemap status to completed
+    await db.run(
+      'UPDATE sitemaps SET status = ?, url_count = ?, file_path = ?, updated_at = CURRENT_TIMESTAMP WHERE entity_type = ?',
+      ['completed', 1, sitemapFilePath, type]
+    );
+    
+    logger.info(`Sitemap generation for '${type}' completed`);
+  } catch (error) {
+    logger.error(`Error in sitemap generation for '${type}':`, error);
+    throw error;
+  }
+}
 
 /**
  * Get the current status of sitemap generation
@@ -16,7 +194,7 @@ const SITEMAP_INDEX_PATH = path.join(PUBLIC_DIR, 'sitemap.xml');
 export async function getSitemapStatus(req, res) {
   let db = null;
   try {
-    db = await openSQLiteConnection();
+    db = await getConnection();
     
     // Check if sitemap_status table exists
     const tableExists = await db.get(`
@@ -49,7 +227,7 @@ export async function getSitemapStatus(req, res) {
     // Check if sitemap index file exists
     let sitemapExists = false;
     try {
-      await fs.access(SITEMAP_INDEX_PATH);
+      await fs.promises.access(SITEMAP_INDEX_PATH);
       sitemapExists = true;
     } catch (error) {
       sitemapExists = false;
@@ -93,7 +271,7 @@ export async function getSitemapStatus(req, res) {
     return res.status(500).json({ error: error.message });
   } finally {
     if (db) {
-      await closeSQLiteConnection(db);
+      await db.close();
     }
   }
 }
@@ -106,7 +284,7 @@ export async function getSitemapStatus(req, res) {
 export async function triggerSitemapGeneration(req, res) {
   let db = null;
   try {
-    db = await openSQLiteConnection();
+    db = await getConnection();
     
     // Check if sitemap generation is already in progress
     const status = await db.get('SELECT is_generating FROM sitemap_status LIMIT 1');
@@ -134,13 +312,13 @@ export async function triggerSitemapGeneration(req, res) {
         logger.error('Error in asynchronous sitemap generation:', error);
         try {
           // Update status to indicate generation failed
-          const errorDb = await openSQLiteConnection();
+          const errorDb = await getConnection();
           await errorDb.run(`
             UPDATE sitemap_status 
             SET status = ?, is_generating = ?, error_message = ?, updated_at = CURRENT_TIMESTAMP
             WHERE 1=1
           `, ['error', false, error.message]);
-          await closeSQLiteConnection(errorDb);
+          await errorDb.close();
         } catch (dbError) {
           logger.error('Error updating sitemap status after failure:', dbError);
         }
@@ -156,7 +334,7 @@ export async function triggerSitemapGeneration(req, res) {
     return res.status(500).json({ error: error.message, success: false });
   } finally {
     if (db) {
-      await closeSQLiteConnection(db);
+      await db.close();
     }
   }
 }
@@ -170,7 +348,7 @@ export async function getSitemapContent(req, res) {
   try {
     // Check if sitemap index file exists
     try {
-      await fs.access(SITEMAP_INDEX_PATH);
+      await fs.promises.access(SITEMAP_INDEX_PATH);
     } catch (error) {
       return res.status(404).json({ 
         error: 'Sitemap file not found',
@@ -179,7 +357,7 @@ export async function getSitemapContent(req, res) {
     }
     
     // Read the sitemap file
-    const content = await fs.readFile(SITEMAP_INDEX_PATH, 'utf8');
+    const content = await fs.promises.readFile(SITEMAP_INDEX_PATH, 'utf8');
     
     // Set content type header for XML
     res.setHeader('Content-Type', 'application/xml');

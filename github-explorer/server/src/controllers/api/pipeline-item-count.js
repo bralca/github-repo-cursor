@@ -1,4 +1,5 @@
-import { openSQLiteConnection, closeSQLiteConnection } from '../../utils/sqlite.js';
+import { getConnection } from '../../db/connection-manager.js';
+import { logger } from '../../utils/logger.js';
 
 /**
  * Get the count of items for a specific pipeline type
@@ -12,11 +13,10 @@ export async function getPipelineItemCount(req, res) {
     return res.status(400).json({ error: 'Pipeline type is required' });
   }
   
-  let db = null;
   let count = 0;
   
   try {
-    db = await openSQLiteConnection();
+    const db = await getConnection();
     
     // Determine the target table based on pipeline type
     let table;
@@ -45,9 +45,5 @@ export async function getPipelineItemCount(req, res) {
   } catch (error) {
     console.error(`Error getting item count for ${pipelineType} pipeline:`, error);
     return res.status(500).json({ error: error.message });
-  } finally {
-    if (db) {
-      await closeSQLiteConnection(db);
-    }
   }
 } 

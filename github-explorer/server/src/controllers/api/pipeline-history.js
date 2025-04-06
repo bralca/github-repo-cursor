@@ -1,4 +1,5 @@
-import { openSQLiteConnection, closeSQLiteConnection } from '../../utils/sqlite.js';
+import { getConnection } from '../../db/connection-manager.js';
+import { logger } from '../../utils/logger.js';
 
 /**
  * Get pipeline execution history, optionally filtered by pipeline type
@@ -8,9 +9,8 @@ import { openSQLiteConnection, closeSQLiteConnection } from '../../utils/sqlite.
 export async function getPipelineHistory(req, res) {
   const pipelineType = req.query.pipeline_type;
   
-  let db = null;
   try {
-    db = await openSQLiteConnection();
+    const db = await getConnection();
     
     let query = `
       SELECT 
@@ -39,35 +39,65 @@ export async function getPipelineHistory(req, res) {
   } catch (error) {
     console.error('Error getting pipeline history:', error);
     return res.status(500).json({ error: error.message });
-  } finally {
-    if (db) {
-      await closeSQLiteConnection(db);
-    }
   }
 }
 
 /**
- * Clear pipeline execution history
+ * Get detailed pipeline history entry by ID
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+export async function getPipelineHistoryById(req, res) {
+  const historyId = req.params.id;
+  
+  if (!historyId) {
+    return res.status(400).json({ error: 'History ID is required' });
+  }
+  
+  try {
+    const db = await getConnection();
+    
+    // Get the history entry
+    const historyEntry = await db.get(`
+      SELECT id, pipeline_type, status, trigger_type, items_processed, started_at, completed_at, error_message
+      FROM pipeline_history
+      WHERE id = ?
+    `, [historyId]);
+    
+    if (!historyEntry) {
+      return res.status(404).json({ error: 'History entry not found' });
+    }
+    
+    // Calculate duration
+    if (historyEntry.started_at && historyEntry.completed_at) {
+      const startDate = new Date(historyEntry.started_at);
+      const endDate = new Date(historyEntry.completed_at);
+      historyEntry.duration_seconds = Math.floor((endDate - startDate) / 1000);
+    } else {
+      historyEntry.duration_seconds = null;
+    }
+    
+    return res.json(historyEntry);
+  } catch (error) {
+    logger.error(`Error getting pipeline history entry ${historyId}:`, error);
+    return res.status(500).json({ error: error.message });
+  }
+}
+
+/**
+ * Clear pipeline history
  * @param {object} req - Express request object
  * @param {object} res - Express response object
  */
 export async function clearPipelineHistory(req, res) {
-  let db = null;
   try {
-    db = await openSQLiteConnection();
+    const db = await getConnection();
     
     await db.run('DELETE FROM pipeline_history');
     
-    return res.json({
-      success: true,
-      message: 'Pipeline history cleared successfully'
-    });
+    return res.json({ success: true, message: 'Pipeline history cleared' });
   } catch (error) {
-    console.error('Error clearing pipeline history:', error);
+    logger.error('Error clearing pipeline history:', error);
     return res.status(500).json({ error: error.message });
-  } finally {
-    if (db) {
-      await closeSQLiteConnection(db);
-    }
   }
 } 

@@ -12,7 +12,7 @@ import { pipelineFactory } from '../core/pipeline-factory.js';
 import { BaseStage } from '../core/base-stage.js';
 import { githubClientFactory } from '../../services/github/github-client.js';
 import { logger } from '../../utils/logger.js';
-import { openSQLiteConnection, closeSQLiteConnection } from '../../utils/sqlite.js';
+import { getConnection } from '../../db/connection-manager.js';
 
 /**
  * Stage for enriching entities with additional data
@@ -62,8 +62,8 @@ class EntityEnrichmentStage extends BaseStage {
     };
     
     try {
-      // Open database connection
-      const db = await openSQLiteConnection();
+      // Get DB connection
+      const db = await getConnection();
       
       try {
         // Process each entity type
@@ -120,8 +120,8 @@ class EntityEnrichmentStage extends BaseStage {
           stack: error.stack
         });
       } finally {
-        // Close database connection
-        await closeSQLiteConnection(db);
+        // The connection is managed by the connection manager
+        // No need to close or release it
       }
       
       // Update context with stats
