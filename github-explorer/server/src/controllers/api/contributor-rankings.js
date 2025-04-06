@@ -1,6 +1,17 @@
 import { openSQLiteConnection, closeSQLiteConnection } from '../../utils/sqlite.js';
 import { randomUUID } from 'crypto';
 import { withDb } from '../../utils/db.js';
+import { cacheOrCompute, generateCacheKey } from '../../utils/cache.js';
+import { setupLogger } from '../../utils/logger.js';
+
+// Setup component logger
+const logger = setupLogger('contributor-rankings-controller');
+
+// Cache prefix for contributor rankings
+const CACHE_PREFIX = 'contributor-rankings';
+
+// Default TTL for contributor rankings (1 hour)
+const RANKINGS_TTL = 3600; // seconds
 
 /**
  * Handle contributor rankings operations
@@ -31,7 +42,7 @@ export async function handleContributorRankings(req, res) {
         return res.status(400).json({ error: `Unknown operation: ${operation}` });
     }
   } catch (error) {
-    console.error('Error in contributor rankings API:', error);
+    logger.error('Error in contributor rankings API:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }
@@ -43,69 +54,88 @@ export async function handleContributorRankings(req, res) {
  */
 async function getLatestRankings(req, res) {
   try {
-    const rankings = await withDb(async (db) => {
-      // Step 1: Get the most recent timestamp
-      const latestTimestamp = await db.get(
-        `SELECT MAX(calculation_timestamp) as latest_timestamp FROM contributor_rankings`
-      );
-      
-      if (!latestTimestamp.latest_timestamp) {
-        return [];
-      }
-      
-      // Step 2: Get rankings with contributor details
-      const rankings = await db.all(`
-        SELECT 
-          cr.*,
-          c.username,
-          c.name,
-          c.avatar,
-          c.location,
-          c.twitter_username,
-          c.top_languages
-        FROM contributor_rankings cr
-        JOIN contributors c ON cr.contributor_id = c.id
-        WHERE cr.calculation_timestamp = ?
-        AND COALESCE(c.is_bot, 0) = 0
-        ORDER BY cr.rank_position ASC
-        LIMIT 100
-      `, [latestTimestamp.latest_timestamp]);
-      
-      // Step 3: Get the most popular repository for each contributor
-      for (const ranking of rankings) {
-        const popularRepo = await db.get(`
-          SELECT 
-            r.name, 
-            r.full_name, 
-            r.url, 
-            r.stars,
-            r.github_id
-          FROM repositories r
-          JOIN contributor_repository cr ON r.id = cr.repository_id
-          WHERE cr.contributor_id = ?
-          ORDER BY r.stars DESC
-          LIMIT 1
-        `, [ranking.contributor_id]);
-        
-        if (popularRepo) {
-          ranking.most_popular_repository = popularRepo;
-        }
-        
-        // Step 4: Get the most collaborative merge request for each contributor
-        const mostCollaborativeMR = await getMostCollaborativeMergeRequest(db, ranking.contributor_id);
-        if (mostCollaborativeMR) {
-          ranking.most_collaborative_merge_request = mostCollaborativeMR;
-        }
-      }
-      
-      return rankings;
-    });
+    // Generate cache key
+    const cacheKey = generateCacheKey(CACHE_PREFIX, 'latest');
+    
+    // Use cache-or-compute pattern
+    const rankings = await cacheOrCompute(
+      cacheKey,
+      async () => {
+        logger.info('Cache miss - fetching latest rankings from database');
+        return await fetchLatestRankingsFromDb();
+      },
+      RANKINGS_TTL
+    );
     
     return res.status(200).json({ rankings });
   } catch (error) {
-    console.error('Error fetching latest rankings:', error);
+    logger.error('Error fetching latest rankings:', error);
     return res.status(500).json({ error: error.message || 'Failed to fetch latest rankings' });
   }
+}
+
+/**
+ * Fetch latest rankings from database
+ * @returns {Promise<Array>} Rankings data
+ */
+async function fetchLatestRankingsFromDb() {
+  return await withDb(async (db) => {
+    // Step 1: Get the most recent timestamp
+    const latestTimestamp = await db.get(
+      `SELECT MAX(calculation_timestamp) as latest_timestamp FROM contributor_rankings`
+    );
+    
+    if (!latestTimestamp.latest_timestamp) {
+      return [];
+    }
+    
+    // Step 2: Get rankings with contributor details
+    const rankings = await db.all(`
+      SELECT 
+        cr.*,
+        c.username,
+        c.name,
+        c.avatar,
+        c.location,
+        c.twitter_username,
+        c.top_languages
+      FROM contributor_rankings cr
+      JOIN contributors c ON cr.contributor_id = c.id
+      WHERE cr.calculation_timestamp = ?
+      AND COALESCE(c.is_bot, 0) = 0
+      ORDER BY cr.rank_position ASC
+      LIMIT 100
+    `, [latestTimestamp.latest_timestamp]);
+    
+    // Step 3: Get the most popular repository for each contributor
+    for (const ranking of rankings) {
+      const popularRepo = await db.get(`
+        SELECT 
+          r.name, 
+          r.full_name, 
+          r.url, 
+          r.stars,
+          r.github_id
+        FROM repositories r
+        JOIN contributor_repository cr ON r.id = cr.repository_id
+        WHERE cr.contributor_id = ?
+        ORDER BY r.stars DESC
+        LIMIT 1
+      `, [ranking.contributor_id]);
+      
+      if (popularRepo) {
+        ranking.most_popular_repository = popularRepo;
+      }
+      
+      // Step 4: Get the most collaborative merge request for each contributor
+      const mostCollaborativeMR = await getMostCollaborativeMergeRequest(db, ranking.contributor_id);
+      if (mostCollaborativeMR) {
+        ranking.most_collaborative_merge_request = mostCollaborativeMR;
+      }
+    }
+    
+    return rankings;
+  });
 }
 
 /**
@@ -115,12 +145,39 @@ async function getLatestRankings(req, res) {
  * @param {string} timeframe - Timeframe to get rankings for ('24h', '7d', '30d', 'all')
  */
 async function getRankingsByTimeframe(req, res, timeframe) {
-  let db = null;
   try {
     if (!timeframe || !['24h', '7d', '30d', 'all'].includes(timeframe)) {
       return res.status(400).json({ error: 'Invalid timeframe. Must be one of: 24h, 7d, 30d, all' });
     }
     
+    // Generate cache key based on timeframe
+    const cacheKey = generateCacheKey(CACHE_PREFIX, { timeframe });
+    
+    // Use cache-or-compute pattern
+    const result = await cacheOrCompute(
+      cacheKey,
+      async () => {
+        logger.info(`Cache miss - fetching rankings for timeframe ${timeframe} from database`);
+        return await fetchRankingsByTimeframeFromDb(timeframe);
+      },
+      RANKINGS_TTL
+    );
+    
+    return res.json(result);
+  } catch (error) {
+    logger.error(`Error fetching rankings for timeframe ${timeframe}:`, error);
+    return res.status(500).json({ error: error.message || `Failed to fetch rankings for timeframe ${timeframe}` });
+  }
+}
+
+/**
+ * Fetch rankings by timeframe from database
+ * @param {string} timeframe - Timeframe to get rankings for
+ * @returns {Promise<Object>} Rankings data with metadata
+ */
+async function fetchRankingsByTimeframeFromDb(timeframe) {
+  let db = null;
+  try {
     db = await openSQLiteConnection();
     
     // For now, we just return the latest rankings regardless of timeframe
@@ -130,7 +187,7 @@ async function getRankingsByTimeframe(req, res, timeframe) {
     );
     
     if (!latestTimestamp.latest_timestamp) {
-      return res.json({ rankings: [], timestamp: null });
+      return { rankings: [], timestamp: null, timeframe };
     }
     
     // Get rankings with contributor details
@@ -178,14 +235,14 @@ async function getRankingsByTimeframe(req, res, timeframe) {
       }
     }
     
-    return res.json({
+    return {
       rankings,
       timestamp: latestTimestamp.latest_timestamp,
       timeframe
-    });
+    };
   } catch (error) {
-    console.error(`Error fetching rankings for timeframe ${timeframe}:`, error);
-    return res.status(500).json({ error: error.message || `Failed to fetch rankings for timeframe ${timeframe}` });
+    logger.error(`Error fetching rankings for timeframe ${timeframe}:`, error);
+    throw error;
   } finally {
     if (db) {
       await closeSQLiteConnection(db);
