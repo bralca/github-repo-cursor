@@ -340,13 +340,18 @@ async function generateEntitySitemap(db, entityConfig) {
         filename: sitemapFilename,
         type,
         count: urls.length,
-        lastmod: new Date().toISOString()
+        lastmod: new Date().toISOString(),
+        // Also add the loc property for the sitemap index
+        loc: `${BASE_URL}/sitemaps/${sitemapFilename}`
       });
     }
     
     return sitemapFiles;
   } catch (error) {
-    logger.error(`Error generating sitemap for ${type}: ${error.message}`, { error });
+    logger.error(`Error generating sitemap for ${type}: ${error.message}`, { 
+      errorMessage: error.message, 
+      errorStack: error.stack 
+    });
     return [];
   }
 }

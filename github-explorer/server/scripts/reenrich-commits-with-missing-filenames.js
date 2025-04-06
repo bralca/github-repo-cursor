@@ -15,6 +15,7 @@ import MergeRequestEnricher from '../src/pipeline/enrichers/merge-request-enrich
 import dotenv from 'dotenv';
 import winston from 'winston';
 import { fileURLToPath } from 'url';
+import { getConnection } from '../src/db/connection-manager.js';
 
 // Get current file's directory
 const __filename = fileURLToPath(import.meta.url);
@@ -51,10 +52,8 @@ async function main() {
   
   let db;
   try {
-    db = await open({
-      filename: dbPath,
-      driver: sqlite3.Database
-    });
+    // Get database connection from connection manager
+    db = await getConnection();
     logger.info('Database connection established');
   } catch (error) {
     logger.error('Failed to connect to the database', { error });
@@ -93,7 +92,7 @@ async function main() {
     
     if (commitsWithMissingFilenames.length === 0) {
       logger.info('No commits with missing filenames found. Exiting.');
-      await db.close();
+      // Connection is managed by connection manager, no need to close
       return;
     }
     
@@ -161,8 +160,8 @@ async function main() {
   } finally {
     // Clean up resources
     await enricher.close();
-    await db.close();
-    logger.info('Database connection closed');
+    // Connection is managed by connection manager, no need to close
+    logger.info('Process completed');
   }
 }
 
