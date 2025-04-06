@@ -8,6 +8,21 @@
 import { logger } from '../../utils/logger.js';
 import { resetConnection } from '../../db/connection-manager.js';
 import { handleDbError } from '../../utils/db-utils.js';
+import { cacheOrCompute, generateCacheKey } from '../../utils/cache.js';
+
+// Cache settings
+const CACHE_TTL = 3600; // 1 hour in seconds
+const CACHEABLE_ENDPOINTS = [
+  'getContributorById',
+  'getContributorByLogin',
+  'getContributorActivity',
+  'getContributorImpact',
+  'getContributorRepositories',
+  'getContributorMergeRequests',
+  'getContributorRecentActivity',
+  'getContributorProfileMetadata',
+  'getContributorProfileData'
+];
 
 /**
  * Wrap an async controller function with error handling
@@ -17,11 +32,48 @@ import { handleDbError } from '../../utils/db-utils.js';
  */
 export function wrapController(handler) {
   return async (req, res) => {
+    // Store the original json method
+    const originalJson = res.json;
+    let responseData = null;
+    
+    // Intercept res.json calls to capture response data
+    res.json = function(data) {
+      responseData = data;
+      return originalJson.call(this, data);
+    };
+    
     try {
       logger.debug(`Running controller: ${handler.name}`);
       
-      // Run the handler
-      return await handler(req, res);
+      // Check if this endpoint should be cached
+      const shouldCache = CACHEABLE_ENDPOINTS.includes(handler.name);
+      
+      if (shouldCache) {
+        const cachePrefix = `controller:${handler.name}`;
+        // Use both path params and query params for the cache key
+        const cacheParams = {
+          params: req.params,
+          query: req.query
+        };
+        const cacheKey = generateCacheKey(cachePrefix, cacheParams);
+        
+        return await cacheOrCompute(
+          cacheKey,
+          async () => {
+            logger.info(`Cache miss for ${handler.name} - executing controller`);
+            await handler(req, res);
+            return responseData;
+          },
+          CACHE_TTL
+        ).then(cachedData => {
+          if (!res.headersSent) {
+            return res.json(cachedData);
+          }
+        });
+      } else {
+        // Non-cached controller execution
+        return await handler(req, res);
+      }
     } catch (error) {
       logger.error(`Controller error in ${handler.name}:`, { 
         error,

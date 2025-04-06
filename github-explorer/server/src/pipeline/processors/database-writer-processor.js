@@ -8,7 +8,13 @@
 
 import { BaseStage } from '../core/base-stage.js';
 import { logger } from '../../utils/logger.js';
-// Removed import for supabaseClientFactory
+// Import cache invalidation utilities
+import { 
+  invalidateContributorCache, 
+  invalidateRepositoryCache, 
+  invalidateEntityCountsCache,
+  invalidateOnDataUpdate
+} from '../../utils/cache-invalidation.js';
 
 /**
  * DatabaseWriterProcessor - Processor for writing processed data to the database
@@ -26,6 +32,7 @@ export class DatabaseWriterProcessor extends BaseStage {
         batchSize: 50, // Default batch size for database operations
         maxRetries: 3, // Maximum number of retries for failed operations
         retryDelay: 1000, // Delay between retries in milliseconds
+        enableCacheInvalidation: true, // Whether to invalidate caches on write
         ...options.config
       }
     });
@@ -48,21 +55,44 @@ export class DatabaseWriterProcessor extends BaseStage {
     const config = { ...this.config, ...pipelineConfig };
 
     try {
+      // Track entities that have been modified for cache invalidation
+      const modifiedEntities = {
+        repositories: new Set(),
+        contributors: new Set(),
+        entityCountsChanged: false
+      };
+
       // Process different types of entities if they exist in the context
       if (context.repositories?.length > 0) {
         await this.storeRepositories(context.repositories, context, config);
+        
+        // Track modified repositories for cache invalidation
+        context.repositories.forEach(repo => {
+          modifiedEntities.repositories.add(repo.id);
+        });
+        
+        modifiedEntities.entityCountsChanged = true;
       }
 
       if (context.contributors?.length > 0) {
         await this.storeContributors(context.contributors, context, config);
+        
+        // Track modified contributors for cache invalidation
+        context.contributors.forEach(contributor => {
+          modifiedEntities.contributors.add(contributor.id);
+        });
+        
+        modifiedEntities.entityCountsChanged = true;
       }
 
       if (context.mergeRequests?.length > 0) {
         await this.storeMergeRequests(context.mergeRequests, context, config);
+        modifiedEntities.entityCountsChanged = true;
       }
 
       if (context.commits?.length > 0) {
         await this.storeCommits(context.commits, context, config);
+        modifiedEntities.entityCountsChanged = true;
       }
 
       // Process entity relationships if they exist
@@ -72,6 +102,12 @@ export class DatabaseWriterProcessor extends BaseStage {
           context, 
           config
         );
+        
+        // Track modified contributors and repositories from relationships
+        context.contributorRepositoryRelationships.forEach(rel => {
+          if (rel.contributorId) modifiedEntities.contributors.add(rel.contributorId);
+          if (rel.repositoryId) modifiedEntities.repositories.add(rel.repositoryId);
+        });
       }
 
       // Store statistics if they exist
@@ -81,6 +117,11 @@ export class DatabaseWriterProcessor extends BaseStage {
 
       if (context.mergeRequestStatistics && Object.keys(context.mergeRequestStatistics).length > 0) {
         await this.storeMergeRequestStatistics(context.mergeRequestStatistics, context, config);
+      }
+
+      // Invalidate caches if enabled
+      if (config.enableCacheInvalidation) {
+        await this.invalidateCaches(modifiedEntities, context);
       }
 
       this.log('info', 'Database writer processor completed successfully (stub implementation)');
@@ -94,6 +135,59 @@ export class DatabaseWriterProcessor extends BaseStage {
       }
       
       return context;
+    }
+  }
+
+  /**
+   * Invalidate caches for modified entities
+   * @param {Object} modifiedEntities - Tracking of modified entities
+   * @param {PipelineContext} context - Pipeline context
+   * @returns {Promise<void>}
+   */
+  async invalidateCaches(modifiedEntities, context) {
+    this.log('info', 'Invalidating caches for modified entities');
+    
+    try {
+      // Invalidate repository caches
+      const repositoryCount = modifiedEntities.repositories.size;
+      if (repositoryCount > 0) {
+        this.log('info', `Invalidating caches for ${repositoryCount} repositories`);
+        
+        for (const repoId of modifiedEntities.repositories) {
+          invalidateRepositoryCache(repoId);
+        }
+      }
+      
+      // Invalidate contributor caches
+      const contributorCount = modifiedEntities.contributors.size;
+      if (contributorCount > 0) {
+        this.log('info', `Invalidating caches for ${contributorCount} contributors`);
+        
+        for (const contributorId of modifiedEntities.contributors) {
+          invalidateContributorCache(contributorId);
+        }
+      }
+      
+      // Invalidate entity counts if they changed
+      if (modifiedEntities.entityCountsChanged) {
+        this.log('info', 'Invalidating entity counts cache');
+        invalidateEntityCountsCache();
+      }
+      
+      // Trigger a pipeline_completed event if this was a full pipeline run
+      if (
+        repositoryCount > 0 &&
+        contributorCount > 0 &&
+        modifiedEntities.entityCountsChanged
+      ) {
+        this.log('info', 'Triggering pipeline_completed cache invalidation event');
+        invalidateOnDataUpdate('pipeline_completed');
+      }
+      
+      this.log('info', 'Cache invalidation completed');
+    } catch (error) {
+      this.log('error', 'Error invalidating caches', { error });
+      // Don't throw the error, just log it to prevent pipeline failure
     }
   }
 

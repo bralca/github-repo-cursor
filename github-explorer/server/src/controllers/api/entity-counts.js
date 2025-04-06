@@ -1,4 +1,15 @@
 import { openSQLiteConnection, closeSQLiteConnection } from '../../utils/sqlite.js';
+import { cacheOrCompute, generateCacheKey } from '../../utils/cache.js';
+import { setupLogger } from '../../utils/logger.js';
+
+// Setup component logger
+const logger = setupLogger('entity-counts-controller');
+
+// Cache prefix for entity counts
+const CACHE_PREFIX = 'entity-counts';
+
+// Default TTL for entity counts (1 hour)
+const ENTITY_COUNTS_TTL = 3600; // seconds
 
 /**
  * Get counts of all entity types
@@ -6,6 +17,32 @@ import { openSQLiteConnection, closeSQLiteConnection } from '../../utils/sqlite.
  * @param {object} res - Express response object
  */
 export async function getEntityCounts(req, res) {
+  try {
+    // Generate cache key based on any query parameters
+    const cacheKey = generateCacheKey(CACHE_PREFIX, req.query);
+    
+    // Use cache-or-compute pattern
+    const results = await cacheOrCompute(
+      cacheKey,
+      async () => {
+        logger.info('Cache miss - fetching entity counts from database');
+        return await fetchEntityCountsFromDb();
+      },
+      ENTITY_COUNTS_TTL
+    );
+    
+    return res.json(results);
+  } catch (error) {
+    logger.error('Error getting entity counts:', { error });
+    return res.status(500).json({ error: error.message });
+  }
+}
+
+/**
+ * Helper function to fetch entity counts from database
+ * @returns {Promise<object>} Entity counts
+ */
+async function fetchEntityCountsFromDb() {
   let db = null;
   try {
     db = await openSQLiteConnection();
@@ -65,20 +102,17 @@ export async function getEntityCounts(req, res) {
       WHERE is_enriched = 1
     `).catch(() => ({ count: 0 }));
     
-    console.log('Database query results:', {
+    logger.debug('Database query results:', {
       repositories: repositories.count,
       contributors: contributors.count,
       mergeRequests: mergeRequests.count,
       commits: commits.count,
       closedMergeRequestsRaw: closedMergeRequestsRaw.count,
       unprocessedMergeRequests: unprocessedMergeRequests.count,
-      unenrichedRepositories: unenrichedRepositories.count,
-      unenrichedContributors: unenrichedContributors.count,
-      unenrichedMergeRequests: unenrichedMergeRequests.count,
       totalUnenriched
     });
     
-    return res.json({
+    return {
       // Basic counts
       repositories: repositories.count,
       contributors: contributors.count,
@@ -99,10 +133,10 @@ export async function getEntityCounts(req, res) {
       closedMergeRequestsRaw: closedMergeRequestsRaw.count,
       unprocessedMergeRequests: unprocessedMergeRequests.count,
       totalUnenriched: totalUnenriched
-    });
+    };
   } catch (error) {
-    console.error('Error getting entity counts:', error);
-    return res.status(500).json({ error: error.message });
+    logger.error('Error fetching entity counts from database:', { error });
+    throw error;
   } finally {
     if (db) {
       await closeSQLiteConnection(db);

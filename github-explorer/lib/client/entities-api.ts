@@ -1,4 +1,7 @@
-import { fetchFromApi } from './api';
+import { fetchFromApi, CACHE_TAGS } from './api';
+
+// Default cache TTL for entity data (1 hour in seconds)
+const ENTITY_DATA_TTL = 3600;
 
 // Types for entity counts
 export interface EntityCountsResponse {
@@ -41,9 +44,21 @@ export interface EntityCountsResponse {
 export const entitiesApi = {
   /**
    * Get counts of all entities
+   * @param forceRefresh Optional flag to force a fresh request bypassing the cache
    * @returns Object containing counts of all entity types
    */
-  async getCounts(): Promise<EntityCountsResponse> {
-    return await fetchFromApi<EntityCountsResponse>('entity-counts');
+  async getCounts(forceRefresh = false): Promise<EntityCountsResponse> {
+    return await fetchFromApi<EntityCountsResponse>(
+      'entity-counts',
+      'GET',
+      undefined,
+      undefined,
+      {
+        // 1-hour cache with selective revalidation through cache tags
+        revalidate: ENTITY_DATA_TTL,
+        forceRefresh,
+        tags: [CACHE_TAGS.ENTITY_COUNTS]
+      }
+    );
   }
 }; 

@@ -23,6 +23,23 @@ import {
 } from '../controllers/api/contributors-wrapped.js';
 import { getMergeRequests, getMergeRequestById, getMergeRequestByNumber } from '../controllers/api/merge-requests.js';
 import { getCommits, getCommitById, getCommitBySha } from '../controllers/api/commits.js';
+// Import cache invalidation controller
+import {
+  clearCacheByEntityType,
+  clearContributorCache,
+  clearRepositoryCache,
+  clearEntityCountsCache,
+  triggerDataUpdateInvalidation,
+  getEntityTypes
+} from '../controllers/api/cache-invalidation-controller.js';
+// Import cache monitoring controller
+import {
+  getCacheMetrics,
+  resetCacheMetrics,
+  getCacheKeys,
+  getCacheValue,
+  searchCacheKeys
+} from '../controllers/api/cache-monitor-controller.js';
 
 const router = express.Router();
 
@@ -73,6 +90,21 @@ router.get('/sitemap.xml', getSitemapContent);
 
 // Ranking endpoints
 router.post('/contributor-rankings', handleContributorRankings);
+
+// Cache invalidation endpoints
+router.get('/cache/entity-types', getEntityTypes);
+router.post('/cache/invalidate/entity-type/:entityType', clearCacheByEntityType);
+router.post('/cache/invalidate/contributor/:id', clearContributorCache);
+router.post('/cache/invalidate/repository/:id', clearRepositoryCache);
+router.post('/cache/invalidate/entity-counts', clearEntityCountsCache);
+router.post('/cache/invalidate/data-update', triggerDataUpdateInvalidation);
+
+// Cache monitoring endpoints
+router.get('/cache/metrics', getCacheMetrics);
+router.post('/cache/metrics/reset', resetCacheMetrics);
+router.get('/cache/keys', getCacheKeys);
+router.get('/cache/key/:key', getCacheValue);
+router.get('/cache/search', searchCacheKeys);
 
 // The following endpoints will be implemented in future tasks:
 // - /bot-detection

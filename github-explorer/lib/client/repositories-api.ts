@@ -1,4 +1,7 @@
-import { fetchFromApi } from './api';
+import { fetchFromApi, CACHE_TAGS } from './api';
+
+// Default cache TTL for repository data (1 hour in seconds)
+const REPOSITORY_DATA_TTL = 3600;
 
 export interface Repository {
   id: string;
@@ -62,35 +65,65 @@ export const repositoriesApi = {
    * Get all repositories
    * @param page Page number to retrieve
    * @param limit Number of repositories per page
+   * @param forceRefresh Optional flag to force a fresh request bypassing the cache
    * @returns List of repositories
    */
-  async getAll(page = 1, limit = 20): Promise<{ repositories: Repository[], total: number }> {
+  async getAll(page = 1, limit = 20, forceRefresh = false): Promise<{ repositories: Repository[], total: number }> {
     return await fetchFromApi<{ repositories: Repository[], total: number }>(
       'repositories',
       'GET',
-      { page: page.toString(), limit: limit.toString() }
+      { page: page.toString(), limit: limit.toString() },
+      undefined,
+      {
+        // 1-hour cache with selective revalidation through cache tags
+        revalidate: REPOSITORY_DATA_TTL,
+        forceRefresh,
+        tags: [CACHE_TAGS.REPOSITORIES]
+      }
     );
   },
   
   /**
    * Get a repository by its slug
    * @param slug Repository slug (owner/name)
+   * @param forceRefresh Optional flag to force a fresh request bypassing the cache
    * @returns Repository detail with associated entities
    */
-  async getBySlug(slug: string): Promise<RepositoryDetail> {
+  async getBySlug(slug: string, forceRefresh = false): Promise<RepositoryDetail> {
+    const endpoint = `repositories/${encodeURIComponent(slug)}`;
     return await fetchFromApi<RepositoryDetail>(
-      `repositories/${encodeURIComponent(slug)}`
+      endpoint,
+      'GET',
+      undefined,
+      undefined,
+      {
+        // 1-hour cache with selective revalidation through cache tags
+        revalidate: REPOSITORY_DATA_TTL,
+        forceRefresh,
+        tags: [CACHE_TAGS.REPOSITORIES, `repository-${slug}`]
+      }
     );
   },
   
   /**
    * Get a repository by its ID
    * @param id Repository ID
+   * @param forceRefresh Optional flag to force a fresh request bypassing the cache
    * @returns Repository detail with associated entities
    */
-  async getById(id: string): Promise<RepositoryDetail> {
+  async getById(id: string, forceRefresh = false): Promise<RepositoryDetail> {
+    const endpoint = `repositories/id/${id}`;
     return await fetchFromApi<RepositoryDetail>(
-      `repositories/id/${id}`
+      endpoint,
+      'GET',
+      undefined,
+      undefined,
+      {
+        // 1-hour cache with selective revalidation through cache tags
+        revalidate: REPOSITORY_DATA_TTL,
+        forceRefresh,
+        tags: [CACHE_TAGS.REPOSITORIES, `repository-${id}`]
+      }
     );
   }
 }; 
