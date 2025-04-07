@@ -19,10 +19,10 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001';
 // Pipeline types to run with their correct names from server logs and admin UI code
 const PIPELINE_TYPES = [
   'github_sync',              // For closed merge requests (Pull new raw data)
-  'data_processing',          // For entity extraction
-  'data_enrichment',          // For entity enrichment
-  'sitemap_generation',       // For sitemap generation
-  'contributor-ranking'       // For developer rankings (note: hyphenated singular form)
+  // 'data_processing',          // For entity extraction
+  // 'data_enrichment',          // For entity enrichment
+  // 'sitemap_generation',       // For sitemap generation
+  // 'contributor-ranking'       // For developer rankings (note: hyphenated singular form)
 ];
 
 // Cache of successful pipeline name mappings
