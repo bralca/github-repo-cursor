@@ -33,6 +33,49 @@ We will implement a "database agnostic" connection manager that maintains the sa
 
 The parallel operation of both databases is strictly temporary for testing and validation purposes. There will be no interdependency between the databases or fallback mechanisms. Each database will be used independently based on configuration. Once PostgreSQL is fully validated, we will completely replace SQLite with a clean cutover approach. This ensures clear error reporting when issues arise and prevents silent failures that could mask problems.
 
+## Key Data Type Considerations
+
+The GitHub Explorer database uses several important data types that require special attention during the PostgreSQL migration:
+
+### 1. UUID Fields
+
+- **SQLite Implementation**: UUIDs are stored as TEXT fields
+- **PostgreSQL Implementation**: We will use VARCHAR(255) for UUID fields
+- **Important Tables**: All entity tables use UUID primary keys (repositories, contributors, merge_requests, etc.)
+- **Migration Considerations**: 
+  - Ensure all UUID fields maintain their exact string representation
+  - Validate UUID format during data migration
+  - Use VARCHAR instead of PostgreSQL's native UUID type to maintain compatibility with existing string format
+
+### 2. GitHub ID Fields
+
+- **SQLite Implementation**: GitHub IDs are stored as BIGINT fields
+- **PostgreSQL Implementation**: We will use BIGINT for GitHub ID fields
+- **Important Tables**: All entity tables have github_id fields (repositories.github_id, contributors.github_id, etc.)
+- **Migration Considerations**:
+  - Some GitHub IDs exceed the 32-bit integer range, requiring BIGINT (64-bit)
+  - The dual reference pattern (having both UUID and GitHub ID) must be maintained
+  - Unique constraints on github_id fields must be preserved
+
+### 3. Boolean Fields
+
+- **SQLite Implementation**: Booleans are stored as INTEGER (0/1)
+- **PostgreSQL Implementation**: We will use native BOOLEAN type
+- **Important Tables**: Fields like is_enriched, is_fork, is_archived, etc.
+- **Migration Considerations**:
+  - Convert 0/1 values to true/false during data migration
+  - Update application code to handle boolean type differences
+
+### 4. Timestamps
+
+- **SQLite Implementation**: Uses TEXT fields with ISO format
+- **PostgreSQL Implementation**: We will use TIMESTAMP type
+- **Migration Considerations**:
+  - Ensure proper conversion of SQLite timestamps to PostgreSQL format
+  - Implement equivalent triggers for created_at and updated_at fields
+
+By carefully handling these data types during schema creation and data migration, we can ensure a seamless transition while maintaining application compatibility.
+
 ## Stories and Tasks
 
 ### Story 1: PostgreSQL Schema Setup
@@ -46,49 +89,96 @@ The parallel operation of both databases is strictly temporary for testing and v
 - Set up appropriate database users and permissions
 - Document connection details in a secure location
 
-#### Task 1.2: Generate PostgreSQL Schema Script
+#### Task 1.2: Extract Current SQLite Schema and Generate PostgreSQL Schema
 
-- Create SQL scripts to generate identical schema in PostgreSQL
-- Include all tables with identical column names, types, and constraints
-- Handle SQLite-specific data types (convert to PostgreSQL equivalents)
-- Create all indexes defined in the SQLite database
-- Set up appropriate foreign key constraints
+1. Extract the full schema from the SQLite database using terminal commands:
+
+```bash
+# Navigate to the database directory
+cd github-explorer/server/db
+
+# Extract complete SQLite schema with table definitions, indices and triggers
+sqlite3 github_explorer.db '.schema' > sqlite_schema.sql
+
+# Extract table names to verify all tables are included
+sqlite3 github_explorer.db '.tables' > table_list.txt
+
+# For each table, get its detailed structure
+for table in $(cat table_list.txt); do
+  echo "Table: $table" >> table_structures.txt
+  sqlite3 github_explorer.db "PRAGMA table_info($table);" >> table_structures.txt
+  echo "" >> table_structures.txt
+done
+
+# Extract all indices for reference
+sqlite3 github_explorer.db "SELECT * FROM sqlite_master WHERE type='index';" > sqlite_indices.txt
+
+# Extract all triggers
+sqlite3 github_explorer.db "SELECT * FROM sqlite_master WHERE type='trigger';" > sqlite_triggers.txt
+```
+
+2. Create PostgreSQL schema file with proper type mappings, paying special attention to:
 
 ```sql
--- Example of SQLite to PostgreSQL type mapping
--- SQLite: 
--- TEXT -> PostgreSQL: VARCHAR or TEXT
--- INTEGER -> PostgreSQL: INTEGER or BIGINT
--- REAL -> PostgreSQL: NUMERIC or REAL
--- BLOB -> PostgreSQL: BYTEA
--- BOOLEAN (0/1 in SQLite) -> PostgreSQL: BOOLEAN
+-- Key type mappings for GitHub Explorer:
+-- TEXT (UUID in SQLite) -> VARCHAR(255) in PostgreSQL (for primary keys and foreign keys)
+-- BIGINT in SQLite -> BIGINT in PostgreSQL (for github_id fields)
+-- INTEGER (0/1 for booleans in SQLite) -> BOOLEAN in PostgreSQL 
+-- TEXT for JSON data -> JSONB in PostgreSQL (optional performance optimization)
+-- TIMESTAMP -> TIMESTAMP in PostgreSQL
 
--- Example table creation:
+-- Example table creation with proper UUID and GitHub ID handling:
 CREATE TABLE repositories (
-  id VARCHAR(255) PRIMARY KEY,
-  github_id BIGINT NOT NULL,
+  id VARCHAR(255) PRIMARY KEY,                 -- TEXT UUID in SQLite
+  github_id BIGINT NOT NULL,                   -- BIGINT maintained for GitHub IDs
   name VARCHAR(255) NOT NULL,
   full_name VARCHAR(255) NOT NULL,
   description TEXT,
-  -- ... other fields
+  url TEXT,
+  api_url TEXT,
+  stars INTEGER,
+  forks INTEGER,
+  is_enriched BOOLEAN DEFAULT FALSE,           -- Convert SQLite INTEGER (0/1) to BOOLEAN
+  health_percentage INTEGER,
+  open_issues_count INTEGER,
+  last_updated TIMESTAMP,
+  size_kb INTEGER,
+  watchers_count INTEGER,
+  primary_language VARCHAR(100),
+  license TEXT,
+  is_fork BOOLEAN DEFAULT FALSE,
+  is_archived BOOLEAN DEFAULT FALSE,
+  default_branch VARCHAR(100) DEFAULT 'main',
+  source VARCHAR(50) DEFAULT 'github_api',
+  owner_id VARCHAR(255),                        -- Foreign key as VARCHAR(255)
+  owner_github_id BIGINT,                       -- BIGINT for GitHub ID
+  enrichment_attempts INTEGER DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  
+  -- Constraints should match SQLite
   CONSTRAINT repositories_github_id_unique UNIQUE (github_id),
-  CONSTRAINT repositories_full_name_unique UNIQUE (full_name)
+  CONSTRAINT repositories_full_name_unique UNIQUE (full_name),
+  CONSTRAINT fk_repositories_owner FOREIGN KEY (owner_id) REFERENCES contributors(id) ON DELETE SET NULL
 );
 
--- And indexes:
+-- Create corresponding indexes
 CREATE INDEX idx_repositories_github_id ON repositories(github_id);
 CREATE INDEX idx_repositories_full_name ON repositories(full_name);
 CREATE INDEX idx_repositories_owner_github_id ON repositories(owner_github_id);
 CREATE INDEX idx_repositories_owner_id ON repositories(owner_id);
 ```
 
-#### Task 1.3: Set up Database Triggers and Functions
+3. Create all tables with consistent data type mappings:
 
-- Create PostgreSQL equivalents of SQLite triggers for `created_at` and `updated_at` fields
-- Set up any other needed PostgreSQL functions or procedures
-- Test triggers to ensure they work as expected
+- Ensure all primary keys use VARCHAR(255) for UUID fields
+- Maintain BIGINT type for all github_id fields
+- Create proper foreign key constraints with matching ON DELETE actions
+- Convert SQLite INTEGER boolean fields (0/1) to PostgreSQL BOOLEAN
+- Maintain consistent column names and purposes
+- Create all unique constraints with identical semantics
+
+4. Create all required triggers (especially for updated_at fields):
 
 ```sql
 -- Example PostgreSQL trigger for updated_at timestamps
@@ -106,43 +196,301 @@ FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 ```
 
+5. Create compound indices with the same structure:
+
+```sql
+-- Example compound index for merge_requests table
+CREATE UNIQUE INDEX idx_merge_requests_repo_pr ON merge_requests(repository_github_id, github_id);
+```
+
+6. Maintain consistency with SQLite's dual reference pattern:
+   - Keep both the UUID foreign keys (e.g., repository_id)
+   - And the GitHub IDs (e.g., repository_github_id)
+   - This pattern appears in merge_requests, commits, and contributor_repository tables
+
+#### Task 1.3: Extract and Create PostgreSQL Triggers and Functions
+
+1. Extract all SQLite triggers to understand their functionality:
+
+```bash
+# Extract all trigger definitions from SQLite
+sqlite3 github_explorer.db "SELECT name, sql FROM sqlite_master WHERE type='trigger';" > sqlite_triggers_full.txt
+
+# Analyze which tables have timestamp triggers
+grep -i "updated_at\|created_at" sqlite_triggers_full.txt > timestamp_triggers.txt
+```
+
+2. Create a unified PostgreSQL timestamp trigger function:
+
+```sql
+-- Create a single reusable function for updated_at timestamp management
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.updated_at = CURRENT_TIMESTAMP;
+   RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create a function for both created_at and updated_at timestamp management (for INSERT)
+CREATE OR REPLACE FUNCTION set_timestamp_columns()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.created_at = CURRENT_TIMESTAMP;
+   NEW.updated_at = CURRENT_TIMESTAMP;
+   RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+3. Create triggers for each table:
+
+```sql
+-- Core Entity Tables
+-- repositories table
+CREATE TRIGGER update_repositories_timestamps
+BEFORE INSERT ON repositories
+FOR EACH ROW
+EXECUTE FUNCTION set_timestamp_columns();
+
+CREATE TRIGGER update_repositories_updated_at
+BEFORE UPDATE ON repositories
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- contributors table
+CREATE TRIGGER update_contributors_timestamps
+BEFORE INSERT ON contributors
+FOR EACH ROW
+EXECUTE FUNCTION set_timestamp_columns();
+
+CREATE TRIGGER update_contributors_updated_at
+BEFORE UPDATE ON contributors
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- merge_requests table
+CREATE TRIGGER update_merge_requests_timestamps
+BEFORE INSERT ON merge_requests
+FOR EACH ROW
+EXECUTE FUNCTION set_timestamp_columns();
+
+CREATE TRIGGER update_merge_requests_updated_at
+BEFORE UPDATE ON merge_requests
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- commits table
+CREATE TRIGGER update_commits_timestamps
+BEFORE INSERT ON commits
+FOR EACH ROW
+EXECUTE FUNCTION set_timestamp_columns();
+
+CREATE TRIGGER update_commits_updated_at
+BEFORE UPDATE ON commits
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- contributor_repository table
+CREATE TRIGGER update_contributor_repository_timestamps
+BEFORE INSERT ON contributor_repository
+FOR EACH ROW
+EXECUTE FUNCTION set_timestamp_columns();
+
+CREATE TRIGGER update_contributor_repository_updated_at
+BEFORE UPDATE ON contributor_repository
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- Raw Data Tables
+-- closed_merge_requests_raw table
+CREATE TRIGGER update_closed_merge_requests_raw_timestamps
+BEFORE INSERT ON closed_merge_requests_raw
+FOR EACH ROW
+EXECUTE FUNCTION set_timestamp_columns();
+
+CREATE TRIGGER update_closed_merge_requests_raw_updated_at
+BEFORE UPDATE ON closed_merge_requests_raw
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- Pipeline Management Tables
+-- pipeline_schedules table
+CREATE TRIGGER update_pipeline_schedules_timestamps
+BEFORE INSERT ON pipeline_schedules
+FOR EACH ROW
+EXECUTE FUNCTION set_timestamp_columns();
+
+CREATE TRIGGER update_pipeline_schedules_updated_at
+BEFORE UPDATE ON pipeline_schedules
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- Add triggers for all remaining tables with timestamp columns
+```
+
+4. Create a validation script to ensure all triggers are working:
+
+```sql
+-- Script to test timestamp triggers for each table
+CREATE OR REPLACE FUNCTION test_timestamp_triggers() RETURNS TEXT AS $$
+DECLARE
+  test_record RECORD;
+  test_id VARCHAR(255);
+  insert_time TIMESTAMP;
+  update_time TIMESTAMP;
+  result TEXT := '';
+BEGIN
+  -- Test repositories table triggers
+  test_id := 'test-' || gen_random_uuid();
+  INSERT INTO repositories(id, github_id, name, full_name) 
+  VALUES (test_id, 12345, 'test-repo', 'test-owner/test-repo')
+  RETURNING created_at INTO insert_time;
+  
+  SELECT updated_at INTO update_time FROM repositories WHERE id = test_id;
+  
+  result := result || 'repositories: Insert trigger ' || 
+    CASE WHEN insert_time IS NOT NULL THEN 'OK' ELSE 'FAILED' END || ', ';
+  
+  -- Wait 1 second to ensure timestamps will differ
+  PERFORM pg_sleep(1);
+  
+  UPDATE repositories SET name = 'updated-name' WHERE id = test_id
+  RETURNING updated_at INTO update_time;
+  
+  result := result || 'Update trigger ' || 
+    CASE WHEN update_time > insert_time THEN 'OK' ELSE 'FAILED' END || E'\n';
+  
+  -- Cleanup test record
+  DELETE FROM repositories WHERE id = test_id;
+  
+  -- Add similar tests for all other tables with timestamp columns
+  
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Execute the test
+SELECT test_timestamp_triggers();
+```
+
+5. Verify that all tables have consistent timestamp behavior:
+
+```bash
+# Run this PostgreSQL query to list all tables with timestamp columns and their triggers
+psql -h $PG_HOST -U $PG_USER -d $PG_DATABASE -c "
+SELECT
+  t.table_name,
+  c.column_name,
+  EXISTS (
+    SELECT 1 FROM pg_trigger trig
+    JOIN pg_class rel ON trig.tgrelid = rel.oid
+    WHERE rel.relname = t.table_name
+    AND trig.tgname LIKE '%' || t.table_name || '%' || c.column_name || '%'
+  ) AS has_trigger
+FROM information_schema.tables t
+JOIN information_schema.columns c ON t.table_name = c.table_name
+WHERE t.table_schema = 'public'
+AND c.column_name IN ('created_at', 'updated_at')
+ORDER BY t.table_name, c.column_name;
+"
+```
+
 #### Task 1.4: Test PostgreSQL Schema Setup
 
 To verify the PostgreSQL schema setup is correct, run these terminal commands:
 
 ```bash
 # Compare table structure between SQLite and PostgreSQL
+echo "=== Comparing Tables ==="
 echo "SQLite tables:"
 sqlite3 github-explorer/server/db/github_explorer.db ".tables"
 
 echo "PostgreSQL tables:"
 PGPASSWORD=$PG_PASSWORD psql -h $PG_HOST -U $PG_USER -d $PG_DATABASE -c "\dt"
 
-# Verify column structure of key tables 
-echo "SQLite repositories structure:"
-sqlite3 github-explorer/server/db/github_explorer.db ".schema repositories"
+# Verify table count matches
+sqlite_table_count=$(sqlite3 github-explorer/server/db/github_explorer.db "SELECT COUNT(name) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+pg_table_count=$(PGPASSWORD=$PG_PASSWORD psql -h $PG_HOST -U $PG_USER -d $PG_DATABASE -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public'")
+echo "SQLite table count: $sqlite_table_count"
+echo "PostgreSQL table count: $pg_table_count"
 
-echo "PostgreSQL repositories structure:"
-PGPASSWORD=$PG_PASSWORD psql -h $PG_HOST -U $PG_USER -d $PG_DATABASE -c "\d repositories"
+# Verify column structure of key tables
+echo -e "\n=== Comparing Schema Structure ==="
+for table in repositories contributors merge_requests commits contributor_repository pipeline_schedules pipeline_history pipeline_status
+do
+  echo -e "\nComparing $table table:"
+  echo "SQLite columns:"
+  sqlite3 github-explorer/server/db/github_explorer.db "PRAGMA table_info($table);"
+  
+  echo "PostgreSQL columns:"
+  PGPASSWORD=$PG_PASSWORD psql -h $PG_HOST -U $PG_USER -d $PG_DATABASE -c "\d $table"
+done
 
-# Test trigger functionality for updated_at
-echo "Testing PostgreSQL updated_at trigger:"
+# Verify index counts match
+echo -e "\n=== Comparing Indices ==="
+sqlite_index_count=$(sqlite3 github-explorer/server/db/github_explorer.db "SELECT COUNT(name) FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%'")
+pg_index_count=$(PGPASSWORD=$PG_PASSWORD psql -h $PG_HOST -U $PG_USER -d $PG_DATABASE -t -c "SELECT COUNT(*) FROM pg_indexes WHERE schemaname='public'")
+echo "SQLite index count: $sqlite_index_count"
+echo "PostgreSQL index count: $pg_index_count"
+
+# Verify UUID type handling
+echo -e "\n=== Testing UUID Fields ==="
+# Insert a test repository with a UUID
+test_uuid=$(uuidgen | tr -d '-')
+echo "Test UUID: $test_uuid"
 PGPASSWORD=$PG_PASSWORD psql -h $PG_HOST -U $PG_USER -d $PG_DATABASE -c "
 INSERT INTO repositories (id, github_id, name, full_name) 
-VALUES ('test-id', 12345, 'test-repo', 'test-owner/test-repo');
-SELECT created_at, updated_at FROM repositories WHERE id = 'test-id';
-UPDATE repositories SET name = 'updated-name' WHERE id = 'test-id';
-SELECT created_at, updated_at FROM repositories WHERE id = 'test-id';
+VALUES ('$test_uuid', 12345, 'test-repo', 'test-owner/test-repo');
+SELECT id FROM repositories WHERE id = '$test_uuid';
 "
 
-# Verify timestamps are different after update
-# If updated_at > created_at, the trigger is working correctly
+# Verify GitHub ID handling (BIGINT)
+echo -e "\n=== Testing GitHub ID Fields ==="
+# Test with a large GitHub ID value
+large_github_id=9223372036854775807  # Max BIGINT value
+PGPASSWORD=$PG_PASSWORD psql -h $PG_HOST -U $PG_USER -d $PG_DATABASE -c "
+INSERT INTO repositories (id, github_id, name, full_name) 
+VALUES ('test-large-id', $large_github_id, 'test-large-id', 'test-owner/test-large-id');
+SELECT github_id FROM repositories WHERE github_id = $large_github_id;
+"
+
+# Test trigger functionality for updated_at
+echo -e "\n=== Testing Timestamp Triggers ==="
+PGPASSWORD=$PG_PASSWORD psql -h $PG_HOST -U $PG_USER -d $PG_DATABASE -c "
+INSERT INTO repositories (id, github_id, name, full_name) 
+VALUES ('test-timestamp', 54321, 'test-timestamps', 'test-owner/test-timestamps');
+SELECT created_at, updated_at FROM repositories WHERE id = 'test-timestamp';
+
+-- Wait a second to ensure timestamp difference
+SELECT pg_sleep(1);
+
+UPDATE repositories SET name = 'updated-name' WHERE id = 'test-timestamp';
+SELECT created_at, updated_at FROM repositories WHERE id = 'test-timestamp';
+"
+
+# Check foreign key constraints
+echo -e "\n=== Testing Foreign Key Constraints ==="
+PGPASSWORD=$PG_PASSWORD psql -h $PG_HOST -U $PG_USER -d $PG_DATABASE -c "
+-- Try to insert a commit with non-existent repository_id
+INSERT INTO commits (id, github_id, repository_id, contributor_id, message, committed_at, filename, status, additions, deletions) 
+VALUES ('test-fk', 'abc123', 'non-existent-repo', NULL, 'test commit', CURRENT_TIMESTAMP, 'test.txt', 'added', 1, 0);
+"
+
+# Clean up test data
+echo -e "\n=== Cleaning Up Test Data ==="
+PGPASSWORD=$PG_PASSWORD psql -h $PG_HOST -U $PG_USER -d $PG_DATABASE -c "
+DELETE FROM repositories WHERE id IN ('$test_uuid', 'test-large-id', 'test-timestamp');
+"
 ```
 
 **Expected Results:**
-- Both databases should have the same tables
-- Column structures should match with appropriate type conversions
+- Both databases should have the same number of tables
+- Column names, types, and constraints should match with appropriate type conversions
+- PostgreSQL should correctly handle UUIDs as VARCHAR(255)
+- PostgreSQL should store GitHub IDs as BIGINT values
 - After the UPDATE statement, the updated_at timestamp should be newer than created_at
+- Foreign key constraints should properly prevent invalid data
 
 ### Story 2: Database Connection Manager Adaptation
 
@@ -874,6 +1222,7 @@ import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import { Pool } from 'pg';
 import { logger } from '../utils/logger.js';
+import fs from 'fs';
 
 async function migrateRepositories() {
   // SQLite connection
@@ -896,8 +1245,52 @@ async function migrateRepositories() {
     const repositories = await sqliteDb.all('SELECT * FROM repositories');
     logger.info(`Migrating ${repositories.length} repositories to PostgreSQL`);
     
+    // Verify UUID format in SQLite data
+    const invalidUuids = repositories.filter(repo => !repo.id || typeof repo.id !== 'string' || repo.id.length > 255);
+    if (invalidUuids.length > 0) {
+      logger.warn(`Found ${invalidUuids.length} repositories with invalid UUID format`, {
+        examples: invalidUuids.slice(0, 3).map(repo => repo.id)
+      });
+    }
+    
+    // Verify GitHub IDs in SQLite data
+    const invalidGithubIds = repositories.filter(repo => repo.github_id === null || isNaN(repo.github_id));
+    if (invalidGithubIds.length > 0) {
+      logger.warn(`Found ${invalidGithubIds.length} repositories with invalid github_id format`, {
+        examples: invalidGithubIds.slice(0, 3).map(repo => repo.github_id)
+      });
+    }
+    
+    // Write data type validation report
+    const validationReport = {
+      totalRecords: repositories.length,
+      invalidUuids: {
+        count: invalidUuids.length,
+        examples: invalidUuids.slice(0, 5).map(repo => ({ id: repo.id, name: repo.name }))
+      },
+      invalidGithubIds: {
+        count: invalidGithubIds.length,
+        examples: invalidGithubIds.slice(0, 5).map(repo => ({ github_id: repo.github_id, name: repo.name }))
+      },
+      largeGithubIds: {
+        count: repositories.filter(repo => repo.github_id > 2147483647).length,
+        examples: repositories.filter(repo => repo.github_id > 2147483647).slice(0, 5).map(repo => repo.github_id)
+      },
+      uuidLengthStats: {
+        min: Math.min(...repositories.filter(repo => repo.id).map(repo => repo.id.length)),
+        max: Math.max(...repositories.filter(repo => repo.id).map(repo => repo.id.length)),
+        avg: repositories.filter(repo => repo.id).reduce((sum, repo) => sum + repo.id.length, 0) / repositories.length
+      }
+    };
+    
+    fs.writeFileSync('data_migration_validation.json', JSON.stringify(validationReport, null, 2));
+    logger.info('Data validation report created', { reportPath: 'data_migration_validation.json' });
+    
     // Process in batches
     const batchSize = 100;
+    let successCount = 0;
+    let errorCount = 0;
+    
     for (let i = 0; i < repositories.length; i += batchSize) {
       const batch = repositories.slice(i, i + batchSize);
       
@@ -907,6 +1300,25 @@ async function migrateRepositories() {
         await pgClient.query('BEGIN');
         
         for (const repo of batch) {
+          // Ensure UUID fields are properly formatted as strings
+          const id = repo.id || `generated-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+          
+          // Ensure github_id is a valid BIGINT
+          const github_id = repo.github_id != null ? BigInt(repo.github_id) : null;
+          if (github_id === null) {
+            logger.warn(`Repository ${repo.name} has null github_id, using placeholder`);
+            github_id = i * batchSize + batch.indexOf(repo); // Use a placeholder ID
+          }
+          
+          // Convert SQLite boolean (0/1) to PostgreSQL boolean
+          const is_enriched = repo.is_enriched ? true : false;
+          const is_fork = repo.is_fork ? true : false;
+          const is_archived = repo.is_archived ? true : false;
+          
+          // Handle proper date format conversion if needed
+          const created_at = repo.created_at ? new Date(repo.created_at) : new Date();
+          const updated_at = repo.updated_at ? new Date(repo.updated_at) : new Date();
+          
           await pgClient.query(`
             INSERT INTO repositories (
               id, github_id, name, full_name, description, url, api_url, 
@@ -916,24 +1328,45 @@ async function migrateRepositories() {
               owner_github_id, enrichment_attempts, created_at, updated_at
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 
                     $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
-            ON CONFLICT (github_id) DO NOTHING
+            ON CONFLICT (github_id) DO UPDATE SET
+              name = EXCLUDED.name,
+              updated_at = EXCLUDED.updated_at
+            RETURNING id
           `, [
-            repo.id, repo.github_id, repo.name, repo.full_name, repo.description,
-            repo.url, repo.api_url, repo.stars, repo.forks, repo.is_enriched,
-            repo.health_percentage, repo.open_issues_count, repo.last_updated,
-            repo.size_kb, repo.watchers_count, repo.primary_language, repo.license,
-            repo.is_fork, repo.is_archived, repo.default_branch, repo.source,
-            repo.owner_id, repo.owner_github_id, repo.enrichment_attempts,
-            repo.created_at, repo.updated_at
+            id, github_id, repo.name, repo.full_name, repo.description,
+            repo.url, repo.api_url, repo.stars || 0, repo.forks || 0, is_enriched,
+            repo.health_percentage || 0, repo.open_issues_count || 0, repo.last_updated,
+            repo.size_kb || 0, repo.watchers_count || 0, repo.primary_language, repo.license,
+            is_fork, is_archived, repo.default_branch || 'main', repo.source || 'github_api',
+            repo.owner_id, repo.owner_github_id, repo.enrichment_attempts || 0,
+            created_at, updated_at
           ]);
+          
+          successCount++;
         }
         
         await pgClient.query('COMMIT');
         logger.info(`Successfully migrated batch ${i/batchSize + 1}/${Math.ceil(repositories.length/batchSize)}`);
       } catch (error) {
+        errorCount++;
         await pgClient.query('ROLLBACK');
         logger.error(`Error migrating batch ${i/batchSize + 1}`, { error });
-        throw error;
+        
+        // Log detailed error information for diagnosis
+        if (error.code === '22P02') { // Invalid text representation
+          logger.error('Invalid data format detected. This often happens with incompatible data types.');
+          
+          // Log the specific records in this batch that might have the issue
+          const problemRecords = batch.map(repo => ({
+            id: repo.id,
+            github_id: repo.github_id,
+            name: repo.name
+          }));
+          logger.error('Problem records in this batch:', { problemRecords });
+        }
+        
+        // Continue with next batch rather than failing the whole migration
+        logger.info('Continuing with next batch...');
       } finally {
         pgClient.release();
       }
@@ -943,9 +1376,62 @@ async function migrateRepositories() {
     const sqliteCount = (await sqliteDb.get('SELECT COUNT(*) as count FROM repositories')).count;
     const pgCount = (await pgPool.query('SELECT COUNT(*) as count FROM repositories')).rows[0].count;
     
-    logger.info('Migration complete', { sqliteCount, pgCount });
+    logger.info('Migration complete', { 
+      sqliteCount, 
+      pgCount,
+      successCount,
+      errorCount,
+      percentComplete: (sqliteCount > 0) ? (parseInt(pgCount) / sqliteCount * 100).toFixed(2) + '%' : '0%'
+    });
+    
     if (sqliteCount !== parseInt(pgCount)) {
-      logger.warn('Count mismatch after migration', { sqliteCount, pgCount });
+      logger.warn('Count mismatch after migration', { sqliteCount, pgCount, difference: sqliteCount - parseInt(pgCount) });
+      
+      // Additional verification for UUID and github_id fields
+      const pgUuidStats = await pgPool.query(`
+        SELECT 
+          MIN(LENGTH(id)) as min_length,
+          MAX(LENGTH(id)) as max_length,
+          AVG(LENGTH(id)) as avg_length,
+          COUNT(*) FILTER (WHERE id IS NULL) as null_count
+        FROM repositories
+      `);
+      
+      const pgGithubIdStats = await pgPool.query(`
+        SELECT 
+          MIN(github_id) as min_id,
+          MAX(github_id) as max_id,
+          COUNT(*) FILTER (WHERE github_id IS NULL) as null_count,
+          COUNT(*) FILTER (WHERE github_id > 2147483647) as large_ids
+        FROM repositories
+      `);
+      
+      logger.info('PostgreSQL UUID statistics', { stats: pgUuidStats.rows[0] });
+      logger.info('PostgreSQL github_id statistics', { stats: pgGithubIdStats.rows[0] });
+    }
+    
+    // Verify specific UUIDs and GitHub IDs migrated correctly (sample check)
+    if (repositories.length > 0) {
+      const sampleSize = Math.min(5, repositories.length);
+      logger.info(`Verifying ${sampleSize} random records for data integrity...`);
+      
+      for (let i = 0; i < sampleSize; i++) {
+        const randomIndex = Math.floor(Math.random() * repositories.length);
+        const sampleRepo = repositories[randomIndex];
+        
+        const pgRepo = await pgPool.query('SELECT * FROM repositories WHERE id = $1', [sampleRepo.id]);
+        
+        if (pgRepo.rows.length === 0) {
+          logger.warn(`Verification failed: UUID ${sampleRepo.id} not found in PostgreSQL`);
+        } else if (pgRepo.rows[0].github_id !== BigInt(sampleRepo.github_id)) {
+          logger.warn(`Verification failed: github_id mismatch for ${sampleRepo.id}`, {
+            sqlite: sampleRepo.github_id,
+            postgres: pgRepo.rows[0].github_id
+          });
+        } else {
+          logger.info(`Verification passed for repository: ${sampleRepo.name} (${sampleRepo.id})`);
+        }
+      }
     }
   } catch (error) {
     logger.error('Migration failed', { error });
